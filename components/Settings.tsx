@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
-import { User } from '../types';
-import { User as UserIcon, LogOut, CreditCard, Bell, Shield, Cloud, CheckCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, ViewMode } from '../types';
+import { LogOut, User as UserIcon, Bell, ArrowLeft, Save, Upload, Menu, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface SettingsProps {
   user: User;
@@ -9,142 +9,221 @@ interface SettingsProps {
   onConnectDrive: () => void;
   isDriveConnected: boolean;
   onClose: () => void;
+  onUpdateUser?: (user: User) => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onConnectDrive, isDriveConnected, onClose }) => {
-  const [activeTab, setActiveTab] = useState('profile');
+const DEFAULT_ORDER: ViewMode[] = ['HQ', 'MANAGER', 'TASKS', 'HABITS', 'APPS', 'CALENDAR', 'CHAT', 'FILES'];
+const NAV_LABELS: Record<string, string> = {
+    'HQ': 'Workspace',
+    'MANAGER': 'Manager',
+    'TASKS': 'Tasks',
+    'HABITS': 'Habits',
+    'APPS': 'Apps',
+    'CALENDAR': 'Schedule',
+    'CHAT': 'Mentor',
+    'FILES': 'Assets'
+};
+
+export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onUpdateUser }) => {
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [isEditing, setIsEditing] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(user.preferences.notifications);
+  const [navOrder, setNavOrder] = useState<ViewMode[]>(user.preferences.navOrder || DEFAULT_ORDER);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+      setName(user.name);
+      setEmail(user.email);
+      setNotificationsEnabled(user.preferences.notifications);
+      setNavOrder(user.preferences.navOrder || DEFAULT_ORDER);
+  }, [user]);
+
+  const handleSave = () => {
+      if (onUpdateUser) {
+          onUpdateUser({ 
+              ...user, 
+              name, 
+              email,
+              preferences: {
+                  ...user.preferences,
+                  notifications: notificationsEnabled,
+                  navOrder: navOrder
+              }
+          });
+          setIsEditing(false);
+      }
+  };
+
+  const moveItem = (index: number, direction: 'up' | 'down') => {
+      const newOrder = [...navOrder];
+      if (direction === 'up' && index > 0) {
+          [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+      } else if (direction === 'down' && index < newOrder.length - 1) {
+          [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+      }
+      setNavOrder(newOrder);
+      // Auto save preference changes for nav
+      if (onUpdateUser) {
+          onUpdateUser({
+              ...user,
+              preferences: {
+                  ...user.preferences,
+                  navOrder: newOrder
+              }
+          });
+      }
+  };
+
+  const handleToggleNotifications = () => {
+      setNotificationsEnabled(!notificationsEnabled);
+      if (onUpdateUser) {
+          onUpdateUser({
+              ...user,
+              preferences: {
+                  ...user.preferences,
+                  notifications: !notificationsEnabled
+              }
+          });
+      }
+  };
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+              if (onUpdateUser && ev.target?.result) {
+                  onUpdateUser({ ...user, avatar: ev.target.result as string });
+              }
+          };
+          reader.readAsDataURL(file);
+      }
+  };
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto p-6 md:p-10 max-w-5xl mx-auto w-full">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
-        <button 
-          onClick={onClose}
-          className="p-2 hover:bg-white/10 rounded-full text-gray-500 hover:text-white transition-colors"
-        >
-          <X size={24} />
-        </button>
+    <div className="flex flex-col h-full w-full overflow-y-auto scrollbar-hide pb-20">
+      
+      <div className="flex items-center gap-4 mb-8 shrink-0">
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-text-secondary hover:text-white transition-colors">
+              <ArrowLeft size={24} />
+          </button>
+          <h1 className="text-4xl font-bold text-white">Settings</h1>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Sidebar */}
-        <div className="w-full md:w-64 flex-shrink-0 space-y-2">
-          {[
-            { id: 'profile', label: 'Profile', icon: <UserIcon size={18} /> },
-            { id: 'integrations', label: 'Integrations', icon: <Cloud size={18} /> },
-            { id: 'billing', label: 'Billing', icon: <CreditCard size={18} /> },
-            { id: 'notifications', label: 'Notifications', icon: <Bell size={18} /> },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                activeTab === item.id 
-                  ? 'bg-white text-black shadow-lg' 
-                  : 'text-gray-500 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
-          
-          <div className="pt-4 mt-4 border-t border-gray-800">
-            <button 
-              onClick={onLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition-colors"
-            >
-              <LogOut size={18} />
-              Sign Out
-            </button>
+      <div className="bg-surface rounded-[2.5rem] border border-white/5 p-8 max-w-2xl shadow-soft">
+          <div className="flex items-center gap-6 mb-10">
+             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                 <div className="w-24 h-24 rounded-3xl bg-surface-highlight overflow-hidden border border-white/10 shadow-glow">
+                    <img src={user.avatar} className="w-full h-full object-cover" />
+                 </div>
+                 <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                     <Upload size={24} className="text-white" />
+                 </div>
+                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+             </div>
+             
+             <div className="flex-1">
+                {isEditing ? (
+                    <div className="space-y-3">
+                        <input 
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-surface-highlight border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary font-bold text-xl"
+                            placeholder="Full Name"
+                            aria-label="Edit Name"
+                        />
+                        <input 
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full bg-surface-highlight border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary"
+                            placeholder="Email Address"
+                            aria-label="Edit Email"
+                        />
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={handleSave} 
+                                className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg text-sm font-bold hover:bg-indigo-600 transition-colors active:scale-95"
+                                aria-label="Save Profile Changes"
+                            >
+                                <Save size={14} /> Save
+                            </button>
+                            <button 
+                                onClick={() => setIsEditing(false)} 
+                                className="px-4 py-2 bg-white/5 text-text-secondary rounded-lg text-sm font-bold hover:text-white transition-colors active:scale-95"
+                                aria-label="Cancel Editing"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <h2 className="text-3xl font-bold text-white mb-1">{user.name}</h2>
+                        <p className="text-text-secondary mb-3">{user.email}</p>
+                        <button onClick={() => setIsEditing(true)} className="text-accent-primary text-sm font-bold hover:underline active:scale-95">Edit Profile</button>
+                    </>
+                )}
+             </div>
           </div>
-        </div>
 
-        {/* Content Area */}
-        <div className="flex-1 bg-card-bg border border-gray-800 rounded-3xl p-8 min-h-[500px]">
-          
-          {activeTab === 'profile' && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="flex items-center gap-6">
-                <div className="w-24 h-24 rounded-full bg-gray-800 overflow-hidden border-2 border-white/10">
-                   <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+          <div className="space-y-4 mt-8">
+             <div className="p-5 bg-surface-highlight rounded-2xl border border-white/5">
+                 <h3 className="text-white font-bold mb-4 flex items-center gap-2"><UserIcon size={18} /> Profile Information</h3>
+                 <p className="text-sm text-muted-foreground">Manage your personal details and avatar.</p>
+             </div>
+
+             <div className="flex items-center justify-between p-5 bg-surface-highlight rounded-2xl border border-white/5">
+                <div className="flex items-center gap-4">
+                    <div className="p-2 bg-white/10 rounded-lg"><Bell size={18} /></div>
+                    <span className="text-white font-medium">Notifications</span>
                 </div>
-                <div>
-                   <h2 className="text-2xl font-bold text-white">{user.name}</h2>
-                   <p className="text-gray-500">{user.email}</p>
-                   <div className="mt-2 inline-flex items-center gap-1 bg-accent-blue/10 text-accent-blue text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-                      PRO Plan Active
-                   </div>
-                </div>
-              </div>
+                <button 
+                    onClick={handleToggleNotifications}
+                    className={`w-12 h-6 rounded-full p-1 transition-colors ${notificationsEnabled ? 'bg-primary' : 'bg-gray-600'}`}
+                >
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${notificationsEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                </button>
+             </div>
 
-              <form className="space-y-4 max-w-lg">
-                 <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Display Name</label>
-                    <input type="text" defaultValue={user.name} className="w-full bg-[#141416] border border-gray-700 rounded-xl p-3 text-white focus:outline-none focus:border-accent-blue" />
+             {/* Sidebar Customization */}
+             <div className="p-5 bg-surface-highlight rounded-2xl border border-white/5">
+                 <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Menu size={18} /> Menu Customization</h3>
+                 <p className="text-sm text-muted-foreground mb-4">Rearrange the sidebar to suit your workflow.</p>
+                 
+                 <div className="space-y-2">
+                     {navOrder.map((item, index) => (
+                         <div key={item} className="flex items-center justify-between p-3 bg-black/20 rounded-xl border border-white/5">
+                             <span className="text-sm font-medium text-white">{NAV_LABELS[item] || item}</span>
+                             <div className="flex gap-1">
+                                 <button 
+                                    onClick={() => moveItem(index, 'up')} 
+                                    disabled={index === 0}
+                                    className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"
+                                 >
+                                     <ChevronUp size={16} />
+                                 </button>
+                                 <button 
+                                    onClick={() => moveItem(index, 'down')} 
+                                    disabled={index === navOrder.length - 1}
+                                    className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"
+                                 >
+                                     <ChevronDown size={16} />
+                                 </button>
+                             </div>
+                         </div>
+                     ))}
                  </div>
-                 <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Email</label>
-                    <input type="email" defaultValue={user.email} className="w-full bg-[#141416] border border-gray-700 rounded-xl p-3 text-gray-400 cursor-not-allowed" disabled />
-                 </div>
-                 <div className="pt-4">
-                    <button className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors">
-                        Save Changes
-                    </button>
-                 </div>
-              </form>
-            </div>
-          )}
-
-          {activeTab === 'integrations' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-               <h2 className="text-xl font-bold text-white">Connected Apps</h2>
-               <p className="text-gray-500 text-sm">Manage external connections to supercharge your OS.</p>
-               
-               <div className="bg-[#141416] border border-gray-800 rounded-2xl p-6 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" alt="Drive" className="w-8 h-8" />
-                     </div>
-                     <div>
-                        <h3 className="font-bold text-white">Google Drive</h3>
-                        <p className="text-xs text-gray-500">Sync design assets and invoices automatically.</p>
-                     </div>
-                  </div>
-                  <button 
-                    onClick={onConnectDrive}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold border transition-all flex items-center gap-2
-                      ${isDriveConnected 
-                        ? 'bg-green-500/10 text-green-500 border-green-500/20' 
-                        : 'bg-transparent text-white border-gray-700 hover:bg-white/5'
-                      }
-                    `}
-                  >
-                    {isDriveConnected ? (
-                      <>
-                        <CheckCircle size={14} />
-                        Connected
-                      </>
-                    ) : (
-                      'Connect'
-                    )}
-                  </button>
-               </div>
-            </div>
-          )}
-
-          {activeTab === 'billing' && (
-            <div className="flex flex-col items-center justify-center h-full text-center py-20 animate-in fade-in slide-in-from-right-4 duration-300">
-               <Shield size={48} className="text-gray-700 mb-4" />
-               <h3 className="text-lg font-bold text-white">Billing Portal</h3>
-               <p className="text-gray-500 text-sm mb-6">Manage your subscription and payment methods securely.</p>
-               <button className="px-6 py-3 bg-gray-800 text-white font-bold rounded-xl hover:bg-gray-700 transition-colors">
-                  Open Stripe Portal
-               </button>
-            </div>
-          )}
-
-        </div>
+             </div>
+             
+             <button 
+                onClick={onLogout} 
+                className="w-full flex items-center gap-4 p-5 bg-red-500/10 text-red-500 rounded-2xl font-bold hover:bg-red-500/20 transition-colors border border-red-500/20 mt-8 active:scale-95"
+                aria-label="Sign Out"
+            >
+                <LogOut size={18} /> Sign Out
+             </button>
+          </div>
       </div>
     </div>
   );

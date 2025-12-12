@@ -1,77 +1,191 @@
+
 <!DOCTYPE html>
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Designpreneur AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>TaskNovaPro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
             colors: {
-              'app-bg': '#09090b',       // Zinc 950
-              'card-bg': '#18181b',      // Zinc 900
-              'accent-blue': '#3b82f6',  // Blue 500
-              'accent-purple': '#a855f7',
-              'text-primary': '#FFFFFF',
-              'text-secondary': '#a1a1aa', // Zinc 400
-              'success': '#22c55e',
-              'danger': '#ef4444',
+              background: 'hsl(var(--background))',
+              foreground: 'hsl(var(--foreground))',
+              
+              card: 'hsl(var(--card))',
+              'card-foreground': 'hsl(var(--card-foreground))',
+              
+              popover: 'hsl(var(--popover))',
+              'popover-foreground': 'hsl(var(--popover-foreground))',
+              
+              primary: 'hsl(var(--primary))',
+              'primary-foreground': 'hsl(var(--primary-foreground))',
+              
+              secondary: 'hsl(var(--secondary))',
+              'secondary-foreground': 'hsl(var(--secondary-foreground))',
+              
+              muted: 'hsl(var(--muted))',
+              'muted-foreground': 'hsl(var(--muted-foreground))',
+              
+              accent: 'hsl(var(--accent))',
+              'accent-foreground': 'hsl(var(--accent-foreground))',
+              
+              destructive: 'hsl(var(--destructive))',
+              'destructive-foreground': 'hsl(var(--destructive-foreground))',
+              
+              border: 'hsl(var(--border))',
+              input: 'hsl(var(--input))',
+              ring: 'hsl(var(--ring))',
+
+              // Legacy mappings mapping to variables
+              'app-bg': 'hsl(var(--background))',
+              'surface': 'hsl(var(--card))', 
+              'surface-highlight': 'hsl(var(--secondary))',
+              'text-primary': 'hsl(var(--foreground))',
+              'text-secondary': 'hsl(var(--muted-foreground))',
+              'text-muted': 'hsl(var(--muted-foreground))',
+              
+              'accent-primary': 'hsl(var(--primary))',
+              'accent-secondary': '#14b8a6', // Keeping specific colors static for branding if needed, or could map them
             },
             fontFamily: {
-              sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', "Segoe UI", 'Roboto', "Helvetica Neue", 'Arial', "Noto Sans", 'sans-serif'],
+              sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+              mono: ['Geist Mono', 'JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
             },
             borderRadius: {
-              '4xl': '2rem',
+              'xl': '0.75rem',
+              '2xl': '1rem',
+              '3xl': '1.5rem',
+            },
+            boxShadow: {
+              'soft': '0 0 0 1px hsl(var(--border))',
+              'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+              'glow': '0 0 20px -10px hsl(var(--primary) / 0.3)', 
             },
             animation: {
-              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'in': 'animate-in fade-in zoom-in-95 duration-300',
-              'progress': 'progress 2s ease-in-out infinite',
+                'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
             },
             keyframes: {
-              progress: {
-                '0%': { transform: 'translateX(-100%)' },
-                '50%': { transform: 'translateX(0%)' },
-                '100%': { transform: 'translateX(100%)' },
-              }
+                'shake': {
+                    '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                    '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                    '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                    '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                }
             }
           },
         },
       }
     </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+      :root {
+        /* Light Mode Defaults */
+        --background: 0 0% 98%;      /* Zinc 50 */
+        --foreground: 240 10% 3.9%;  /* Zinc 950 */
+
+        --card: 0 0% 100%;
+        --card-foreground: 240 10% 3.9%;
+ 
+        --popover: 0 0% 100%;
+        --popover-foreground: 240 10% 3.9%;
+ 
+        --primary: 25 95% 53%;       /* Orange 500 - TaskNovaPro Theme */
+        --primary-foreground: 0 0% 98%;
+ 
+        --secondary: 240 4.8% 95.9%; /* Zinc 100 */
+        --secondary-foreground: 240 5.9% 10%;
+ 
+        --muted: 240 4.8% 95.9%;
+        --muted-foreground: 240 3.8% 46.1%;
+ 
+        --accent: 240 4.8% 95.9%;
+        --accent-foreground: 240 5.9% 10%;
+ 
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+
+        --border: 240 5.9% 90%;
+        --input: 240 5.9% 90%;
+        --ring: 25 95% 53%;
+        
+        --radius: 0.5rem;
+      }
+ 
+      .dark {
+        /* Dark Mode Defaults */
+        --background: 240 10% 3.9%;  /* Zinc 950 */
+        --foreground: 0 0% 98%;      /* Zinc 50 */
+ 
+        --card: 240 10% 3.9%;
+        --card-foreground: 0 0% 98%;
+ 
+        --popover: 240 10% 3.9%;
+        --popover-foreground: 0 0% 98%;
+ 
+        --primary: 25 95% 53%;       /* Orange 500 - TaskNovaPro Theme */
+        --primary-foreground: 0 0% 98%;
+ 
+        --secondary: 240 3.7% 15.9%; /* Zinc 800 */
+        --secondary-foreground: 0 0% 98%;
+ 
+        --muted: 240 3.7% 15.9%;
+        --muted-foreground: 240 5% 64.9%;
+ 
+        --accent: 240 3.7% 15.9%;
+        --accent-foreground: 0 0% 98%;
+ 
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+ 
+        --border: 240 3.7% 15.9%;
+        --input: 240 3.7% 15.9%;
+        --ring: 25 95% 53%;
+      }
 
       body {
-        background-color: #09090b;
-        color: #ffffff;
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
         font-family: 'Inter', sans-serif;
+        letter-spacing: -0.025em;
+        overscroll-behavior-y: none;
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
+
       /* Custom smooth scrollbar */
       ::-webkit-scrollbar {
         width: 6px;
+        height: 6px;
       }
       ::-webkit-scrollbar-track {
-        background: #09090b;
+        background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #27272a;
+        background: hsl(var(--border));
         border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #3f3f46;
+        background: hsl(var(--muted-foreground));
       }
       
-      .glass-nav {
-        background: rgba(24, 24, 27, 0.8);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+      .glass {
+        background: rgba(9, 9, 11, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid hsl(var(--border));
+      }
+      
+      input, textarea, select {
+        font-family: inherit;
+        letter-spacing: inherit;
       }
     </style>
   <script type="importmap">
@@ -87,7 +201,7 @@
 }
 </script>
 </head>
-  <body class="bg-app-bg text-text-primary antialiased overflow-hidden">
-    <div id="root"></div>
+  <body class="bg-background text-foreground antialiased overflow-hidden h-[100dvh]">
+    <div id="root" class="h-full"></div>
   </body>
 </html>

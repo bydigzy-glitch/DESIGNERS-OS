@@ -1,165 +1,362 @@
 
-import React, { useState, useEffect } from 'react';
-import { Task, ViewMode } from '../types';
-import { Plus, Activity, Zap, Pause, Play, Calendar, FileText, Clock, ArrowRight, Grid } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Task, ViewMode, Client, Project, User, Habit } from '../types';
+import { Zap, Plus, CheckCircle2, Briefcase, Sparkles, Flame, CheckSquare, Calendar, Trash2, ArrowUpRight, TrendingUp, MoreHorizontal, FileText, MessageSquare, Clock, AlertTriangle, Star } from 'lucide-react';
+import { EmptyState } from './common/EmptyState';
+import { ProjectModal } from './modals/ProjectModal';
+import { TaskModal } from './modals/TaskModal';
+import { TasksTable } from './common/TasksTable';
+import { FadeIn, CountUp } from './common/AnimatedComponents';
 
 interface HQProps {
+  user: User | null;
   tasks: Task[];
+  clients: Client[];
+  projects: Project[];
+  habits: Habit[];
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+  
   onStartRecovery: (energy: number) => void;
   onNavigate: (view: ViewMode) => void;
+  onSendMessage?: (text: string, image?: string) => void;
+  onOpenAiSidebar: () => void;
+  
+  onAddTask: (task: Task) => void;
+  onUpdateTask: (task: Task) => void;
+  onDeleteTask: (id: string) => void;
+  
+  onAddProject: (project: Project) => void;
+  onUpdateProject: (project: Project) => void;
+  onDeleteProject: (id: string) => void;
 }
 
-export const HQ: React.FC<HQProps> = ({ tasks, setTasks, onStartRecovery, onNavigate }) => {
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
-  const [energyInput, setEnergyInput] = useState(5);
+const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
+    // Generate last 7 days
+    const days = useMemo(() => {
+        const result = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            result.push(d);
+        }
+        return result;
+    }, []);
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isTimerRunning && timeLeft > 0) {
-      interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    } else if (timeLeft === 0) setIsTimerRunning(false);
-    return () => clearInterval(interval);
-  }, [isTimerRunning, timeLeft]);
+    // Calculate completed tasks per day
+    const dataPoints = useMemo(() => {
+        return days.map(day => {
+            const dayStr = day.toISOString().split('T')[0];
+            return tasks.filter(t => 
+                t.completed && 
+                new Date(t.date).toISOString().split('T')[0] === dayStr
+            ).length;
+        });
+    }, [tasks, days]);
 
-  const addTask = (e: React.FormEvent) => {
+    const width = 100;
+    const height = 50;
+    
+    // Create SVG Path
+    const createPath = (data: number[]) => {
+        if (data.length === 0) return "";
+        const stepX = width / (data.length - 1);
+        const maxVal = Math.max(...data, 5); // Minimum scale of 5
+        const minVal = 0; 
+        
+        const getY = (val: number) => height - ((val - minVal) / (maxVal - minVal)) * height;
+        
+        let d = `M 0 ${getY(data[0])}`;
+        for (let i = 1; i < data.length; i++) {
+             const x = i * stepX;
+             const y = getY(data[i]);
+             const prevX = (i - 1) * stepX;
+             const prevY = getY(data[i - 1]);
+             const cp1x = prevX + (stepX / 2);
+             const cp1y = prevY;
+             const cp2x = x - (stepX / 2);
+             const cp2y = y;
+             d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y}`;
+        }
+        return d;
+    };
+
+    const totalThisWeek = dataPoints.reduce((a, b) => a + b, 0);
+
+    return (
+        <div className="w-full h-full flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <h3 className="text-base font-bold text-foreground">Work Progress</h3>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-primary">
+                            <CountUp value={totalThisWeek} duration={1} />
+                        </span>
+                        <span className="text-xs text-muted-foreground">tasks done this week</span>
+                    </div>
+                </div>
+                <div className="bg-primary/10 text-primary p-2 rounded-lg">
+                    <TrendingUp size={18} />
+                </div>
+            </div>
+            
+            <div className="flex-1 w-full relative">
+                <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+                        </linearGradient>
+                    </defs>
+                    <path d={`${createPath(dataPoints)} L ${width} ${height} L 0 ${height} Z`} fill="url(#gradient)" className="animate-pulse" />
+                    <path d={createPath(dataPoints)} fill="none" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                </svg>
+            </div>
+            
+            <div className="flex justify-between text-[10px] text-muted-foreground font-bold uppercase mt-4">
+                {days.map(d => <div key={d.toString()}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</div>)}
+            </div>
+        </div>
+    );
+};
+
+export const HQ: React.FC<HQProps> = ({ 
+    user, tasks, clients, projects, habits, onNavigate, onSendMessage, onOpenAiSidebar,
+    onAddTask, onUpdateTask, onDeleteTask,
+    onAddProject, onUpdateProject, onDeleteProject
+}) => {
+  const [aiInput, setAiInput] = useState('');
+  
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  const activeProjects = projects.filter(p => p.status === 'ACTIVE').slice(0, 3);
+  const pendingTasks = tasks.filter(t => !t.completed); 
+
+  const totalStreak = useMemo(() => {
+    return habits.reduce((acc, h) => acc + h.streak, 0);
+  }, [habits]);
+
+  // Priority Logic
+  const overdueTasks = tasks.filter(t => !t.completed && new Date(t.date) < new Date());
+  const highPriorityTasks = tasks.filter(t => !t.completed && t.priority === 'HIGH');
+  const upcomingTasks = tasks.filter(t => !t.completed && new Date(t.date) > new Date() && new Date(t.date).getTime() < new Date().getTime() + 86400000);
+
+  const focusTasks = [...overdueTasks, ...highPriorityTasks].slice(0, 5);
+
+  const handleAiSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
-    const newTask: Task = { id: Date.now().toString(), title: newTaskTitle, completed: false, category: 'PRODUCT', date: new Date(), duration: 60 };
-    setTasks([...tasks, newTask]);
-    setNewTaskTitle('');
+    if (aiInput.trim() && onSendMessage) {
+        onSendMessage(aiInput);
+        onOpenAiSidebar(); // Open overlay instead of navigating
+        setAiInput('');
+    }
   };
 
-  // Filter for today's tasks
-  const today = new Date();
-  const todaysTasks = tasks.filter(t => 
-    t.date.getDate() === today.getDate() && 
-    t.date.getMonth() === today.getMonth() && 
-    t.date.getFullYear() === today.getFullYear()
-  ).sort((a, b) => a.date.getTime() - b.date.getTime());
-
   return (
-    <div className="flex flex-col h-full overflow-y-auto p-6 md:p-10 space-y-8 max-w-7xl mx-auto w-full relative">
-      <div className="flex justify-between items-end mb-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <h2 className="text-gray-400 text-[11px] font-bold uppercase tracking-[0.2em]">Command Center</h2>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tighter uppercase leading-none">Designpreneur OS</h1>
-        </div>
-        <div className="w-14 h-14 rounded-full bg-[#1C1C1E] border border-white/5 flex items-center justify-center shadow-2xl">
-            <Activity size={20} className={`text-white opacity-80 ${isTimerRunning ? 'animate-pulse' : ''}`} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 space-y-6">
-            
-            {/* Today's Schedule (Replaces Active Projects) */}
-            <div className="bg-[#1C1C1E] rounded-[2.5rem] p-8 border border-white/5 shadow-2xl">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                      <Calendar size={20} className="text-accent-blue" />
-                      Today's Schedule
-                    </h3>
-                    <button onClick={() => onNavigate('CALENDAR')} className="text-xs font-bold uppercase tracking-wider text-accent-blue hover:text-white transition-colors">Full Timeline</button>
-                </div>
-                
-                {todaysTasks.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No tasks scheduled for today.</p>
-                    <button onClick={() => onNavigate('CALENDAR')} className="text-accent-blue text-sm font-bold mt-2">Plan your day</button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {todaysTasks.map((t) => (
-                      <div key={t.id} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-accent-blue/30 transition-all group">
-                         <div className="flex flex-col items-center justify-center min-w-[50px] border-r border-white/10 pr-4">
-                            <span className="text-xs font-bold text-gray-400">{t.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                         </div>
-                         <div className="flex-1">
-                            <h4 className="text-sm font-bold text-white group-hover:text-accent-blue transition-colors">{t.title}</h4>
-                            <div className="flex items-center gap-2 mt-1">
-                               <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${t.category === 'MEETING' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                  {t.category}
-                               </span>
-                               <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                                  <Clock size={10} /> {t.duration}m
-                               </span>
-                            </div>
-                         </div>
-                         <div className={`w-3 h-3 rounded-full ${t.color === 'blue' ? 'bg-accent-blue' : t.color === 'purple' ? 'bg-purple-500' : 'bg-gray-500'}`}></div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-            </div>
-
-            {/* The Grid (Quick Tasks) */}
-            <div className="bg-[#1C1C1E] rounded-[2.5rem] p-8 border border-white/5 shadow-2xl">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-white tracking-tight">Quick Capture</h3>
-                </div>
-                <form onSubmit={addTask} className="relative group mb-4">
-                    <Plus size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="text" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} placeholder="Add new task..." className="w-full bg-[#141416] text-white rounded-2xl pl-12 h-14 focus:outline-none focus:ring-1 focus:ring-accent-blue transition-all" />
-                </form>
-            </div>
-            
-            {/* Quick Actions */}
-            <div className="grid grid-cols-4 gap-4">
-               {[
-                 { label: 'New Invoice', icon: <FileText size={18} />, action: () => onNavigate('FILES') },
-                 { label: 'Upload', icon: <Plus size={18} />, action: () => onNavigate('FILES') },
-                 { label: 'Apps', icon: <Grid size={18} />, action: () => onNavigate('APPS') },
-                 { label: 'Schedule', icon: <Calendar size={18} />, action: () => onNavigate('CALENDAR') },
-               ].map((a, i) => (
-                  <button key={i} onClick={a.action} className="bg-[#1C1C1E] p-4 rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-white/5 transition-colors group">
-                     <div className="text-gray-400 group-hover:text-white transition-colors">{a.icon}</div>
-                     <span className="text-[10px] font-bold uppercase text-gray-500 group-hover:text-accent-blue transition-colors">{a.label}</span>
-                  </button>
-               ))}
-            </div>
-        </div>
-
-        <div className="lg:col-span-4 space-y-6">
-            <div className="bg-[#1C1C1E] rounded-[2.5rem] p-8 border border-white/5 flex flex-col items-center justify-center relative shadow-2xl gap-4 min-h-[300px]">
-                 <div className="absolute top-6 left-6 text-xs font-bold uppercase text-gray-500 tracking-wider">Focus Timer</div>
-                 <div className="text-6xl font-bold text-white tracking-tighter tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2,'0')}</div>
-                 <button onClick={() => setIsTimerRunning(!isTimerRunning)} className="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg shadow-white/20">
-                    {isTimerRunning ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
-                 </button>
-            </div>
-
-            <div 
-               onClick={() => setShowRecoveryModal(true)}
-               className="bg-gradient-to-b from-[#2a1a1a] to-[#1C1C1E] rounded-[2.5rem] p-8 border border-red-500/10 cursor-pointer shadow-2xl relative overflow-hidden group min-h-[200px] flex flex-col justify-end"
-             >
-                <div className="absolute -right-10 -top-10 w-40 h-40 bg-red-600/20 rounded-full blur-[60px] group-hover:bg-red-600/30 transition-all"></div>
-                <div className="relative z-10">
-                   <h3 className="text-2xl font-bold text-white mb-1">System Reboot</h3>
-                   <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-4">Recover Inspiration</p>
-                   <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">
-                      <ArrowRight size={20} />
-                   </div>
-                </div>
-            </div>
-        </div>
-      </div>
+    <div className="flex flex-col h-full w-full space-y-6 md:space-y-8 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2 relative">
       
-      {showRecoveryModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
-             <div className="bg-[#141416] w-full max-w-md rounded-3xl p-8 border border-gray-800">
-                 <h3 className="text-2xl font-bold text-white mb-6">Energy Level: {energyInput}</h3>
-                 <input type="range" min="1" max="10" value={energyInput} onChange={e => setEnergyInput(Number(e.target.value))} className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer mb-8" />
-                 <button onClick={() => { setShowRecoveryModal(false); onStartRecovery(energyInput); }} className="w-full bg-white text-black py-4 rounded-xl font-bold">INITIATE RECOVERY</button>
+      {/* Top Right AI Access Button */}
+      <div className="absolute top-0 right-0 z-20">
+          <button 
+            onClick={onOpenAiSidebar}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl shadow-glow hover:scale-105 transition-transform"
+          >
+              <Sparkles size={16} />
+              <span className="text-xs font-bold">AI Mentor</span>
+          </button>
+      </div>
+
+      {/* Header & Greeting */}
+      <FadeIn>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6 pt-8 md:pt-0">
+             <div className="flex flex-col gap-4 max-w-lg w-full">
+                 <div>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                        Hey, {user?.name?.split(' ')[0] || 'Creator'}
+                    </h1>
+                    <p className="text-muted-foreground">Ready to conquer the day?</p>
+                 </div>
+                 <form onSubmit={handleAiSubmit} className="relative w-full group">
+                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                        <MessageSquare size={16} />
+                     </div>
+                     <input 
+                        type="text" 
+                        value={aiInput}
+                        onChange={(e) => setAiInput(e.target.value)}
+                        placeholder="Ask Mentor to add tasks or review projects..." 
+                        className="w-full h-12 bg-secondary rounded-xl pl-10 pr-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background transition-all placeholder:text-muted-foreground text-sm font-medium border border-border"
+                     />
+                     <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <button type="submit" className="p-1.5 bg-primary rounded-lg text-white hover:bg-primary/90 transition-colors">
+                            <ArrowUpRight size={14} />
+                        </button>
+                     </div>
+                 </form>
              </div>
-        </div>
-      )}
+          </div>
+      </FadeIn>
+
+      {/* Top Row Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          
+          {/* Work Progress Graph (Span 6) */}
+          <FadeIn delay={0.1} className="md:col-span-6 lg:col-span-7 bg-card border border-border rounded-2xl p-6 shadow-sm min-h-[200px]">
+              <WorkProgressGraph tasks={tasks} />
+          </FadeIn>
+
+          {/* Right Column Stack (Span 6) */}
+          <div className="md:col-span-6 lg:col-span-5 grid grid-cols-2 gap-6">
+              
+              {/* Habits Card */}
+              <FadeIn delay={0.2} 
+                className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between group hover:border-primary/30 transition-colors cursor-pointer"
+                onClick={() => onNavigate('HABITS')}
+              >
+                  <div className="flex justify-between items-start">
+                      <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg">
+                          <Flame size={20} fill="currentColor" />
+                      </div>
+                      <span className="text-xs font-bold text-muted-foreground">HABITS</span>
+                  </div>
+                  <div>
+                      <div className="text-3xl font-bold text-foreground">
+                          <CountUp value={totalStreak} />
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Total Streak Days</div>
+                  </div>
+              </FadeIn>
+
+              {/* Focus Zone Card */}
+              <FadeIn delay={0.3} className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col cursor-pointer hover:border-red-500/30 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                      <div className="p-2 bg-red-500/10 text-red-500 rounded-lg">
+                          <AlertTriangle size={20} />
+                      </div>
+                      <span className="text-xs font-bold text-muted-foreground">FOCUS ZONE</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-2 mt-2 max-h-[100px] scrollbar-hide">
+                      {focusTasks.length > 0 ? focusTasks.map(t => (
+                          <div key={t.id} onClick={() => { setSelectedTask(t); setIsTaskModalOpen(true); }} className="flex items-center gap-2 text-xs font-medium text-foreground hover:text-primary transition-colors">
+                              <span className={`w-2 h-2 rounded-full ${new Date(t.date) < new Date() ? 'bg-red-500' : 'bg-orange-500'}`}></span>
+                              <span className="truncate">{t.title}</span>
+                          </div>
+                      )) : (
+                          <div className="text-xs text-muted-foreground">Nothing urgent. Great job!</div>
+                      )}
+                  </div>
+              </FadeIn>
+          </div>
+      </div>
+
+      {/* Middle Row: Active Projects & Recent Clients */}
+      <FadeIn delay={0.4} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Active Projects Card */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col">
+              <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-foreground">Active Projects</h3>
+                  <button onClick={() => { setSelectedProject(null); setIsProjectModalOpen(true); }} className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+                      <Plus size={18} />
+                  </button>
+              </div>
+              
+              <div className="space-y-4 flex-1">
+                  {activeProjects.length > 0 ? activeProjects.map(p => (
+                      <div key={p.id} onClick={(e) => { e.stopPropagation(); setSelectedProject(p); setIsProjectModalOpen(true); }} className="group flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 cursor-pointer transition-colors border border-transparent hover:border-border">
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm" style={{ backgroundColor: `${p.color}20`, color: p.color }}>
+                              {p.title.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-center mb-1">
+                                  <div className="text-sm font-bold text-foreground truncate">{p.title}</div>
+                                  <div className="text-xs font-medium text-muted-foreground">{p.progress}%</div>
+                              </div>
+                              <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${p.progress}%`, backgroundColor: p.color }}></div>
+                              </div>
+                          </div>
+                          <ArrowUpRight size={16} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                  )) : (
+                      <div className="text-center py-8 text-muted-foreground text-sm">No active projects</div>
+                  )}
+              </div>
+          </div>
+
+          {/* Recent Clients Card */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col">
+              <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-foreground">Recent Clients</h3>
+                  <button onClick={() => onNavigate('MANAGER')} className="text-xs font-bold text-primary hover:underline">View All</button>
+              </div>
+
+              <div className="space-y-4 flex-1">
+                  {clients.slice(0, 4).map(c => (
+                      <div key={c.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 cursor-pointer transition-colors border border-transparent hover:border-border">
+                          <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm text-foreground border border-border">
+                                  {c.name.charAt(0)}
+                              </div>
+                              <div>
+                                  <div className="text-sm font-bold text-foreground">{c.name}</div>
+                                  <div className="text-xs text-muted-foreground">{c.status}</div>
+                              </div>
+                          </div>
+                          <div className="text-sm font-mono font-bold text-foreground">
+                              {/* Calculate dynamic total spent for dashboard preview if desired, or assume revenue is updated */}
+                              $<CountUp value={projects.filter(p => p.clientId === c.id).reduce((s,p) => s + (p.price || 0), 0)} />
+                          </div>
+                      </div>
+                  ))}
+                  {clients.length === 0 && (
+                       <div className="text-center py-8 text-muted-foreground text-sm">No clients found</div>
+                  )}
+              </div>
+          </div>
+      </FadeIn>
+
+      {/* Bottom Row: Tasks Table */}
+      <FadeIn delay={0.5}>
+          <TasksTable 
+            tasks={tasks}
+            projects={projects}
+            onUpdateTask={onUpdateTask}
+            onDeleteTask={onDeleteTask}
+            onAddTask={() => { setSelectedTask(null); setIsTaskModalOpen(true); }}
+            onSelectTask={(task) => { setSelectedTask(task); setIsTaskModalOpen(true); }}
+          />
+      </FadeIn>
+
+      {/* MODALS */}
+      <ProjectModal 
+        isOpen={isProjectModalOpen} 
+        onClose={() => setIsProjectModalOpen(false)}
+        onSave={(p) => {
+            if (selectedProject) onUpdateProject({ ...selectedProject, ...p });
+            else onAddProject({ id: Date.now().toString(), tags: [], progress: 0, ...p } as Project);
+        }}
+        onDelete={onDeleteProject}
+        initialProject={selectedProject}
+        allTasks={tasks}
+        clients={clients}
+        onLinkTasks={(taskIds, projectId) => {}}
+      />
+
+      <TaskModal 
+        isOpen={isTaskModalOpen} 
+        onClose={() => setIsTaskModalOpen(false)}
+        onSave={(t) => {
+            if (selectedTask) onUpdateTask({ ...selectedTask, ...t });
+            else onAddTask({ id: Date.now().toString(), date: new Date(), duration: 60, completed: false, ...t } as Task);
+        }}
+        onDelete={onDeleteTask}
+        initialTask={selectedTask}
+        projects={projects}
+      />
     </div>
   );
 };

@@ -1,13 +1,31 @@
+
 import { GoogleGenAI, Chat, GenerateContentResponse, FunctionDeclaration, Type } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from "../constants";
 
 let chatSession: Chat | null = null;
 let genAI: GoogleGenAI | null = null;
 
+// Safe accessor for Environment Variables
+const getEnvVar = (key: string): string | undefined => {
+    // Check if process is defined (Node/Vite defines)
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+        return process.env[key];
+    }
+    // Check if import.meta.env is defined (Vite)
+    const meta = import.meta as any;
+    if (typeof meta !== 'undefined' && meta.env && meta.env[`VITE_${key}`]) {
+        return meta.env[`VITE_${key}`];
+    }
+    return undefined;
+};
+
 const getGenAI = () => {
   if (!genAI) {
-    const apiKey = process.env.API_KEY;
+    const apiKey = getEnvVar('API_KEY');
     if (!apiKey) {
+      console.warn("Gemini API Key is missing. AI features will be disabled.");
+      // Return a dummy object or handle this gracefully in the UI if possible, 
+      // but for now we throw to let the try/catch blocks handle it.
       throw new Error("API_KEY environment variable is missing.");
     }
     genAI = new GoogleGenAI({ apiKey });
@@ -120,7 +138,12 @@ export interface GeminiResponse {
 
 export const sendMessageToGemini = async (message: string, imageBase64?: string, context?: string, userMemory?: string, isIgnite?: boolean): Promise<GeminiResponse> => {
   if (!chatSession) {
-    initializeGemini(userMemory || "");
+    try {
+        initializeGemini(userMemory || "");
+    } catch (e) {
+        console.error("Failed to init gemini inside sendMessage", e);
+        throw e;
+    }
   }
 
   if (!chatSession) {

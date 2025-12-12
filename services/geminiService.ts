@@ -21,7 +21,9 @@ const getEnvVar = (key: string): string | undefined => {
 
 const getGenAI = () => {
   if (!genAI) {
-    const apiKey = getEnvVar('API_KEY');
+    // Using the specific API key provided by the user
+    const apiKey = "AIzaSyCWXPyrnWdmI9O5TVk9JR0fjlpkMwY6_CM";
+    
     if (!apiKey) {
       console.warn("Gemini API Key is missing. AI features will be disabled.");
       // Return a dummy object or handle this gracefully in the UI if possible, 

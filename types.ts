@@ -1,5 +1,4 @@
 
-
 export interface Message {
   id: string;
   role: 'user' | 'model';
@@ -23,7 +22,7 @@ export interface ChatState {
 
 export type ViewMode = 'CHAT' | 'HQ' | 'TASKS' | 'HABITS' | 'APPS' | 'CALENDAR' | 'FILES' | 'SETTINGS' | 'MANAGER';
 
-export type TaskCategory = 'PRODUCT' | 'CONTENT' | 'MONEY' | 'ADMIN' | 'MEETING';
+export type TaskCategory = 'PRODUCT' | 'CONTENT' | 'MONEY' | 'ADMIN' | 'MEETING' | string;
 
 export interface Task {
   id: string;
@@ -94,7 +93,7 @@ export interface ContentAnalysisResult {
   hashtags: string;
 }
 
-export type FileType = 'IMAGE' | 'PDF' | 'DOC' | 'ZIP';
+export type FileType = 'IMAGE' | 'PDF' | 'DOC' | 'ZIP' | 'VIDEO';
 
 export interface FileAsset {
   id: string;
@@ -105,6 +104,8 @@ export interface FileAsset {
   tag: string;
   folderId?: string; // Optional: if null, it's in root
   url?: string; // Data URL for preview
+  isFavorite?: boolean;
+  isTrashed?: boolean;
 }
 
 export interface Folder {
@@ -163,6 +164,8 @@ export interface User {
   teamMembers?: TeamMember[];
   aiMemory?: string; // AI Learning/Memory field
   friends?: Friend[];
+  tokens: number; // Token balance for apps
+  tokenWeekStart?: string; // ISO Date string for the start of the current token week
 }
 
 export interface AppNotification {
@@ -172,4 +175,13 @@ export interface AppNotification {
     type: 'INFO' | 'WARNING' | 'SUCCESS' | 'SYSTEM';
     timestamp: Date;
     read: boolean;
+}
+
+export interface TokenTransaction {
+    id: string;
+    userId: string;
+    requestId: string;
+    feature: string;
+    cost: number;
+    timestamp: Date;
 }

@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
-export const CountUp: React.FC<{ value: number, duration?: number, prefix?: string, suffix?: string, className?: string }> = ({ 
-    value, duration = 1.5, prefix = '', suffix = '', className = '' 
+export const CountUp: React.FC<{ value: number, duration?: number, prefix?: string, suffix?: string, className?: string, decimals?: number }> = ({ 
+    value, duration = 1.5, prefix = '', suffix = '', className = '', decimals = 0
 }) => {
     const [displayValue, setDisplayValue] = useState(0);
 
@@ -30,17 +30,18 @@ export const CountUp: React.FC<{ value: number, duration?: number, prefix?: stri
 
     return (
         <span className={className}>
-            {prefix}{Math.floor(displayValue).toLocaleString()}{suffix}
+            {prefix}{displayValue.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}
         </span>
     );
 };
 
-export const FadeIn: React.FC<{ children: React.ReactNode, delay?: number, className?: string }> = ({ children, delay = 0, className = "" }) => (
+export const FadeIn: React.FC<{ children: React.ReactNode, delay?: number, className?: string, onClick?: () => void }> = ({ children, delay = 0, className = "", onClick }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay, ease: "easeOut" }}
         className={className}
+        onClick={onClick}
     >
         {children}
     </motion.div>

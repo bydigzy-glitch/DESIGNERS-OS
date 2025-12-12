@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Task, TaskCategory } from '../types';
 import { ChevronLeft, ChevronRight, Plus, MoreHorizontal, Calendar as CalendarIcon, Clock, Trash2 } from 'lucide-react';
 import { TaskModal } from './modals/TaskModal';
+import { FadeIn } from './common/AnimatedComponents';
 
 declare global {
   interface Window {
@@ -207,7 +208,7 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
   );
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden relative pb-20 md:pb-0" onClick={() => setContextMenu(null)}>
+    <FadeIn className="flex flex-col h-full w-full overflow-hidden relative pb-20 md:pb-0" onClick={() => setContextMenu(null)}>
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 flex-shrink-0">
         <h1 className="text-3xl font-bold text-foreground tracking-tight">Calendar</h1>
@@ -342,6 +343,6 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
               </div>
           </div>
       )}
-    </div>
+    </FadeIn>
   );
 };

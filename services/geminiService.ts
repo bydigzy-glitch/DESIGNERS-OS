@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Chat, GenerateContentResponse, FunctionDeclaration, Type } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from "../constants";
 
@@ -19,7 +18,7 @@ const getGenAI = () => {
 // Define Tool for Adding/Updating Tasks
 const createTaskTool: FunctionDeclaration = {
   name: "createTask",
-  description: "Create, update, or delete a task or calendar event. Use this to schedule items or change due dates.",
+  description: "Create, update, or delete a task or calendar event. Use UPDATE with status='DONE' to mark tasks as completed.",
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -119,7 +118,7 @@ export interface GeminiResponse {
   functionCalls?: any[];
 }
 
-export const sendMessageToGemini = async (message: string, imageBase64?: string, context?: string, userMemory?: string): Promise<GeminiResponse> => {
+export const sendMessageToGemini = async (message: string, imageBase64?: string, context?: string, userMemory?: string, isIgnite?: boolean): Promise<GeminiResponse> => {
   if (!chatSession) {
     initializeGemini(userMemory || "");
   }
@@ -136,6 +135,10 @@ export const sendMessageToGemini = async (message: string, imageBase64?: string,
     if (context) {
         finalMessage = `[CURRENT APP STATE CONTEXT]:\n${context}\n\n[USER REQUEST]:\n${message}`;
     }
+    
+    if (isIgnite) {
+        finalMessage = `[SUPER AGENT MODE: IGNITE ACTIVATED]\n\nINSTRUCTION: You are in a high-powered execution mode. \n1. Analyze the request deeply.\n2. If tasks are mentioned via @, prioritize them.\n3. Verify your plan before answering.\n4. You have full permission to CREATE, UPDATE, DELETE tasks/clients/projects if implied.\n\n${finalMessage}`;
+    }
 
     if (imageBase64) {
       const cleanBase64 = imageBase64.includes('base64,') ? imageBase64.split('base64,')[1] : imageBase64;
@@ -150,6 +153,8 @@ export const sendMessageToGemini = async (message: string, imageBase64?: string,
         ]
       });
     } else {
+      // If Ignite is active, we could use a specific thinking config if available, 
+      // but for now we rely on the prompt engineering + UI simulation.
       response = await chatSession.sendMessage({ message: finalMessage });
     }
 

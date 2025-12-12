@@ -44,7 +44,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
               theme: 'dark',
               notifications: false,
               displayName: 'Guest'
-          }
+          },
+          tokens: 10
       };
       // We don't save guest to persistent users list to avoid clutter, just session
       storageService.saveUser(guestUser); // Just to ensure initial data seed works
@@ -107,7 +108,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                     theme: 'dark',
                     notifications: true,
                     displayName: name
-                }
+                },
+                tokens: 10
             };
 
             const success = storageService.register(newUser);

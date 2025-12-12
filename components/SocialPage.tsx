@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Friend, DirectMessage } from '../types';
 import { Users, Plus, Send, Image as ImageIcon, Smile, MoreVertical, Search, Circle } from 'lucide-react';
 import { storageService } from '../services/storageService';
+import { FadeIn } from './common/AnimatedComponents';
 
 interface SocialPageProps {
   user: User;
@@ -58,7 +59,7 @@ export const SocialPage: React.FC<SocialPageProps> = ({ user, onUpdateUser }) =>
   };
 
   return (
-    <div className="flex h-full w-full gap-6 overflow-hidden pb-20 md:pb-0 pr-2">
+    <FadeIn className="flex h-full w-full gap-6 overflow-hidden pb-20 md:pb-0 pr-2">
       
       {/* Sidebar List */}
       <div className={`w-full md:w-80 bg-card border border-border rounded-2xl flex flex-col flex-shrink-0 ${activeFriendId ? 'hidden md:flex' : 'flex'}`}>
@@ -204,6 +205,6 @@ export const SocialPage: React.FC<SocialPageProps> = ({ user, onUpdateUser }) =>
               </div>
           )}
       </div>
-    </div>
+    </FadeIn>
   );
 };

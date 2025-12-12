@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { initializeGemini, sendMessageToGemini, resetGeminiSession, sendToolResponseToGemini } from './services/geminiService';
-import { storageService } from './services/storageService';
+import { storageService, Backend, TOKEN_COSTS } from './services/storageService';
 import { ChatInterface } from './components/ChatInterface';
 import { Navigation } from './components/Navigation';
 import { HQ } from './components/HQ';
@@ -18,6 +18,7 @@ import { LoadingScreen } from './components/common/LoadingScreen';
 import { ToastContainer, ToastMessage, ToastType } from './components/common/Toast';
 import { Message, ViewMode, Task, FileAsset, Folder, User, ChatSession, Client, Project, Habit, CanvasItem, AppNotification } from './types';
 import { RECOVERY_INSTRUCTION } from './constants';
+import { TopBar } from './components/TopBar';
 
 const DUMMY_USER: User = {
     id: 'admin-user',
@@ -30,7 +31,8 @@ const DUMMY_USER: User = {
         theme: 'dark',
         notifications: true,
         displayName: 'Digzy'
-    }
+    },
+    tokens: 10
 };
 
 const APP_VERSION = 'v3.2';
@@ -51,8 +53,10 @@ function App() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string | undefined>(undefined);
   const [isDriveConnected, setIsDriveConnected] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -60,34 +64,26 @@ function App() {
 
   // --- INITIALIZATION & AUTHENTICATION ---
   useEffect(() => {
-      // Simulate loading time for animation
       setTimeout(() => setIsAppLoading(false), 2500);
-
-      // Check version (just updates string, returns false now to stop auto-seed)
       storageService.checkVersion();
       
-      // Ensure DUMMY_USER exists ONLY if 'bydigzy@gmail.com' is not present
       const existingUsers = storageService.getUsers();
       const adminExists = existingUsers.some(u => u.email === DUMMY_USER.email);
-      
-      if (!adminExists) {
-          storageService.saveUser(DUMMY_USER);
-      }
+      if (!adminExists) storageService.saveUser(DUMMY_USER);
       
       const sessionUser = storageService.getSession();
       if (sessionUser) {
-          // Reload full user object from 'users' DB to get latest avatar/preferences
           const freshUser = storageService.getUser(sessionUser.id);
-          setUser(freshUser || sessionUser);
+          const safeUser = freshUser ? { ...freshUser, tokens: freshUser.tokens ?? 10 } : { ...sessionUser, tokens: sessionUser.tokens ?? 10 };
+          setUser(safeUser);
       }
 
-      // Check for App Update
       const lastVersion = localStorage.getItem('app_last_version');
       if (lastVersion !== APP_VERSION) {
           addNotification({
               id: 'sys-update-' + Date.now(),
               title: `System Updated to ${APP_VERSION}`,
-              message: 'TaskNovaPro v3.2: Performance Improvements & Persistence Fixes.',
+              message: 'TaskNovaPro v3.2: Performance Improvements & Backend Integrity.',
               type: 'SYSTEM',
               timestamp: new Date(),
               read: false
@@ -97,7 +93,8 @@ function App() {
   }, []);
 
   const handleLogin = useCallback((loggedInUser: User) => {
-      setUser(loggedInUser);
+      const safeUser = { ...loggedInUser, tokens: loggedInUser.tokens ?? 10 };
+      setUser(safeUser);
       setCurrentView('HQ'); 
   }, []);
 
@@ -105,11 +102,8 @@ function App() {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (!user) return;
-
-      // 1. Sync User Data (Tasks, Projects, etc)
       if (e.key === `designpreneur_data_${user.id}`) {
         const data = storageService.getUserData(user.id);
-        
         if (data) {
             setTasks(data.tasks);
             setProjects(data.projects);
@@ -121,47 +115,39 @@ function App() {
             if (data.chatSessions.length > 0) setChatSessions(data.chatSessions);
         }
       }
-
-      // 2. Sync User Profile (Avatar, Preferences)
       if (e.key === 'designpreneur_users' || e.key === 'designpreneur_session') {
-         // Reload user list to find current user updates
          const users = storageService.getUsers();
          const updatedUser = users.find(u => u.id === user.id);
-         
-         if (updatedUser) {
-             const avatarChanged = updatedUser.avatar !== user.avatar;
-             const nameChanged = updatedUser.name !== user.name;
-             const prefsChanged = JSON.stringify(updatedUser.preferences) !== JSON.stringify(user.preferences);
-             
-             if (avatarChanged || nameChanged || prefsChanged) {
-                 setUser(updatedUser);
-             }
+         if (updatedUser && (updatedUser.avatar !== user.avatar || updatedUser.name !== user.name || updatedUser.tokens !== user.tokens)) {
+             setUser(updatedUser);
          }
       }
     };
-
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user]);
+  }, [user?.id]); // Only re-attach if ID changes
 
   // --- DATA LOADING ---
+  // FIXED: Changed dependency from [user] to [user?.id] to prevent reload on theme/token change
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
         try {
             const data = storageService.getUserData(user.id);
-            // Only set state if data is present to avoid wiping via empty array (though empty array is valid for new users)
-            // storageService ensures it returns empty arrays, not null/undefined
             setFolders(data.folders || []);
             setFiles(data.files || []);
             setTasks(data.tasks || []);
             setClients(data.clients || []);
             setProjects(data.projects || []);
-            setChatSessions(data.chatSessions || []);
-            const loadedHabits = (data as any).habits || []; 
-            setHabits(loadedHabits);
+            // Only update sessions if empty or different to avoid chat reset
+            if (chatSessions.length === 0 && data.chatSessions.length > 0) {
+                setChatSessions(data.chatSessions);
+            } else if (data.chatSessions.length > 0 && data.chatSessions.length !== chatSessions.length) {
+               // Soft sync if count differs (crude sync)
+               setChatSessions(data.chatSessions);
+            }
             
-            const loadedInfinity = (data as any).infinityItems || [];
-            setInfinityItems(loadedInfinity);
+            setHabits((data as any).habits || []);
+            setInfinityItems((data as any).infinityItems || []);
             
             if (data.chatSessions && data.chatSessions.length > 0) {
                 if (!currentSessionId || !data.chatSessions.find(s => s.id === currentSessionId)) {
@@ -169,96 +155,29 @@ function App() {
                     setCurrentSessionId(sorted[0].id);
                 }
             } else {
-                createNewSession(); 
+                if (chatSessions.length === 0) createNewSession(); 
             }
         } catch (e) {
             console.error("Data load error", e);
             addToast('ERROR', 'Failed to load user data.');
         }
     }
-  }, [user]);
-
-  // --- NOTIFICATION CHECKER ---
-  useEffect(() => {
-      if (!user || !user.preferences.notifications) return;
-      
-      const checkTasks = () => {
-          const now = new Date();
-          // Check for due tasks today
-          const tasksDueSoon = tasks.filter(t => !t.completed && new Date(t.date).toDateString() === now.toDateString());
-          
-          if (tasksDueSoon.length > 0) {
-              const pendingCount = tasksDueSoon.length;
-              // Check if we already notified about this today to avoid spam
-              const hasNotified = notifications.some(n => 
-                  n.title === 'Daily Briefing' && n.timestamp.toDateString() === now.toDateString()
-              );
-
-              if (!hasNotified) {
-                  addNotification({
-                      id: 'task-remind-' + Date.now(),
-                      title: 'Daily Briefing',
-                      message: `You have ${pendingCount} tasks scheduled for today. Stay focused.`,
-                      type: 'INFO',
-                      timestamp: new Date(),
-                      read: false
-                  });
-              }
-          }
-      };
-      
-      checkTasks();
-      // Run check every 30 mins
-      const interval = setInterval(checkTasks, 1000 * 60 * 30);
-      return () => clearInterval(interval);
-  }, [user, tasks]); 
-
-  // --- AUTO-UPDATE PROJECT PROGRESS ---
-  useEffect(() => {
-     if (projects.length > 0 && tasks.length > 0) {
-         let hasChanges = false;
-         const updatedProjects = projects.map(p => {
-             const linkedTasks = tasks.filter(t => t.projectId === p.id);
-             if (linkedTasks.length > 0) {
-                 const completed = linkedTasks.filter(t => t.completed).length;
-                 const newProgress = Math.round((completed / linkedTasks.length) * 100);
-                 if (newProgress !== p.progress) {
-                     hasChanges = true;
-                     return { ...p, progress: newProgress };
-                 }
-             }
-             return p;
-         });
-         
-         if (hasChanges) {
-             setProjects(updatedProjects);
-         }
-     }
-  }, [tasks]);
+  }, [user?.id]);
 
   // --- DATA SAVING ---
   useEffect(() => {
     if (user && !user.isGuest) { 
         storageService.saveUserData(user.id, {
-            tasks,
-            files,
-            folders,
-            clients,
-            projects,
-            chatSessions,
-            habits: habits as any, 
-            infinityItems: infinityItems as any
+            tasks, files, folders, clients, projects, chatSessions, habits: habits as any, infinityItems: infinityItems as any
         });
     }
-  }, [tasks, files, folders, clients, projects, chatSessions, habits, infinityItems, user]);
+  }, [tasks, files, folders, clients, projects, chatSessions, habits, infinityItems, user?.id]); // Only save if user ID is stable
 
   useEffect(() => {
     try {
-      // Initialize with existing user memory if available
       initializeGemini(user?.aiMemory || "");
     } catch (error) {
       console.error("Gemini Initialization Error:", error);
-      addToast('ERROR', 'Failed to initialize AI services.');
     }
   }, [user?.aiMemory]);
 
@@ -275,68 +194,138 @@ function App() {
       setNotifications(prev => [note, ...prev]);
   };
 
-  // --- CRUD HANDLERS ---
+  // --- TOKEN HANDLER (BACKEND ENFORCED) ---
+  const handleUseToken = (amount: number, feature: string): boolean => {
+      if (!user) return false;
+      const requestId = crypto.randomUUID(); // Unique ID for this specific transaction
+      try {
+          // Backend call to check balance and deduct
+          const result = Backend.tokens.deduct(user.id, amount, feature, requestId);
+          if (result.success) {
+              const updatedUser = { ...user, tokens: result.newBalance };
+              setUser(updatedUser);
+              return true;
+          }
+      } catch (e: any) {
+          addToast('ERROR', e.message || "Insufficient tokens.");
+          return false;
+      }
+      return false;
+  };
+
+  const handleToggleTheme = () => {
+      const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+      document.documentElement.classList.remove('dark', 'light');
+      document.documentElement.classList.add(newTheme);
+      localStorage.setItem('user_preferences_theme', newTheme);
+      if (user) {
+          const updated = { ...user, preferences: { ...user.preferences, theme: newTheme as 'light' | 'dark' } };
+          setUser(updated);
+          storageService.saveUser(updated);
+      }
+  };
+
+  const handleToggleHabit = (id: string) => {
+      const today = new Date().toISOString().split('T')[0];
+      setHabits(prev => prev.map(h => {
+          if (h.id === id) {
+              const isCompleted = h.completedDates.includes(today);
+              let newDates = [...h.completedDates];
+              let newStreak = h.streak;
+
+              if (isCompleted) {
+                  newDates = newDates.filter(d => d !== today);
+                  if (newStreak > 0) newStreak--; 
+              } else {
+                  newDates.push(today);
+                  newStreak++;
+              }
+              return { ...h, completedDates: newDates, streak: newStreak };
+          }
+          return h;
+      }));
+  };
+
   const handleTaskCreate = (task: Task) => {
-    setTasks(prev => [...prev, task]);
+    if (!user) return;
+    const updatedTasks = Backend.tasks.create(user.id, task);
+    setTasks(updatedTasks);
     addToast('SUCCESS', 'Task created successfully');
   };
 
   const handleTaskUpdate = (task: Task) => {
-    setTasks(prev => prev.map(t => t.id === task.id ? task : t));
+    if (!user) return;
+    const updatedTasks = Backend.tasks.update(user.id, task);
+    setTasks(updatedTasks);
   };
 
   const handleTaskDelete = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+    if (!user) return;
+    const updatedTasks = Backend.tasks.delete(user.id, id);
+    setTasks(updatedTasks);
     addToast('INFO', 'Task deleted');
   };
 
   const handleProjectCreate = (project: Project) => {
-    setProjects(prev => [...prev, project]);
+    if (!user) return;
+    const updatedProjects = Backend.projects.create(user.id, project);
+    setProjects(updatedProjects);
     addToast('SUCCESS', 'Project created');
   };
 
   const handleProjectUpdate = (project: Project) => {
-    setProjects(prev => prev.map(p => p.id === project.id ? project : p));
+    if (!user) return;
+    const updatedProjects = Backend.projects.update(user.id, project);
+    setProjects(updatedProjects);
     addToast('SUCCESS', 'Project updated');
   };
 
   const handleProjectDelete = (id: string) => {
-    setProjects(prev => prev.filter(p => p.id !== id));
-    setTasks(prev => prev.map(t => t.projectId === id ? { ...t, projectId: undefined } : t));
-    addToast('INFO', 'Project deleted');
+    if (!user) return;
+    const result = Backend.projects.delete(user.id, id);
+    setProjects(result.projects);
+    setTasks(result.tasks);
+    addToast('INFO', 'Project deleted (tasks unlinked)');
   };
 
   const handleClientAdd = (client: Client, newProjects: Partial<Project>[]) => {
-      setClients(prev => [...prev, client]);
-      if (newProjects.length > 0) {
-          const finalProjects = newProjects.map(p => ({
-              ...p,
-              id: Date.now().toString() + Math.random(),
-              clientId: client.id,
-              client: client.name
-          } as Project));
-          setProjects(prev => [...prev, ...finalProjects]);
-      }
+      if (!user) return;
+      const finalProjects = newProjects.map(p => ({
+          ...p,
+          id: Date.now().toString() + Math.random(),
+          clientId: client.id,
+          client: client.name
+      } as Project));
+      
+      const result = Backend.clients.create(user.id, client, finalProjects);
+      setClients(result.clients);
+      setProjects(result.projects);
       addToast('SUCCESS', 'Client added');
   };
 
   const handleClientUpdate = (client: Client, newProjects: Partial<Project>[]) => {
-      setClients(prev => prev.map(c => c.id === client.id ? client : c));
-      if (newProjects.length > 0) {
-          const finalProjects = newProjects.map(p => ({
-              ...p,
-              id: Date.now().toString() + Math.random(),
-              clientId: client.id,
-              client: client.name
-          } as Project));
-          setProjects(prev => [...prev, ...finalProjects]);
-      }
+      if (!user) return;
+      const finalProjects = newProjects.map(p => ({
+          ...p,
+          id: Date.now().toString() + Math.random(),
+          clientId: client.id,
+          client: client.name
+      } as Project));
+
+      const result = Backend.clients.update(user.id, client, finalProjects);
+      setClients(result.clients);
+      setProjects(result.projects);
       addToast('SUCCESS', 'Client updated');
   };
 
   const handleClientDelete = (id: string) => {
-      setClients(prev => prev.filter(c => c.id !== id));
-      addToast('INFO', 'Client removed');
+      if (!user) return;
+      const result = Backend.clients.delete(user.id, id);
+      setClients(result.clients);
+      setProjects(result.projects);
+      setTasks(result.tasks);
+      setFolders(result.folders);
+      addToast('INFO', 'Client and associated data removed');
   };
 
   const createNewSession = useCallback(() => {
@@ -371,12 +360,13 @@ function App() {
     if (activeRequestRef.current) {
         activeRequestRef.current = false;
         setIsLoading(false);
+        setLoadingStep(undefined);
         resetGeminiSession(); 
         addToast('INFO', 'AI generation stopped.');
     }
   }, [addToast]);
 
-  const handleSendMessage = useCallback(async (text: string, image?: string) => {
+  const handleSendMessage = useCallback(async (text: string, image?: string, isIgnite?: boolean, mentionedTaskIds?: string[]) => {
     if (!currentSessionId) createNewSession();
     const activeId = currentSessionId || (chatSessions.length > 0 ? chatSessions[0].id : Date.now().toString()); 
     
@@ -386,13 +376,14 @@ function App() {
         actualActiveId = chatSessions.length > 0 ? chatSessions[chatSessions.length - 1].id : Date.now().toString(); 
     }
 
-    const userMsg: Message = { 
-        id: Date.now().toString(), 
-        role: 'user', 
-        text: text, 
-        timestamp: new Date(),
-        image: image 
-    };
+    // --- SECURE TOKEN CHECK ---
+    // Deduct tokens strictly before processing.
+    const cost = isIgnite ? TOKEN_COSTS.CHAT_IGNITE : TOKEN_COSTS.CHAT_NORMAL;
+    const hasTokens = handleUseToken(cost, isIgnite ? 'chat_ignite' : 'chat_normal');
+    
+    if (!hasTokens) return; // Block execution
+
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', text: text, timestamp: new Date(), image: image };
 
     setChatSessions(prev => {
         const targetSessionIndex = prev.findIndex(s => s.id === actualActiveId);
@@ -414,23 +405,58 @@ function App() {
     setIsLoading(true);
     activeRequestRef.current = true;
     
+    // START IGNITE SIMULATION LOOP
+    let stepInterval: ReturnType<typeof setInterval> | null = null;
+    if (isIgnite) {
+        const steps = ['Initializing Super Agent...', 'Reading Task Context...', 'Analyzing Requirements...', 'Formulating Strategy...', 'Executing Tools...'];
+        let stepIdx = 0;
+        setLoadingStep(steps[0]);
+        stepInterval = setInterval(() => {
+            stepIdx++;
+            if (stepIdx < steps.length) {
+                setLoadingStep(steps[stepIdx]);
+            }
+        }, 1500);
+    }
+
     try {
-      const contextSummary = `
+      // --- AI CONTEXT GENERATION ---
+      const totalRevenue = projects.filter(p => p.status === 'COMPLETED').reduce((acc, p) => acc + (p.price || 0), 0);
+      const completedTasksCount = tasks.filter(t => t.completed).length;
+      const bestHabitStreak = habits.reduce((max, h) => Math.max(max, h.streak), 0);
+      
+      let contextSummary = `
         CURRENT TIME: ${new Date().toLocaleString()}
-        TASKS: ${tasks.map(t => `[ID: ${t.id}] ${t.title} (Due: ${new Date(t.date).toLocaleString()}, Status: ${t.statusLabel})`).join('\n')}.
-        PROJECTS: ${projects.map(p => p.title).join(', ')}.
-        CLIENTS: ${clients.map(c => c.name).join(', ')}.
-        HABITS STREAK: ${habits.reduce((acc, h) => acc + h.streak, 0)}.
+        
+        [USER ACHIEVEMENTS & PROGRESS]:
+        - Total Lifetime Revenue: $${totalRevenue.toLocaleString()}
+        - Tasks Completed: ${completedTasksCount}
+        - Highest Habit Streak: ${bestHabitStreak} days
+        - Active Projects: ${projects.filter(p => p.status === 'ACTIVE').length}
+        
+        [CURRENT TASKS]: ${tasks.filter(t => !t.completed).map(t => `[ID: ${t.id}] ${t.title} (Due: ${new Date(t.date).toLocaleString()})`).join('\n')}.
+        [PROJECTS]: ${projects.map(p => p.title).join(', ')}.
+        [CLIENTS]: ${clients.map(c => c.name).join(', ')}.
+        [HABITS STREAK]: ${habits.reduce((acc, h) => acc + h.streak, 0)}.
       `;
 
-      const response = await sendMessageToGemini(text, image, contextSummary, user?.aiMemory);
+      if (mentionedTaskIds && mentionedTaskIds.length > 0) {
+          const detailedTasks = tasks.filter(t => mentionedTaskIds.includes(t.id));
+          const detailedContext = detailedTasks.map(t => JSON.stringify(t)).join('\n');
+          contextSummary += `\n\n[USER EXPLICITLY MENTIONED THESE TASKS VIA @ - PRIORITIZE THEM]:\n${detailedContext}`;
+      }
+
+      const response = await sendMessageToGemini(text, image, contextSummary, user?.aiMemory, isIgnite);
       let responseText = response.text;
 
-      // Handle AI Tool Calls
       if (response.functionCalls && response.functionCalls.length > 0) {
+          // If Ignite, update status to "Executing..."
+          if (isIgnite) setLoadingStep("Executing Tools...");
+          
           for (const call of response.functionCalls) {
-              
-              if (call.name === 'createTask') {
+              if (call.name === 'createTask' && user) {
+                  // Tool calls here are technically covered by the initial chat cost in this architecture
+                  // unless we strictly want to charge CRUD separately. For now, chat cost covers interaction.
                   const args = call.args;
                   if (args.action === 'CREATE') {
                       const newTask: Task = {
@@ -443,113 +469,45 @@ function App() {
                           completed: false,
                           statusLabel: 'TODO'
                       };
-                      setTasks(prev => [...prev, newTask]);
+                      const newTasks = Backend.tasks.create(user.id, newTask);
+                      setTasks(newTasks);
                       addToast('SUCCESS', `Task created: ${newTask.title}`);
                       if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true, taskId: newTask.id });
                   }
                   else if (args.action === 'UPDATE') {
-                      let updated = false;
-                      setTasks(prev => prev.map(t => {
-                          // Match by ID first, then fuzzy Title
-                          if (t.id === args.id || (args.title && t.title.toLowerCase().includes(args.title.toLowerCase()))) {
-                              updated = true;
-                              return { 
-                                  ...t, 
-                                  ...args, 
-                                  date: args.date ? new Date(args.date) : t.date,
-                                  completed: args.status === 'DONE' ? true : (args.status ? false : t.completed),
-                                  statusLabel: args.status || t.statusLabel
-                              };
-                          }
-                          return t;
-                      }));
-                      
-                      if (updated) {
-                          addToast('SUCCESS', 'Task updated');
+                      const target = tasks.find(t => t.id === args.id || (args.title && t.title.toLowerCase().includes(args.title.toLowerCase())));
+                      if (target) {
+                          const updated = { 
+                              ...target, 
+                              ...args, 
+                              date: args.date ? new Date(args.date) : target.date,
+                              completed: args.status === 'DONE' ? true : (args.status ? false : target.completed),
+                              statusLabel: args.status || target.statusLabel
+                          };
+                          const newTasks = Backend.tasks.update(user.id, updated);
+                          setTasks(newTasks);
+                          addToast('SUCCESS', `Task updated: ${updated.title}`);
                           if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true });
                       } else {
                           if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: false, error: "Task not found" });
                       }
                   }
                   else if (args.action === 'DELETE') {
-                      setTasks(prev => prev.filter(t => t.id !== args.id && (!args.title || !t.title.toLowerCase().includes(args.title.toLowerCase()))));
-                      addToast('INFO', 'Task deleted');
-                      if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true });
+                      const target = tasks.find(t => t.id === args.id || (args.title && t.title.toLowerCase().includes(args.title.toLowerCase())));
+                      if (target) {
+                          const newTasks = Backend.tasks.delete(user.id, target.id);
+                          setTasks(newTasks);
+                          addToast('INFO', 'Task deleted');
+                          if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true });
+                      } else {
+                          if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: false, error: "Task not found" });
+                      }
                   }
               } 
-              
-              else if (call.name === 'manageClient') {
-                  const args = call.args;
-                  if (args.action === 'CREATE') {
-                      const newClient: Client = {
-                          id: Date.now().toString() + Math.random(),
-                          name: args.name,
-                          email: args.email,
-                          status: 'ACTIVE',
-                          revenue: 0,
-                          notes: args.notes
-                      };
-                      setClients(prev => [...prev, newClient]);
-                      addToast('SUCCESS', `Client added: ${newClient.name}`);
-                      if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true, clientId: newClient.id });
-                  }
-                  else if (args.action === 'UPDATE') {
-                      // Simple logic to find by name if ID not provided (AI usually matches names)
-                      const target = clients.find(c => c.name.toLowerCase() === args.name.toLowerCase());
-                      if (target) {
-                          setClients(prev => prev.map(c => c.id === target.id ? { ...c, ...args } : c));
-                          addToast('SUCCESS', `Client updated: ${target.name}`);
-                          if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true });
-                      } else {
-                          if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: false, error: "Client not found" });
-                      }
-                  }
-              }
-
-              else if (call.name === 'manageProject') {
-                  const args = call.args;
-                  if (args.action === 'CREATE') {
-                      const newProject: Project = {
-                          id: Date.now().toString() + Math.random(),
-                          title: args.title,
-                          client: args.clientName || 'Unassigned',
-                          status: 'ACTIVE',
-                          progress: 0,
-                          color: '#6366f1',
-                          tags: [],
-                          price: args.price || 0
-                      };
-                      setProjects(prev => [...prev, newProject]);
-                      addToast('SUCCESS', `Project added: ${newProject.title}`);
-                      if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true, projectId: newProject.id });
-                  }
-                  else if (args.action === 'UPDATE') {
-                      const target = projects.find(p => p.title.toLowerCase() === args.title.toLowerCase());
-                      if (target) {
-                          setProjects(prev => prev.map(p => p.id === target.id ? { ...p, ...args } : p));
-                          addToast('SUCCESS', `Project updated: ${target.title}`);
-                          if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true });
-                      } else {
-                          if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: false, error: "Project not found" });
-                      }
-                  }
-              }
-
-              else if (call.name === 'updateMemory' && user) {
-                  const args = call.args;
-                  const newMemory = (user.aiMemory || "") + "\n- " + args.memory;
-                  const updatedUser = { ...user, aiMemory: newMemory };
-                  setUser(updatedUser);
-                  storageService.saveUser(updatedUser);
-                  addToast('SUCCESS', 'AI Memory Updated');
-                  if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true });
-              }
           }
       }
       
       if (activeRequestRef.current) {
-          // If tool calls happened, we might get a second response from the model
-          // But for simplicity in this structure, we just ensure the loop finishes or we append the final text if any
           if (responseText) {
               const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'model', text: responseText, timestamp: new Date() };
               setChatSessions(prev => {
@@ -584,15 +542,17 @@ function App() {
        }
        addToast('ERROR', 'AI Request Failed');
     } finally {
+      if (stepInterval) clearInterval(stepInterval);
       if (activeRequestRef.current) {
           setIsLoading(false);
+          setLoadingStep(undefined);
           activeRequestRef.current = false;
       }
     }
   }, [currentSessionId, createNewSession, chatSessions, addToast, tasks, projects, clients, habits, user]);
 
   const handleRecoverySession = async (energyLevel: number) => {
-    setIsChatOverlayOpen(true); // Open sidebar
+    setIsChatOverlayOpen(true); 
     const recoveryId = Date.now().toString();
     const startMsg: Message = { id: Date.now().toString(), role: 'user', text: `[SYSTEM TRIGGER]: Energy Level: ${energyLevel}/10.`, timestamp: new Date() };
     setChatSessions(prev => [...prev, {
@@ -602,6 +562,11 @@ function App() {
         lastModified: new Date()
     }]);
     setCurrentSessionId(recoveryId);
+    
+    // Recovery implies basic chat unless specified
+    const hasTokens = handleUseToken(TOKEN_COSTS.CHAT_NORMAL, 'recovery_session');
+    if (!hasTokens) return;
+
     setIsLoading(true);
     activeRequestRef.current = true;
     try {
@@ -644,6 +609,7 @@ function App() {
             onAddProject={handleProjectCreate}
             onUpdateProject={handleProjectUpdate}
             onDeleteProject={handleProjectDelete}
+            onToggleHabit={handleToggleHabit}
         />;
       case 'MANAGER':
         return <ManagerPage 
@@ -674,7 +640,12 @@ function App() {
             setHabits={setHabits}
         />;
       case 'APPS':
-        return <Apps items={infinityItems} setItems={setInfinityItems} />;
+        return <Apps 
+            items={infinityItems} 
+            setItems={setInfinityItems} 
+            userTokens={user?.tokens || 0}
+            onUseToken={(amount) => handleUseToken(amount, 'app_action')}
+        />;
       case 'FILES':
         return <FileManager files={files} setFiles={setFiles} folders={folders} setFolders={setFolders} clients={clients} isDriveConnected={isDriveConnected} />;
       case 'CALENDAR':
@@ -682,10 +653,10 @@ function App() {
           tasks={tasks} 
           onUpdateTask={handleTaskUpdate}
           onDeleteTask={handleTaskDelete} 
-          onChangeColor={(id, c) => setTasks(prev => prev.map(t => t.id === id ? {...t, color: c} : t))} 
+          onChangeColor={(id, c) => handleTaskUpdate({...tasks.find(t => t.id === id)!, color: c})} 
           onAddTask={handleTaskCreate} 
           onAddTasks={(tl) => {
-             setTasks(prev => [...prev, ...tl]);
+             tl.forEach(t => handleTaskCreate(t)); 
              addToast('SUCCESS', `${tl.length} events added`);
           }} 
         />;
@@ -708,6 +679,7 @@ function App() {
             user={user}
             messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []} 
             isLoading={isLoading} 
+            loadingStep={loadingStep}
             onSendMessage={handleSendMessage}
             onStopGeneration={handleStopGeneration}
             sessions={chatSessions}
@@ -715,6 +687,7 @@ function App() {
             onSelectSession={setCurrentSessionId}
             onCreateSession={createNewSession}
             onDeleteSession={deleteSession}
+            tasks={tasks}
         />;
     }
   };
@@ -726,32 +699,43 @@ function App() {
   return (
     <div className="flex flex-col md:flex-row h-[100dvh] bg-app-bg text-text-primary overflow-hidden animate-in fade-in duration-500">
         <Navigation 
-        currentView={currentView} 
-        onNavigate={setCurrentView} 
-        user={user} 
-        notifications={notifications}
-        onMarkRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
-        onClearAll={() => setNotifications([])}
+            currentView={currentView} 
+            onNavigate={setCurrentView} 
+            user={user} 
+            notifications={notifications}
+            onMarkRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
+            onClearAll={() => setNotifications([])}
         />
         <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+            <TopBar 
+                user={user}
+                notifications={notifications}
+                onToggleTheme={handleToggleTheme}
+                onToggleNotifications={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                showNotificationsDropdown={showNotificationsDropdown}
+                onClearNotifications={() => setNotifications([])}
+                onMarkNotificationRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
+            />
             <div className="flex-1 h-full w-full max-w-[1920px] mx-auto overflow-hidden p-4 md:p-8 transition-all">
-            {renderView()}
+                {renderView()}
             </div>
             <ToastContainer toasts={toasts} onDismiss={removeToast} />
             
             <ChatOverlay 
-            isOpen={isChatOverlayOpen}
-            onClose={() => setIsChatOverlayOpen(false)}
-            user={user}
-            messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
-            isLoading={isLoading}
-            onSendMessage={handleSendMessage}
-            onStopGeneration={handleStopGeneration}
-            sessions={chatSessions}
-            currentSessionId={currentSessionId}
-            onSelectSession={setCurrentSessionId}
-            onCreateSession={createNewSession}
-            onDeleteSession={deleteSession}
+                isOpen={isChatOverlayOpen}
+                onClose={() => setIsChatOverlayOpen(false)}
+                user={user}
+                messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
+                isLoading={isLoading}
+                loadingStep={loadingStep}
+                onSendMessage={handleSendMessage}
+                onStopGeneration={handleStopGeneration}
+                sessions={chatSessions}
+                currentSessionId={currentSessionId}
+                onSelectSession={setCurrentSessionId}
+                onCreateSession={createNewSession}
+                onDeleteSession={deleteSession}
+                tasks={tasks}
             />
         </main>
     </div>

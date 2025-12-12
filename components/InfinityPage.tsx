@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { CanvasItem } from '../types';
 import { Plus, Minus, Move, Image as ImageIcon, Trash2, StickyNote, Type, MessageSquare, Undo, Redo } from 'lucide-react';
+import { FadeIn } from './common/AnimatedComponents';
 
 interface InfinityPageProps {
   items: CanvasItem[];
@@ -225,7 +226,7 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
       }}
     >
       {/* Controls */}
-      <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
+      <FadeIn className="absolute top-4 left-4 z-50 flex flex-col gap-2">
           <div className="bg-card border border-border rounded-xl p-2 shadow-lg flex flex-col gap-2">
               <button onClick={() => setScale(s => Math.min(s + 0.1, 5))} className="p-1 hover:bg-secondary rounded" title="Zoom In"><Plus size={16} /></button>
               <span className="text-xs text-center font-mono">{Math.round(scale * 100)}%</span>
@@ -265,7 +266,7 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
                   <li><strong>Ctrl+Scroll</strong> to Zoom</li>
               </ul>
           </div>
-      </div>
+      </FadeIn>
 
       <div 
         className="absolute origin-top-left transition-transform duration-75 ease-linear will-change-transform"

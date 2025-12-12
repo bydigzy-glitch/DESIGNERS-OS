@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, ViewMode } from '../types';
 import { LogOut, User as UserIcon, Bell, ArrowLeft, Save, Upload, Menu, ChevronUp, ChevronDown } from 'lucide-react';
+import { FadeIn } from './common/AnimatedComponents';
 
 interface SettingsProps {
   user: User;
@@ -20,7 +21,7 @@ const NAV_LABELS: Record<string, string> = {
     'HABITS': 'Habits',
     'APPS': 'Apps',
     'CALENDAR': 'Schedule',
-    'CHAT': 'Mentor',
+    'CHAT': 'Ignite',
     'FILES': 'Assets'
 };
 
@@ -102,7 +103,7 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
   };
 
   return (
-    <div className="flex flex-col h-full w-full overflow-y-auto scrollbar-hide pb-20">
+    <FadeIn className="flex flex-col h-full w-full overflow-y-auto scrollbar-hide pb-20">
       
       <div className="flex items-center gap-4 mb-8 shrink-0">
           <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-text-secondary hover:text-white transition-colors">
@@ -225,6 +226,6 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
              </button>
           </div>
       </div>
-    </div>
+    </FadeIn>
   );
 };

@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Flame } from 'lucide-react';
 import { ChatInterface } from './ChatInterface';
-import { User, Message, ChatSession } from '../types';
+import { User, Message, ChatSession, Task } from '../types';
 
 interface ChatOverlayProps {
   isOpen: boolean;
@@ -10,18 +10,20 @@ interface ChatOverlayProps {
   user: User | null;
   messages: Message[];
   isLoading: boolean;
-  onSendMessage: (text: string, image?: string) => void;
+  loadingStep?: string;
+  onSendMessage: (text: string, image?: string, isIgnite?: boolean, mentionedTaskIds?: string[]) => void;
   onStopGeneration?: () => void;
   sessions: ChatSession[];
   currentSessionId: string | null;
   onSelectSession: (id: string) => void;
   onCreateSession: () => void;
   onDeleteSession: (id: string) => void;
+  tasks?: Task[];
 }
 
 export const ChatOverlay: React.FC<ChatOverlayProps> = ({ 
-    isOpen, onClose, user, messages, isLoading, onSendMessage, onStopGeneration,
-    sessions, currentSessionId, onSelectSession, onCreateSession, onDeleteSession
+    isOpen, onClose, user, messages, isLoading, loadingStep, onSendMessage, onStopGeneration,
+    sessions, currentSessionId, onSelectSession, onCreateSession, onDeleteSession, tasks = []
 }) => {
   return (
     <>
@@ -36,7 +38,10 @@ export const ChatOverlay: React.FC<ChatOverlayProps> = ({
         className={`fixed top-0 right-0 h-full w-full max-w-md bg-background border-l border-border shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
           <div className="p-4 border-b border-border flex justify-between items-center bg-card flex-shrink-0">
-              <h2 className="text-lg font-bold text-foreground">AI Mentor</h2>
+              <div className="flex items-center gap-2 text-foreground">
+                  <Flame size={20} fill="currentColor" className="text-orange-500" />
+                  <h2 className="text-lg font-bold">Ignite</h2>
+              </div>
               <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground">
                   <X size={20} />
               </button>
@@ -47,6 +52,7 @@ export const ChatOverlay: React.FC<ChatOverlayProps> = ({
                   user={user}
                   messages={messages}
                   isLoading={isLoading}
+                  loadingStep={loadingStep}
                   onSendMessage={onSendMessage}
                   onStopGeneration={onStopGeneration}
                   sessions={sessions}
@@ -55,6 +61,7 @@ export const ChatOverlay: React.FC<ChatOverlayProps> = ({
                   onCreateSession={onCreateSession}
                   onDeleteSession={onDeleteSession}
                   hideSidebar={true}
+                  tasks={tasks}
               />
           </div>
       </div>

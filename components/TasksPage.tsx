@@ -5,6 +5,8 @@ import { CheckSquare, Plus, Zap, GripVertical, Edit2, Check, ChevronDown, Chevro
 import { TaskModal } from './modals/TaskModal';
 import { ProjectModal } from './modals/ProjectModal';
 import { TasksTable } from './common/TasksTable';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FadeIn } from './common/AnimatedComponents';
 
 interface TasksPageProps {
   tasks: Task[];
@@ -157,7 +159,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full pb-24 md:pb-0 space-y-6 pr-2 overflow-y-auto scrollbar-hide">
+    <FadeIn className="flex flex-col h-full w-full pb-24 md:pb-0 space-y-6 pr-2 overflow-y-auto scrollbar-hide">
        
        {/* Top Stats Row */}
        <div className="flex flex-col md:flex-row gap-6 flex-shrink-0">
@@ -251,40 +253,47 @@ export const TasksPage: React.FC<TasksPageProps> = ({
 
                            {/* Tasks Area */}
                            <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-                               {visibleTasks.map(task => (
-                                   <div 
-                                        key={task.id}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, task.id)}
-                                        onClick={(e) => handleEditTask(e, task)}
-                                        className="bg-card p-4 rounded-xl border border-border shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-all group relative animate-in fade-in zoom-in-95 duration-200"
-                                   >
-                                       <div className="flex justify-between items-start mb-2">
-                                           {task.priority && (
-                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getPriorityColor(task.priority)}`}>{task.priority}</span>
+                               <AnimatePresence initial={false} mode="popLayout">
+                                   {visibleTasks.map(task => (
+                                       <motion.div 
+                                            key={task.id}
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            transition={{ duration: 0.2 }}
+                                            draggable
+                                            onDragStart={(e: any) => handleDragStart(e, task.id)}
+                                            onClick={(e) => handleEditTask(e, task)}
+                                            className="bg-card p-4 rounded-xl border border-border shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 group relative"
+                                       >
+                                           <div className="flex justify-between items-start mb-2">
+                                               {task.priority && (
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getPriorityColor(task.priority)}`}>{task.priority}</span>
+                                               )}
+                                               <div className="p-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                                                   <GripVertical size={14} />
+                                               </div>
+                                           </div>
+                                           
+                                           <h4 className={`text-sm font-bold text-foreground mb-1 leading-tight ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.title}</h4>
+                                           
+                                           {/* Tags / Project */}
+                                           {task.projectId && (
+                                               <div className="flex items-center gap-1.5 mt-2">
+                                                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: projects.find(p => p.id === task.projectId)?.color || '#ccc' }}></div>
+                                                   <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
+                                                       {projects.find(p => p.id === task.projectId)?.title || 'Project'}
+                                                   </span>
+                                               </div>
                                            )}
-                                           <div className="p-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                                               <GripVertical size={14} />
+                                           {/* Time Preview */}
+                                           <div className="text-[9px] text-muted-foreground mt-1">
+                                               {new Date(task.date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
                                            </div>
-                                       </div>
-                                       
-                                       <h4 className={`text-sm font-bold text-foreground mb-1 leading-tight ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.title}</h4>
-                                       
-                                       {/* Tags / Project */}
-                                       {task.projectId && (
-                                           <div className="flex items-center gap-1.5 mt-2">
-                                               <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: projects.find(p => p.id === task.projectId)?.color || '#ccc' }}></div>
-                                               <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
-                                                   {projects.find(p => p.id === task.projectId)?.title || 'Project'}
-                                               </span>
-                                           </div>
-                                       )}
-                                       {/* Time Preview */}
-                                       <div className="text-[9px] text-muted-foreground mt-1">
-                                           {new Date(task.date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
-                                       </div>
-                                   </div>
-                               ))}
+                                       </motion.div>
+                                   ))}
+                               </AnimatePresence>
                                
                                {/* Add Task Button */}
                                <button 
@@ -355,6 +364,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({
             });
         }}
       />
-    </div>
+    </FadeIn>
   );
 };

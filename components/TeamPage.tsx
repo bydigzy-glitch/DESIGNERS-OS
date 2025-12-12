@@ -4,6 +4,7 @@ import { User, Task, Project, TeamMember } from '../types';
 import { Users, Plus, Shield, ShieldCheck, Eye, Trash2, Mail } from 'lucide-react';
 import { TasksTable } from './common/TasksTable';
 import { TaskModal } from './modals/TaskModal';
+import { FadeIn } from './common/AnimatedComponents';
 
 interface TeamPageProps {
   user: User;
@@ -56,7 +57,7 @@ export const TeamPage: React.FC<TeamPageProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full space-y-8 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2">
+    <FadeIn className="flex flex-col h-full w-full space-y-8 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2">
        
        <div className="flex justify-between items-center">
            <div>
@@ -182,6 +183,6 @@ export const TeamPage: React.FC<TeamPageProps> = ({
         initialTask={selectedTask}
         projects={projects}
       />
-    </div>
+    </FadeIn>
   );
 };

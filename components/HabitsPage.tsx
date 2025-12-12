@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Habit } from '../types';
 import { Flame, Plus, Check, X, Trash2, RotateCcw, BookOpen, Dumbbell, Coffee, Target, Mail, Moon, Brain, PenTool, Users, Briefcase } from 'lucide-react';
+import { FadeIn } from './common/AnimatedComponents';
 
 interface HabitsPageProps {
   habits: Habit[];
@@ -113,7 +114,7 @@ export const HabitsPage: React.FC<HabitsPageProps> = ({ habits, setHabits }) => 
   };
 
   return (
-    <div className="flex flex-col h-full w-full overflow-y-auto pb-20 md:pb-0 scrollbar-hide space-y-8 pr-2">
+    <FadeIn className="flex flex-col h-full w-full overflow-y-auto pb-20 md:pb-0 scrollbar-hide space-y-8 pr-2">
        
        <div className="flex justify-between items-end">
            <div>
@@ -262,6 +263,6 @@ export const HabitsPage: React.FC<HabitsPageProps> = ({ habits, setHabits }) => 
                </div>
            </div>
        )}
-    </div>
+    </FadeIn>
   );
 };

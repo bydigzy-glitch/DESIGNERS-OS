@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Task, ViewMode, Client, Project, User, Habit } from '../types';
-import { Zap, Plus, CheckCircle2, Briefcase, Sparkles, Flame, CheckSquare, Calendar, Trash2, ArrowUpRight, TrendingUp, MoreHorizontal, FileText, MessageSquare, Clock, AlertTriangle, Star } from 'lucide-react';
+import { Zap, Plus, CheckCircle2, Briefcase, Sparkles, Flame, CheckSquare, Calendar, Trash2, ArrowUpRight, TrendingUp, MoreHorizontal, FileText, MessageSquare, Clock, AlertTriangle, Star, Check } from 'lucide-react';
 import { EmptyState } from './common/EmptyState';
 import { ProjectModal } from './modals/ProjectModal';
 import { TaskModal } from './modals/TaskModal';
@@ -28,6 +28,8 @@ interface HQProps {
   onAddProject: (project: Project) => void;
   onUpdateProject: (project: Project) => void;
   onDeleteProject: (id: string) => void;
+  
+  onToggleHabit: (id: string) => void;
 }
 
 const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
@@ -122,7 +124,8 @@ const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
 export const HQ: React.FC<HQProps> = ({ 
     user, tasks, clients, projects, habits, onNavigate, onSendMessage, onOpenAiSidebar,
     onAddTask, onUpdateTask, onDeleteTask,
-    onAddProject, onUpdateProject, onDeleteProject
+    onAddProject, onUpdateProject, onDeleteProject,
+    onToggleHabit
 }) => {
   const [aiInput, setAiInput] = useState('');
   
@@ -142,7 +145,12 @@ export const HQ: React.FC<HQProps> = ({
   // Priority Logic
   const overdueTasks = tasks.filter(t => !t.completed && new Date(t.date) < new Date());
   const highPriorityTasks = tasks.filter(t => !t.completed && t.priority === 'HIGH');
-  const upcomingTasks = tasks.filter(t => !t.completed && new Date(t.date) > new Date() && new Date(t.date).getTime() < new Date().getTime() + 86400000);
+  
+  // Revised Upcoming Tasks Logic (Next 5 future tasks sorted by date)
+  const upcomingTasks = tasks
+    .filter(t => !t.completed && new Date(t.date) > new Date())
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 5);
 
   const focusTasks = [...overdueTasks, ...highPriorityTasks].slice(0, 5);
 
@@ -155,23 +163,32 @@ export const HQ: React.FC<HQProps> = ({
     }
   };
 
+  // Habits Logic for Card
+  const today = new Date().toISOString().split('T')[0];
+  const last7Days = Array.from({length: 7}).map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      return d.toISOString().split('T')[0];
+  });
+  const todaysPendingHabits = habits.filter(h => !h.completedDates.includes(today));
+
   return (
     <div className="flex flex-col h-full w-full space-y-6 md:space-y-8 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2 relative">
       
-      {/* Top Right AI Access Button */}
+      {/* Top Right Ignite Button */}
       <div className="absolute top-0 right-0 z-20">
           <button 
             onClick={onOpenAiSidebar}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl shadow-glow hover:scale-105 transition-transform"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl shadow-glow hover:scale-105 transition-transform border border-orange-400/20"
           >
-              <Sparkles size={16} />
-              <span className="text-xs font-bold">AI Mentor</span>
+              <Flame size={16} fill="currentColor" />
+              <span className="text-xs font-bold">Ignite</span>
           </button>
       </div>
 
       {/* Header & Greeting */}
       <FadeIn>
-          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6 pt-8 md:pt-0">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6 pt-10 md:pt-0">
              <div className="flex flex-col gap-4 max-w-lg w-full">
                  <div>
                     <h1 className="text-3xl font-bold text-foreground tracking-tight">
@@ -187,7 +204,7 @@ export const HQ: React.FC<HQProps> = ({
                         type="text" 
                         value={aiInput}
                         onChange={(e) => setAiInput(e.target.value)}
-                        placeholder="Ask Mentor to add tasks or review projects..." 
+                        placeholder="Ask Ignite to add tasks or review projects..." 
                         className="w-full h-12 bg-secondary rounded-xl pl-10 pr-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background transition-all placeholder:text-muted-foreground text-sm font-medium border border-border"
                      />
                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -211,27 +228,74 @@ export const HQ: React.FC<HQProps> = ({
           {/* Right Column Stack (Span 6) */}
           <div className="md:col-span-6 lg:col-span-5 grid grid-cols-2 gap-6">
               
-              {/* Habits Card */}
-              <FadeIn delay={0.2} 
-                className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between group hover:border-primary/30 transition-colors cursor-pointer"
-                onClick={() => onNavigate('HABITS')}
-              >
-                  <div className="flex justify-between items-start">
-                      <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg">
-                          <Flame size={20} fill="currentColor" />
+              {/* Habits Card - UPDATED DESIGN */}
+              <FadeIn delay={0.2} className="col-span-2 bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col justify-between group hover:border-primary/30 transition-colors relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                          <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg">
+                              <Flame size={20} fill="currentColor" />
+                          </div>
+                          <div>
+                              <span className="text-xs font-bold text-muted-foreground block">STREAK</span>
+                              <span className="text-xl font-bold text-foreground leading-none"><CountUp value={totalStreak} /> Days</span>
+                          </div>
                       </div>
-                      <span className="text-xs font-bold text-muted-foreground">HABITS</span>
+                      <button onClick={() => onNavigate('HABITS')} className="p-1 hover:bg-secondary rounded text-muted-foreground">
+                          <ArrowUpRight size={16} />
+                      </button>
                   </div>
-                  <div>
-                      <div className="text-3xl font-bold text-foreground">
-                          <CountUp value={totalStreak} />
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">Total Streak Days</div>
+
+                  {/* Heatmap */}
+                  <div className="flex justify-between gap-1 mb-4">
+                      {last7Days.map(date => {
+                          const isToday = date === today;
+                          const completedCount = habits.filter(h => h.completedDates.includes(date)).length;
+                          const totalHabits = habits.length || 1;
+                          const intensity = completedCount / totalHabits;
+                          
+                          // Determine color class based on activity
+                          let bgClass = 'bg-secondary/50';
+                          if (completedCount > 0) {
+                              if (intensity >= 1) bgClass = 'bg-orange-500';
+                              else if (intensity >= 0.5) bgClass = 'bg-orange-500/70';
+                              else bgClass = 'bg-orange-500/40';
+                          }
+                          
+                          return (
+                              <div key={date} className="flex flex-col items-center gap-1 flex-1">
+                                  <div className={`w-full aspect-square rounded-md transition-all ${bgClass} ${isToday ? 'ring-2 ring-primary/20' : ''}`} title={`${completedCount} habits on ${date}`} />
+                                  <span className="text-[8px] font-bold text-muted-foreground uppercase">{new Date(date).toLocaleDateString('en-US', {weekday: 'narrow'})}</span>
+                              </div>
+                          )
+                      })}
+                  </div>
+
+                  {/* Quick Check-in */}
+                  <div className="space-y-2">
+                      {todaysPendingHabits.slice(0, 2).map(h => (
+                          <div key={h.id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/20 border border-transparent hover:border-orange-500/30 transition-colors group/item">
+                              <span className="text-xs font-bold text-foreground truncate max-w-[150px]">{h.title}</span>
+                              <button 
+                                  onClick={(e) => {e.stopPropagation(); onToggleHabit(h.id)}}
+                                  className="w-5 h-5 rounded border border-border bg-card flex items-center justify-center text-muted-foreground hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all"
+                              >
+                                  <Check size={12} />
+                              </button>
+                          </div>
+                      ))}
+                      {todaysPendingHabits.length === 0 && habits.length > 0 && (
+                          <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold text-center flex items-center justify-center gap-2">
+                              <CheckCircle2 size={12} /> All Done for Today!
+                          </div>
+                      )}
+                      {habits.length === 0 && (
+                          <div className="text-xs text-muted-foreground text-center">No habits tracked. Add one!</div>
+                      )}
                   </div>
               </FadeIn>
 
               {/* Focus Zone Card */}
-              <FadeIn delay={0.3} className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col cursor-pointer hover:border-red-500/30 transition-colors">
+              <FadeIn delay={0.3} className="col-span-2 bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col cursor-pointer hover:border-red-500/30 transition-colors">
                   <div className="flex justify-between items-start mb-2">
                       <div className="p-2 bg-red-500/10 text-red-500 rounded-lg">
                           <AlertTriangle size={20} />
@@ -252,8 +316,8 @@ export const HQ: React.FC<HQProps> = ({
           </div>
       </div>
 
-      {/* Middle Row: Active Projects & Recent Clients */}
-      <FadeIn delay={0.4} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Middle Row: Active Projects, Upcoming Tasks, Recent Clients */}
+      <FadeIn delay={0.4} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Active Projects Card */}
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col">
@@ -283,6 +347,36 @@ export const HQ: React.FC<HQProps> = ({
                       </div>
                   )) : (
                       <div className="text-center py-8 text-muted-foreground text-sm">No active projects</div>
+                  )}
+              </div>
+          </div>
+
+          {/* Upcoming Tasks Card - NEW */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col">
+              <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-foreground">Upcoming</h3>
+                  <button onClick={() => onNavigate('CALENDAR')} className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+                      <Calendar size={18} />
+                  </button>
+              </div>
+              
+              <div className="space-y-3 flex-1 overflow-y-auto max-h-[200px] scrollbar-hide">
+                  {upcomingTasks.length > 0 ? upcomingTasks.map(t => (
+                      <div key={t.id} onClick={() => { setSelectedTask(t); setIsTaskModalOpen(true); }} className="flex items-center gap-3 p-2 rounded-xl hover:bg-secondary/50 cursor-pointer transition-colors border border-transparent hover:border-border group">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-secondary flex flex-col items-center justify-center text-xs font-bold border border-border">
+                              <span className="text-muted-foreground uppercase text-[8px]">{new Date(t.date).toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                              <span className="text-foreground">{new Date(t.date).getDate()}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                              <div className="text-sm font-bold text-foreground truncate">{t.title}</div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Clock size={10} />
+                                  {new Date(t.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </div>
+                          </div>
+                      </div>
+                  )) : (
+                      <div className="text-center py-8 text-muted-foreground text-sm">No upcoming tasks</div>
                   )}
               </div>
           </div>

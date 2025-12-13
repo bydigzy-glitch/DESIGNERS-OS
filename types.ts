@@ -129,7 +129,7 @@ export interface TeamMember {
   role: 'ADMIN' | 'EDITOR' | 'VIEWER';
   avatar?: string;
   name?: string;
-  status: 'ACTIVE' | 'INVITED';
+  status: 'ACTIVE' | 'INVITED' | 'PENDING' | 'INACTIVE';
   dailyStreak?: number; // Added for Team Page
 }
 
@@ -141,6 +141,9 @@ export interface TeamMessage {
   text: string;
   timestamp: Date;
   isSystem?: boolean;
+  readBy?: string[]; // User IDs who have read this message
+  replyTo?: string; // ID of message being replied to
+  reactions?: { emoji: string; userIds: string[] }[]; // Emoji reactions
 }
 
 export interface Team {
@@ -199,6 +202,11 @@ export interface AppNotification {
   type: 'INFO' | 'WARNING' | 'SUCCESS' | 'SYSTEM';
   timestamp: Date;
   read: boolean;
+  actionData?: {
+    type: 'TEAM_INVITE';
+    teamId: string;
+    teamName: string;
+  };
 }
 
 export interface TokenTransaction {

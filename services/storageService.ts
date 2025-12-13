@@ -103,7 +103,7 @@ export const Backend = {
             const userToInvite = users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
 
             if (userToInvite) {
-                // User exists - add directly and send notification
+                // User exists - add as PENDING and send actionable notification
                 if (teams[teamIndex].members.some(m => m.id === userToInvite.id)) {
                     return { success: false, message: "User already in team." };
                 }
@@ -116,23 +116,27 @@ export const Backend = {
                     email: userToInvite.email,
                     name: userToInvite.name,
                     role: 'VIEWER',
-                    status: 'ACTIVE',
+                    status: 'PENDING', // Changed to PENDING - user must accept
                     avatar: userAvatar,
                     dailyStreak: 0
                 });
 
-                // Link user to this team
-                userToInvite.teamId = teamId;
+                // DON'T set teamId yet - only after acceptance
 
-                // Create notification for invited user
+                // Create actionable notification for invited user
                 if (!userToInvite.notifications) userToInvite.notifications = [];
                 userToInvite.notifications.push({
                     id: `team-invite-${Date.now()}`,
                     title: 'Team Invitation',
-                    message: `${inviterName || 'Someone'} added you to ${teamName}`,
+                    message: `${inviterName || 'Someone'} invited you to join ${teamName}`,
                     type: 'SYSTEM',
                     timestamp: new Date(),
-                    read: false
+                    read: false,
+                    actionData: {
+                        type: 'TEAM_INVITE',
+                        teamId: teamId,
+                        teamName: teamName
+                    }
                 });
 
                 storageService.saveUser(userToInvite);
@@ -156,7 +160,34 @@ export const Backend = {
             return { success: true, message: "User invited." };
         },
 
-        sendMessage: (teamId: string, senderId: string, text: string): TeamMessage | null => {
+        respondToInvite: (teamId: string, userId: string, accept: boolean): { success: boolean, message: string } => {
+            const teams = Backend.teams._getAll();
+            const teamIndex = teams.findIndex(t => t.id === teamId);
+            if (teamIndex === -1) return { success: false, message: "Team not found." };
+
+            const memberIndex = teams[teamIndex].members.findIndex(m => m.id === userId && m.status === 'PENDING');
+            if (memberIndex === -1) return { success: false, message: "No pending invitation found." };
+
+            const users = storageService.getUsers();
+            const user = users.find(u => u.id === userId);
+            if (!user) return { success: false, message: "User not found." };
+
+            if (accept) {
+                // Accept: Change status to ACTIVE and set teamId
+                teams[teamIndex].members[memberIndex].status = 'ACTIVE';
+                user.teamId = teamId;
+                storageService.saveUser(user);
+                Backend.teams._saveAll(teams);
+                return { success: true, message: "Invitation accepted!" };
+            } else {
+                // Decline: Remove from members
+                teams[teamIndex].members.splice(memberIndex, 1);
+                Backend.teams._saveAll(teams);
+                return { success: true, message: "Invitation declined." };
+            }
+        },
+
+        sendMessage: (teamId: string, senderId: string, text: string, replyToId?: string): TeamMessage | null => {
             const teams = Backend.teams._getAll();
             const teamIndex = teams.findIndex(t => t.id === teamId);
             if (teamIndex === -1) return null;
@@ -169,9 +200,12 @@ export const Backend = {
                 id: Date.now().toString(),
                 senderId,
                 senderName: sender.name,
-                senderAvatar: sender.avatar || '',
+                senderAvatar: sender.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sender.email}`,
                 text,
-                timestamp: new Date()
+                timestamp: new Date(),
+                readBy: [senderId], // Sender has read their own message
+                replyTo: replyToId,
+                reactions: []
             };
 
             teams[teamIndex].messages.push(msg);
@@ -179,8 +213,70 @@ export const Backend = {
             return msg;
         },
 
+
         get: (teamId: string): Team | undefined => {
             return Backend.teams._getAll().find(t => t.id === teamId);
+        },
+
+        markMessageRead: (teamId: string, messageId: string, userId: string): boolean => {
+            const teams = Backend.teams._getAll();
+            const team = teams.find(t => t.id === teamId);
+            if (!team) return false;
+
+            const message = team.messages.find(m => m.id === messageId);
+            if (!message) return false;
+
+            if (!message.readBy) message.readBy = [];
+            if (!message.readBy.includes(userId)) {
+                message.readBy.push(userId);
+                Backend.teams._saveAll(teams);
+            }
+            return true;
+        },
+
+        addReaction: (teamId: string, messageId: string, emoji: string, userId: string): boolean => {
+            const teams = Backend.teams._getAll();
+            const team = teams.find(t => t.id === teamId);
+            if (!team) return false;
+
+            const message = team.messages.find(m => m.id === messageId);
+            if (!message) return false;
+
+            if (!message.reactions) message.reactions = [];
+
+            let reaction = message.reactions.find(r => r.emoji === emoji);
+            if (!reaction) {
+                message.reactions.push({ emoji, userIds: [userId] });
+            } else {
+                if (!reaction.userIds.includes(userId)) {
+                    reaction.userIds.push(userId);
+                }
+            }
+
+            Backend.teams._saveAll(teams);
+            return true;
+        },
+
+        removeReaction: (teamId: string, messageId: string, emoji: string, userId: string): boolean => {
+            const teams = Backend.teams._getAll();
+            const team = teams.find(t => t.id === teamId);
+            if (!team) return false;
+
+            const message = team.messages.find(m => m.id === messageId);
+            if (!message || !message.reactions) return false;
+
+            const reaction = message.reactions.find(r => r.emoji === emoji);
+            if (!reaction) return false;
+
+            reaction.userIds = reaction.userIds.filter(id => id !== userId);
+
+            // Remove empty reactions
+            if (reaction.userIds.length === 0) {
+                message.reactions = message.reactions.filter(r => r.emoji !== emoji);
+            }
+
+            Backend.teams._saveAll(teams);
+            return true;
         }
     },
 

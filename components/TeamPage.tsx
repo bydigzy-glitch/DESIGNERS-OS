@@ -108,7 +108,7 @@ export const TeamPage: React.FC<TeamPageProps> = ({
 
     // Stats
     const teamTasksCompleted = tasks.filter(t => t.completed).length;
-    const teamMembers = team ? team.members : [];
+    const teamMembers = team ? team.members.filter((m: any) => m.status === 'ACTIVE') : []; // Only show accepted members
     const teamChat = team ? team.messages : [];
     const combinedStreak = teamMembers.reduce((acc: any, m: any) => acc + (m.dailyStreak || 0), 0);
 
@@ -251,9 +251,12 @@ export const TeamPage: React.FC<TeamPageProps> = ({
 
                             return (
                                 <div key={i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                                    {!isMe && (
-                                        <img src={msg.senderAvatar} className="w-8 h-8 rounded-full bg-secondary object-cover" />
-                                    )}
+                                    {/* Show avatar for all messages */}
+                                    <img
+                                        src={isMe ? (user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`) : msg.senderAvatar}
+                                        className="w-8 h-8 rounded-full bg-secondary object-cover flex-shrink-0"
+                                        alt={isMe ? 'You' : msg.senderName}
+                                    />
                                     <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[70%]`}>
                                         {!isMe && <span className="text-[10px] text-muted-foreground mb-1 ml-1">{msg.senderName}</span>}
                                         <div className={`p-3 rounded-2xl text-sm ${isMe ? 'bg-primary text-white rounded-tr-sm' : 'bg-secondary text-foreground rounded-tl-sm'}`}>
@@ -264,10 +267,10 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                                         </span>
                                     </div>
                                 </div>
-                            )
+                            );
                         })}
                         <div ref={chatEndRef} />
-                    </div>
+                    </div >
 
                     <form onSubmit={handleSendMessage} className="p-4 bg-card border-t border-border">
                         <div className="flex items-center gap-2 bg-secondary/50 rounded-xl p-2 px-4 border border-transparent focus-within:border-primary transition-colors">
@@ -284,10 +287,10 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                             </button>
                         </div>
                     </form>
-                </FadeIn>
+                </FadeIn >
 
                 {/* MEMBER ROSTER */}
-                <FadeIn delay={0.4} className="bg-card border border-border rounded-2xl flex flex-col overflow-hidden shadow-sm h-full max-h-[400px] lg:max-h-[600px] lg:h-auto">
+                < FadeIn delay={0.4} className="bg-card border border-border rounded-2xl flex flex-col overflow-hidden shadow-sm h-full max-h-[400px] lg:max-h-[600px] lg:h-auto" >
                     <div className="p-6 border-b border-border">
                         <h3 className="font-bold text-lg text-foreground">Team Roster</h3>
                     </div>
@@ -327,11 +330,11 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                             </div>
                         )}
                     </div>
-                </FadeIn>
-            </div>
+                </FadeIn >
+            </div >
 
             {/* Team Tasks (Duplicate of Workspace Tasks) */}
-            <FadeIn delay={0.5}>
+            < FadeIn delay={0.5} >
                 <TasksTable
                     tasks={tasks}
                     projects={projects}
@@ -341,10 +344,10 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                     onSelectTask={(task) => { setSelectedTask(task); setIsTaskModalOpen(true); }}
                     title="Team Tasks"
                 />
-            </FadeIn>
+            </FadeIn >
 
             {/* Task Modal */}
-            <TaskModal
+            < TaskModal
                 isOpen={isTaskModalOpen}
                 onClose={() => setIsTaskModalOpen(false)}
                 onSave={(t) => {
@@ -357,30 +360,32 @@ export const TeamPage: React.FC<TeamPageProps> = ({
             />
 
             {/* Invite Modal */}
-            {isInviting && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setIsInviting(false)}>
-                    <div className="bg-card border border-border p-6 rounded-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                        <h3 className="font-bold text-lg mb-4 text-foreground">Invite to Squad</h3>
-                        <form onSubmit={handleInvite}>
-                            <div className="relative mb-4">
-                                <input
-                                    type="email"
-                                    value={newMemberEmail}
-                                    onChange={e => setNewMemberEmail(e.target.value)}
-                                    className="w-full bg-secondary border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:outline-none focus:border-primary"
-                                    placeholder="colleague@brand.com"
-                                    autoFocus
-                                    required
-                                />
-                                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                            </div>
-                            <button type="submit" className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-xl text-sm hover:bg-primary/90 transition-colors shadow-glow">
-                                Send Invite
-                            </button>
-                        </form>
+            {
+                isInviting && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setIsInviting(false)}>
+                        <div className="bg-card border border-border p-6 rounded-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                            <h3 className="font-bold text-lg mb-4 text-foreground">Invite to Squad</h3>
+                            <form onSubmit={handleInvite}>
+                                <div className="relative mb-4">
+                                    <input
+                                        type="email"
+                                        value={newMemberEmail}
+                                        onChange={e => setNewMemberEmail(e.target.value)}
+                                        className="w-full bg-secondary border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:outline-none focus:border-primary"
+                                        placeholder="colleague@brand.com"
+                                        autoFocus
+                                        required
+                                    />
+                                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                </div>
+                                <button type="submit" className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-xl text-sm hover:bg-primary/90 transition-colors shadow-glow">
+                                    Send Invite
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };

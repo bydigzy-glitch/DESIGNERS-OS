@@ -28,9 +28,15 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate,
     'FILES': { id: 'FILES', label: 'Assets', icon: <FolderOpen size={18} /> },
   };
 
-  // Determine order: Use user prefs but ensure all default items are present (for new features)
+  // Determine order: ALWAYS show all DEFAULT items, but respect user's custom order if they have one
+  // This ensures new features like TEAMS are never hidden by old preferences
   const navOrder = user?.preferences?.navOrder && user.preferences.navOrder.length > 0
-    ? Array.from(new Set([...user.preferences.navOrder, ...DEFAULT_ORDER]))
+    ? [
+      // First, show user's preferred items in their order (if they exist in defaults)
+      ...user.preferences.navOrder.filter(id => DEFAULT_ORDER.includes(id)),
+      // Then, add any new default items that user doesn't have yet
+      ...DEFAULT_ORDER.filter(id => !user.preferences.navOrder.includes(id))
+    ]
     : DEFAULT_ORDER;
 
   useEffect(() => {

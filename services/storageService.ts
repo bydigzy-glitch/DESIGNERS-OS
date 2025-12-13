@@ -94,7 +94,7 @@ export const Backend = {
             return newTeam;
         },
 
-        invite: (teamId: string, email: string): { success: boolean, message: string } => {
+        invite: (teamId: string, email: string, inviterName?: string): { success: boolean, message: string } => {
             const teams = Backend.teams._getAll();
             const teamIndex = teams.findIndex(t => t.id === teamId);
             if (teamIndex === -1) return { success: false, message: "Team not found." };
@@ -103,10 +103,13 @@ export const Backend = {
             const userToInvite = users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
 
             if (userToInvite) {
-                // User exists - add directly (Simulating "Accept" flow shortcut)
+                // User exists - add directly and send notification
                 if (teams[teamIndex].members.some(m => m.id === userToInvite.id)) {
                     return { success: false, message: "User already in team." };
                 }
+
+                const teamName = teams[teamIndex].name;
+                const userAvatar = userToInvite.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userToInvite.email}`;
 
                 teams[teamIndex].members.push({
                     id: userToInvite.id,
@@ -114,12 +117,24 @@ export const Backend = {
                     name: userToInvite.name,
                     role: 'VIEWER',
                     status: 'ACTIVE',
-                    avatar: userToInvite.avatar,
+                    avatar: userAvatar,
                     dailyStreak: 0
                 });
 
                 // Link user to this team
                 userToInvite.teamId = teamId;
+
+                // Create notification for invited user
+                if (!userToInvite.notifications) userToInvite.notifications = [];
+                userToInvite.notifications.push({
+                    id: `team-invite-${Date.now()}`,
+                    title: 'Team Invitation',
+                    message: `${inviterName || 'Someone'} added you to ${teamName}`,
+                    type: 'SYSTEM',
+                    timestamp: new Date(),
+                    read: false
+                });
+
                 storageService.saveUser(userToInvite);
             } else {
                 // User doesn't exist - Add placeholder

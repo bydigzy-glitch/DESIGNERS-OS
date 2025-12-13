@@ -69,7 +69,7 @@ export const TeamPage: React.FC<TeamPageProps> = ({
         e.preventDefault();
         if (!newMemberEmail.trim() || !team) return;
 
-        const result = Backend.teams.invite(team.id, newMemberEmail);
+        const result = Backend.teams.invite(team.id, newMemberEmail, user.name);
         if (result.success) {
             // Force reload to see update immediately (storage event handles cross-tab, this handles local)
             const updatedTeam = Backend.teams.get(team.id);

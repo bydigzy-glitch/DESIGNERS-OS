@@ -189,6 +189,7 @@ export interface User {
   friends?: Friend[];
   tokens: number; // Token balance for apps
   tokenWeekStart?: string; // ISO Date string for the start of the current token week
+  notifications?: AppNotification[]; // In-app notifications
 }
 
 export interface AppNotification {

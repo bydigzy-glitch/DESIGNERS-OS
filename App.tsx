@@ -14,6 +14,7 @@ import { Settings } from './components/Settings';
 import { Auth } from './components/Auth';
 import { ChatOverlay } from './components/ChatOverlay';
 import { ManagerPage } from './components/ManagerPage';
+import { TeamPage } from './components/TeamPage'; // Import TeamPage
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { ToastContainer, ToastMessage, ToastType } from './components/common/Toast';
 import { Message, ViewMode, Task, FileAsset, Folder, User, ChatSession, Client, Project, Habit, CanvasItem, AppNotification } from './types';
@@ -118,7 +119,8 @@ function App() {
       if (e.key === 'designpreneur_users' || e.key === 'designpreneur_session') {
          const users = storageService.getUsers();
          const updatedUser = users.find(u => u.id === user.id);
-         if (updatedUser && (updatedUser.avatar !== user.avatar || updatedUser.name !== user.name || updatedUser.tokens !== user.tokens)) {
+         if (updatedUser) {
+             // Deep merge or update to ensure chat updates reflect
              setUser(updatedUser);
          }
       }
@@ -128,7 +130,6 @@ function App() {
   }, [user?.id]); // Only re-attach if ID changes
 
   // --- DATA LOADING ---
-  // FIXED: Changed dependency from [user] to [user?.id] to prevent reload on theme/token change
   useEffect(() => {
     if (user?.id) {
         try {
@@ -622,6 +623,16 @@ function App() {
             onAddProject={handleProjectCreate}
             onUpdateProject={handleProjectUpdate}
             onDeleteProject={handleProjectDelete}
+        />;
+      case 'TEAMS':
+        return <TeamPage 
+            user={user as User} 
+            tasks={tasks} 
+            projects={projects} 
+            onUpdateTask={handleTaskUpdate} 
+            onDeleteTask={handleTaskDelete} 
+            onAddTask={handleTaskCreate} 
+            onUpdateUser={handleUpdateUser} 
         />;
       case 'TASKS':
         return <TasksPage 

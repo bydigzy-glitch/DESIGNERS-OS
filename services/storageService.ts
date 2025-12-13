@@ -1,5 +1,5 @@
 
-import { User, Task, FileAsset, Folder, ChatSession, Client, Project, Habit, CanvasItem, Friend, DirectMessage, TokenTransaction } from '../types';
+import { User, Task, FileAsset, Folder, ChatSession, Client, Project, Habit, CanvasItem, Friend, DirectMessage, TokenTransaction, TeamMessage } from '../types';
 
 const STORAGE_KEYS = {
   VERSION: 'designpreneur_version',
@@ -249,7 +249,7 @@ export const storageService = {
       
       if (existingIndex >= 0) {
         const existing = users[existingIndex];
-        users[existingIndex] = { ...existing, ...user, preferences: { ...existing.preferences, ...user.preferences }, friends: user.friends || existing.friends };
+        users[existingIndex] = { ...existing, ...user, preferences: { ...existing.preferences, ...user.preferences }, friends: user.friends || existing.friends, teamChat: user.teamChat || existing.teamChat };
       } else {
         users.push(user);
       }
@@ -287,7 +287,16 @@ export const storageService = {
         ...user, 
         email: cleanEmail, 
         tokens: 10,
-        tokenWeekStart: Backend.tokens._getCurrentWeekStart()
+        tokenWeekStart: Backend.tokens._getCurrentWeekStart(),
+        teamChat: [{
+            id: 'init-1',
+            senderId: 'system',
+            senderName: 'System',
+            senderAvatar: '',
+            text: 'Welcome to your team channel. Start collaborating!',
+            timestamp: new Date(),
+            isSystem: true
+        }]
     };
     
     users.push(finalUser);
@@ -407,5 +416,21 @@ export const storageService = {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     const session = storageService.getSession();
     if (session && session.id === userId) localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(currentUser));
+  },
+  
+  sendTeamMessage: (userId: string, message: TeamMessage) => {
+      const users = storageService.getUsers();
+      const currentUserIndex = users.findIndex(u => u.id === userId);
+      
+      if (currentUserIndex === -1) return;
+      
+      const currentUser = users[currentUserIndex];
+      if (!currentUser.teamChat) currentUser.teamChat = [];
+      
+      currentUser.teamChat.push(message);
+      
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      const session = storageService.getSession();
+      if (session && session.id === userId) localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(currentUser));
   }
 };

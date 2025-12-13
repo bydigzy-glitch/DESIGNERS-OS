@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ViewMode, User, AppNotification } from '../types';
-import { LayoutGrid, Layers, Calendar as CalendarIcon, MessageSquare, FolderOpen, Settings, Hexagon, CheckSquare, Sun, Moon, Flame, Bell, Briefcase } from 'lucide-react';
+import { LayoutGrid, Layers, Calendar as CalendarIcon, MessageSquare, FolderOpen, Settings, Hexagon, CheckSquare, Sun, Moon, Flame, Bell, Briefcase, Users } from 'lucide-react';
 
 interface NavigationProps {
   currentView: ViewMode;
@@ -12,12 +12,13 @@ interface NavigationProps {
   onClearAll: () => void;
 }
 
-const DEFAULT_ORDER: ViewMode[] = ['HQ', 'MANAGER', 'TASKS', 'HABITS', 'APPS', 'CALENDAR', 'CHAT', 'FILES'];
+const DEFAULT_ORDER: ViewMode[] = ['HQ', 'TEAMS', 'MANAGER', 'TASKS', 'HABITS', 'APPS', 'CALENDAR', 'CHAT', 'FILES'];
 
 export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, user, notifications, onMarkRead, onClearAll }) => {
   // Static definition of all available items
   const allNavItems: Record<string, { id: ViewMode; label: string; icon: React.ReactNode }> = {
     'HQ': { id: 'HQ', label: 'Workspace', icon: <LayoutGrid size={18} /> },
+    'TEAMS': { id: 'TEAMS', label: 'Teams', icon: <Users size={18} /> },
     'MANAGER': { id: 'MANAGER', label: 'Manager', icon: <Briefcase size={18} /> },
     'TASKS': { id: 'TASKS', label: 'Tasks', icon: <CheckSquare size={18} /> },
     'HABITS': { id: 'HABITS', label: 'Habits', icon: <Flame size={18} /> },

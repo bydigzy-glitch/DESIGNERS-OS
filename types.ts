@@ -20,7 +20,7 @@ export interface ChatState {
   error: string | null;
 }
 
-export type ViewMode = 'CHAT' | 'HQ' | 'TASKS' | 'HABITS' | 'APPS' | 'CALENDAR' | 'FILES' | 'SETTINGS' | 'MANAGER';
+export type ViewMode = 'CHAT' | 'HQ' | 'TASKS' | 'HABITS' | 'APPS' | 'CALENDAR' | 'FILES' | 'SETTINGS' | 'MANAGER' | 'TEAMS';
 
 export type TaskCategory = 'PRODUCT' | 'CONTENT' | 'MONEY' | 'ADMIN' | 'MEETING' | string;
 
@@ -130,6 +130,17 @@ export interface TeamMember {
   avatar?: string;
   name?: string;
   status: 'ACTIVE' | 'INVITED';
+  dailyStreak?: number; // Added for Team Page
+}
+
+export interface TeamMessage {
+    id: string;
+    senderId: string;
+    senderName: string;
+    senderAvatar: string;
+    text: string;
+    timestamp: Date;
+    isSystem?: boolean;
 }
 
 export interface DirectMessage {
@@ -162,6 +173,7 @@ export interface User {
   preferences: UserPreferences;
   isGuest?: boolean;
   teamMembers?: TeamMember[];
+  teamChat?: TeamMessage[]; // Added for Team Page
   aiMemory?: string; // AI Learning/Memory field
   friends?: Friend[];
   tokens: number; // Token balance for apps

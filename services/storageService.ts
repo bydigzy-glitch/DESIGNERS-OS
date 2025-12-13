@@ -346,10 +346,17 @@ export const Backend = {
 };
 
 export const storageService = {
+    /**
+     * Check and update version WITHOUT clearing user data.
+     * IMPORTANT: This function MUST NEVER delete STORAGE_KEYS.USERS, STORAGE_KEYS.DATA_PREFIX, 
+     * STORAGE_KEYS.TEAMS, or STORAGE_KEYS.LEDGER to prevent data loss on updates.
+     */
     checkVersion: (): boolean => {
         const storedVersion = localStorage.getItem(STORAGE_KEYS.VERSION);
         if (storedVersion !== CURRENT_VERSION) {
+            // Only update the version marker, DO NOT clear any user data
             localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
+            console.log(`[Storage] Version updated from ${storedVersion || 'unset'} to ${CURRENT_VERSION}. User data preserved.`);
         }
         return false;
     },

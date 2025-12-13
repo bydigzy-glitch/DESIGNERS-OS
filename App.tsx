@@ -77,6 +77,10 @@ function App() {
             const freshUser = storageService.getUser(sessionUser.id);
             const safeUser = freshUser ? { ...freshUser, tokens: freshUser.tokens ?? 10 } : { ...sessionUser, tokens: sessionUser.tokens ?? 10 };
             setUser(safeUser);
+            // Load notifications on session restore
+            if (safeUser.notifications) {
+                setNotifications(safeUser.notifications);
+            }
         }
 
         const lastVersion = localStorage.getItem('app_last_version');
@@ -97,6 +101,10 @@ function App() {
         const safeUser = { ...loggedInUser, tokens: loggedInUser.tokens ?? 10 };
         setUser(safeUser);
         setCurrentView('HQ');
+        // Load notifications if user has any
+        if (safeUser.notifications) {
+            setNotifications(safeUser.notifications);
+        }
     }, []);
 
     // --- CROSS-TAB SYNC LISTENER ---
@@ -122,6 +130,10 @@ function App() {
                 if (updatedUser) {
                     // Deep merge or update to ensure chat updates reflect
                     setUser(updatedUser);
+                    // Sync notifications from updated user
+                    if (updatedUser.notifications) {
+                        setNotifications(updatedUser.notifications);
+                    }
                 }
             }
         };

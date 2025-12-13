@@ -35,7 +35,7 @@ export interface Task {
   reminder?: number; // minutes before start (e.g., 15, 30, 60), undefined = no reminder
   priority?: 'HIGH' | 'MEDIUM' | 'LOW';
   statusLabel?: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
-  assignee?: string; 
+  assignee?: string;
   projectId?: string;
   notes?: string;
 }
@@ -134,13 +134,23 @@ export interface TeamMember {
 }
 
 export interface TeamMessage {
-    id: string;
-    senderId: string;
-    senderName: string;
-    senderAvatar: string;
-    text: string;
-    timestamp: Date;
-    isSystem?: boolean;
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  text: string;
+  timestamp: Date;
+  isSystem?: boolean;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  members: TeamMember[]; // Detailed member info
+  messages: TeamMessage[];
+  tasks: Task[]; // Shared team tasks
+  createdDate: Date;
+  ownerId: string;
 }
 
 export interface DirectMessage {
@@ -172,8 +182,9 @@ export interface User {
   isPro: boolean;
   preferences: UserPreferences;
   isGuest?: boolean;
-  teamMembers?: TeamMember[];
-  teamChat?: TeamMessage[]; // Added for Team Page
+  teamId?: string; // Link to shared Team
+  teamMembers?: TeamMember[]; // Deprecated? Keep for transition or local caching
+  teamChat?: TeamMessage[]; // Deprecated? Keep for transition or local caching
   aiMemory?: string; // AI Learning/Memory field
   friends?: Friend[];
   tokens: number; // Token balance for apps
@@ -181,19 +192,19 @@ export interface User {
 }
 
 export interface AppNotification {
-    id: string;
-    title: string;
-    message: string;
-    type: 'INFO' | 'WARNING' | 'SUCCESS' | 'SYSTEM';
-    timestamp: Date;
-    read: boolean;
+  id: string;
+  title: string;
+  message: string;
+  type: 'INFO' | 'WARNING' | 'SUCCESS' | 'SYSTEM';
+  timestamp: Date;
+  read: boolean;
 }
 
 export interface TokenTransaction {
-    id: string;
-    userId: string;
-    requestId: string;
-    feature: string;
-    cost: number;
-    timestamp: Date;
+  id: string;
+  userId: string;
+  requestId: string;
+  feature: string;
+  cost: number;
+  timestamp: Date;
 }

@@ -10,7 +10,7 @@ const STORAGE_KEYS = {
     TEAMS: 'designpreneur_teams',
 };
 
-const CURRENT_VERSION = 'v3.2';
+const CURRENT_VERSION = 'v3.3';
 
 // Fixed Token Costs
 export const TOKEN_COSTS = {
@@ -210,6 +210,44 @@ export const Backend = {
 
             teams[teamIndex].messages.push(msg);
             Backend.teams._saveAll(teams);
+
+            // Notify other members
+            try {
+                const users = storageService.getUsers();
+                let usersUpdated = false;
+
+                teams[teamIndex].members.forEach(m => {
+                    if (m.id === senderId || m.status !== 'ACTIVE') return;
+
+                    const userIndex = users.findIndex(u => u.id === m.id);
+                    if (userIndex !== -1) {
+                        const notif: any = { // Use any to bypass import check, matches AppNotification interface
+                            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                            title: `New message in ${teams[teamIndex].name}`,
+                            message: `${sender.name}: ${text.length > 50 ? text.substring(0, 50) + '...' : text}`,
+                            type: 'INFO',
+                            timestamp: new Date(),
+                            read: false,
+                            actionData: {
+                                type: 'CHAT_MESSAGE',
+                                teamId: teamId,
+                                teamName: teams[teamIndex].name
+                            }
+                        };
+                        users[userIndex].notifications = [notif, ...(users[userIndex].notifications || [])];
+                        usersUpdated = true;
+                    }
+                });
+
+                if (usersUpdated) {
+                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+                    // Dispatch storage event to update other tabs/components
+                    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEYS.USERS, newValue: JSON.stringify(users) }));
+                }
+            } catch (e) {
+                console.error("Failed to send notifications", e);
+            }
+
             return msg;
         },
 
@@ -566,7 +604,7 @@ export const storageService = {
                 color: '#f97316',
                 priority: 'HIGH',
                 statusLabel: 'IN_PROGRESS',
-                assignee: 'System'
+                assignedTo: 'System'
             }],
             files: [], folders: [], chatSessions: [], clients: [], projects: [], habits: [], infinityItems: []
         });

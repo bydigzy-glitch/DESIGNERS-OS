@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { initializeGemini, sendMessageToGemini, resetGeminiSession, sendToolResponseToGemini } from './services/geminiService';
 import { storageService, Backend, TOKEN_COSTS } from './services/storageService';
+import { db, supabase, subscribeToChanges } from './services/supabaseClient';
 import { ChatInterface } from './components/ChatInterface';
 import { Navigation } from './components/Navigation';
 import { HQ } from './components/HQ';
@@ -14,7 +15,7 @@ import { Settings } from './components/Settings';
 import { Auth } from './components/Auth';
 import { ChatOverlay } from './components/ChatOverlay';
 import { ManagerPage } from './components/ManagerPage';
-import { TeamPage } from './components/TeamPage'; // Import TeamPage
+import { TeamPage } from './components/TeamPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { ToastContainer, ToastMessage, ToastType } from './components/common/Toast';
 import { Message, ViewMode, Task, FileAsset, Folder, User, ChatSession, Client, Project, Habit, CanvasItem, AppNotification } from './types';
@@ -141,41 +142,243 @@ function App() {
         return () => window.removeEventListener('storage', handleStorageChange);
     }, [user?.id]); // Only re-attach if ID changes
 
-    // --- DATA LOADING ---
+    // --- DATA LOADING (Cloud for authenticated users, localStorage for guests) ---
     useEffect(() => {
-        if (user?.id) {
-            try {
-                const data = storageService.getUserData(user.id);
-                setFolders(data.folders || []);
-                setFiles(data.files || []);
-                setTasks(data.tasks || []);
-                setClients(data.clients || []);
-                setProjects(data.projects || []);
-                // Only update sessions if empty or different to avoid chat reset
-                if (chatSessions.length === 0 && data.chatSessions.length > 0) {
-                    setChatSessions(data.chatSessions);
-                } else if (data.chatSessions.length > 0 && data.chatSessions.length !== chatSessions.length) {
-                    // Soft sync if count differs (crude sync)
-                    setChatSessions(data.chatSessions);
-                }
+        const loadData = async () => {
+            if (!user?.id) return;
 
-                setHabits((data as any).habits || []);
-                setInfinityItems((data as any).infinityItems || []);
-
-                if (data.chatSessions && data.chatSessions.length > 0) {
-                    if (!currentSessionId || !data.chatSessions.find(s => s.id === currentSessionId)) {
+            // Guest users use localStorage
+            if (user.isGuest) {
+                try {
+                    const data = storageService.getUserData(user.id);
+                    setFolders(data.folders || []);
+                    setFiles(data.files || []);
+                    setTasks(data.tasks || []);
+                    setClients(data.clients || []);
+                    setProjects(data.projects || []);
+                    setHabits((data as any).habits || []);
+                    setInfinityItems((data as any).infinityItems || []);
+                    if (data.chatSessions && data.chatSessions.length > 0) {
+                        setChatSessions(data.chatSessions);
                         const sorted = [...data.chatSessions].sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
                         setCurrentSessionId(sorted[0].id);
+                    } else if (chatSessions.length === 0) {
+                        createNewSession();
                     }
-                } else {
-                    if (chatSessions.length === 0) createNewSession();
+                } catch (e) {
+                    console.error("Guest data load error", e);
                 }
-            } catch (e) {
-                console.error("Data load error", e);
-                addToast('ERROR', 'Failed to load user data.');
+                return;
             }
-        }
+
+            // Cloud users use Supabase
+            try {
+                console.log('[Supabase] Loading data for user:', user.id);
+
+                // Load tasks
+                const { data: tasksData } = await db.tasks.getAll(user.id);
+                if (tasksData) {
+                    const mappedTasks: Task[] = tasksData.map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        date: new Date(t.date),
+                        category: t.category as Task['category'],
+                        priority: t.priority as Task['priority'],
+                        statusLabel: t.status_label,
+                        duration: t.duration,
+                        completed: t.completed,
+                        color: t.color,
+                        projectId: t.project_id,
+                        notes: t.notes
+                    }));
+                    setTasks(mappedTasks);
+                }
+
+                // Load clients
+                const { data: clientsData } = await db.clients.getAll(user.id);
+                if (clientsData) {
+                    const mappedClients: Client[] = clientsData.map(c => ({
+                        id: c.id,
+                        name: c.name,
+                        email: c.email || '',
+                        revenue: Number(c.revenue) || 0,
+                        status: c.status as Client['status'],
+                        notes: c.notes,
+                        avatar: c.avatar
+                    }));
+                    setClients(mappedClients);
+                }
+
+                // Load projects
+                const { data: projectsData } = await db.projects.getAll(user.id);
+                if (projectsData) {
+                    const mappedProjects: Project[] = projectsData.map(p => ({
+                        id: p.id,
+                        title: p.title,
+                        client: p.client_name,
+                        clientId: p.client_id,
+                        status: p.status as Project['status'],
+                        price: Number(p.price) || 0,
+                        progress: p.progress,
+                        tags: p.tags || [],
+                        color: p.color,
+                        notes: p.notes,
+                        deadline: p.deadline ? new Date(p.deadline) : undefined
+                    }));
+                    setProjects(mappedProjects);
+                }
+
+                // Load habits
+                const { data: habitsData } = await db.habits.getAll(user.id);
+                if (habitsData) {
+                    const mappedHabits: Habit[] = habitsData.map(h => ({
+                        id: h.id,
+                        title: h.title,
+                        streak: h.streak,
+                        completedDates: h.completed_dates || [],
+                        frequency: h.frequency as Habit['frequency'],
+                        category: h.category as Habit['category']
+                    }));
+                    setHabits(mappedHabits);
+                }
+
+                // Load chat sessions
+                const { data: sessionsData } = await db.chatSessions.getAll(user.id);
+                if (sessionsData && sessionsData.length > 0) {
+                    const mappedSessions: ChatSession[] = sessionsData.map(s => ({
+                        id: s.id,
+                        title: s.title,
+                        messages: (s.messages || []).map((m: any) => ({
+                            ...m,
+                            timestamp: new Date(m.timestamp)
+                        })),
+                        lastModified: new Date(s.last_modified)
+                    }));
+                    setChatSessions(mappedSessions);
+                    const sorted = [...mappedSessions].sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime());
+                    setCurrentSessionId(sorted[0].id);
+                } else if (chatSessions.length === 0) {
+                    createNewSession();
+                }
+
+                console.log('[Supabase] Data loaded successfully');
+
+            } catch (e) {
+                console.error("[Supabase] Data load error", e);
+                addToast('ERROR', 'Failed to load data from cloud. Using local fallback.');
+                // Fallback to localStorage
+                try {
+                    const data = storageService.getUserData(user.id);
+                    setTasks(data.tasks || []);
+                    setClients(data.clients || []);
+                    setProjects(data.projects || []);
+                } catch (e2) {
+                    console.error("Fallback also failed", e2);
+                }
+            }
+        };
+
+        loadData();
     }, [user?.id]);
+
+    // --- REAL-TIME SUBSCRIPTIONS FOR CROSS-DEVICE SYNC ---
+    useEffect(() => {
+        if (!user?.id || user.isGuest) return;
+
+        console.log('[Realtime] Setting up subscriptions for user:', user.id);
+
+        const unsubscribe = subscribeToChanges(
+            user.id,
+            // Task changes
+            (payload: any) => {
+                console.log('[Realtime] Task change:', payload.eventType);
+                if (payload.eventType === 'INSERT') {
+                    const t = payload.new;
+                    setTasks(prev => {
+                        if (prev.find(x => x.id === t.id)) return prev;
+                        return [...prev, {
+                            id: t.id, title: t.title, date: new Date(t.date), category: t.category,
+                            priority: t.priority, statusLabel: t.status_label, duration: t.duration,
+                            completed: t.completed, color: t.color, projectId: t.project_id, notes: t.notes
+                        }];
+                    });
+                } else if (payload.eventType === 'UPDATE') {
+                    const t = payload.new;
+                    setTasks(prev => prev.map(x => x.id === t.id ? {
+                        ...x, title: t.title, date: new Date(t.date), category: t.category,
+                        priority: t.priority, statusLabel: t.status_label, duration: t.duration,
+                        completed: t.completed, color: t.color, projectId: t.project_id, notes: t.notes
+                    } : x));
+                } else if (payload.eventType === 'DELETE') {
+                    setTasks(prev => prev.filter(x => x.id !== payload.old.id));
+                }
+            },
+            // Client changes
+            (payload: any) => {
+                console.log('[Realtime] Client change:', payload.eventType);
+                if (payload.eventType === 'INSERT') {
+                    const c = payload.new;
+                    setClients(prev => prev.find(x => x.id === c.id) ? prev : [...prev, {
+                        id: c.id, name: c.name, email: c.email || '', revenue: Number(c.revenue) || 0,
+                        status: c.status, notes: c.notes, avatar: c.avatar
+                    }]);
+                } else if (payload.eventType === 'UPDATE') {
+                    const c = payload.new;
+                    setClients(prev => prev.map(x => x.id === c.id ? {
+                        ...x, name: c.name, email: c.email || '', revenue: Number(c.revenue) || 0,
+                        status: c.status, notes: c.notes, avatar: c.avatar
+                    } : x));
+                } else if (payload.eventType === 'DELETE') {
+                    setClients(prev => prev.filter(x => x.id !== payload.old.id));
+                }
+            },
+            // Project changes
+            (payload: any) => {
+                console.log('[Realtime] Project change:', payload.eventType);
+                if (payload.eventType === 'INSERT') {
+                    const p = payload.new;
+                    setProjects(prev => prev.find(x => x.id === p.id) ? prev : [...prev, {
+                        id: p.id, title: p.title, client: p.client_name, clientId: p.client_id,
+                        status: p.status, price: Number(p.price) || 0, progress: p.progress,
+                        tags: p.tags || [], color: p.color, notes: p.notes,
+                        deadline: p.deadline ? new Date(p.deadline) : undefined
+                    }]);
+                } else if (payload.eventType === 'UPDATE') {
+                    const p = payload.new;
+                    setProjects(prev => prev.map(x => x.id === p.id ? {
+                        ...x, title: p.title, client: p.client_name, clientId: p.client_id,
+                        status: p.status, price: Number(p.price) || 0, progress: p.progress,
+                        tags: p.tags || [], color: p.color, notes: p.notes,
+                        deadline: p.deadline ? new Date(p.deadline) : undefined
+                    } : x));
+                } else if (payload.eventType === 'DELETE') {
+                    setProjects(prev => prev.filter(x => x.id !== payload.old.id));
+                }
+            },
+            // Habit changes
+            (payload: any) => {
+                console.log('[Realtime] Habit change:', payload.eventType);
+                if (payload.eventType === 'INSERT') {
+                    const h = payload.new;
+                    setHabits(prev => prev.find(x => x.id === h.id) ? prev : [...prev, {
+                        id: h.id, title: h.title, streak: h.streak,
+                        completedDates: h.completed_dates || [], frequency: h.frequency, category: h.category
+                    }]);
+                } else if (payload.eventType === 'UPDATE') {
+                    const h = payload.new;
+                    setHabits(prev => prev.map(x => x.id === h.id ? {
+                        ...x, title: h.title, streak: h.streak,
+                        completedDates: h.completed_dates || [], frequency: h.frequency, category: h.category
+                    } : x));
+                } else if (payload.eventType === 'DELETE') {
+                    setHabits(prev => prev.filter(x => x.id !== payload.old.id));
+                }
+            }
+        );
+
+        return unsubscribe;
+    }, [user?.id, user?.isGuest]);
+
 
     // --- DATA SAVING ---
     useEffect(() => {
@@ -288,49 +491,147 @@ function App() {
         }));
     };
 
-    const handleTaskCreate = (task: Task) => {
+    const handleTaskCreate = async (task: Task) => {
         if (!user) return;
+        // Update local state immediately
         const updatedTasks = Backend.tasks.create(user.id, task);
         setTasks(updatedTasks);
         addToast('SUCCESS', 'Task created successfully');
+
+        // Sync to cloud for non-guest users
+        if (!user.isGuest) {
+            try {
+                await db.tasks.create({
+                    id: task.id,
+                    user_id: user.id,
+                    title: task.title,
+                    date: task.date.toISOString(),
+                    category: task.category,
+                    priority: task.priority,
+                    status_label: task.statusLabel,
+                    duration: task.duration,
+                    completed: task.completed,
+                    color: task.color,
+                    project_id: task.projectId,
+                    notes: task.notes
+                });
+            } catch (e) {
+                console.error('[Supabase] Task create failed:', e);
+            }
+        }
     };
 
-    const handleTaskUpdate = (task: Task) => {
+    const handleTaskUpdate = async (task: Task) => {
         if (!user) return;
         const updatedTasks = Backend.tasks.update(user.id, task);
         setTasks(updatedTasks);
+
+        if (!user.isGuest) {
+            try {
+                await db.tasks.update(task.id, {
+                    title: task.title,
+                    date: task.date.toISOString(),
+                    category: task.category,
+                    priority: task.priority,
+                    status_label: task.statusLabel,
+                    duration: task.duration,
+                    completed: task.completed,
+                    color: task.color,
+                    project_id: task.projectId,
+                    notes: task.notes
+                });
+            } catch (e) {
+                console.error('[Supabase] Task update failed:', e);
+            }
+        }
     };
 
-    const handleTaskDelete = (id: string) => {
+    const handleTaskDelete = async (id: string) => {
         if (!user) return;
         const updatedTasks = Backend.tasks.delete(user.id, id);
         setTasks(updatedTasks);
         addToast('INFO', 'Task deleted');
+
+        if (!user.isGuest) {
+            try {
+                await db.tasks.delete(id);
+            } catch (e) {
+                console.error('[Supabase] Task delete failed:', e);
+            }
+        }
     };
 
-    const handleProjectCreate = (project: Project) => {
+    const handleProjectCreate = async (project: Project) => {
         if (!user) return;
         const updatedProjects = Backend.projects.create(user.id, project);
         setProjects(updatedProjects);
         addToast('SUCCESS', 'Project created');
+
+        if (!user.isGuest) {
+            try {
+                await db.projects.create({
+                    id: project.id,
+                    user_id: user.id,
+                    title: project.title,
+                    client_id: project.clientId,
+                    client_name: project.client,
+                    status: project.status,
+                    price: project.price,
+                    progress: project.progress,
+                    tags: project.tags,
+                    color: project.color,
+                    notes: project.notes,
+                    deadline: project.deadline?.toISOString()
+                });
+            } catch (e) {
+                console.error('[Supabase] Project create failed:', e);
+            }
+        }
     };
 
-    const handleProjectUpdate = (project: Project) => {
+    const handleProjectUpdate = async (project: Project) => {
         if (!user) return;
         const updatedProjects = Backend.projects.update(user.id, project);
         setProjects(updatedProjects);
         addToast('SUCCESS', 'Project updated');
+
+        if (!user.isGuest) {
+            try {
+                await db.projects.update(project.id, {
+                    title: project.title,
+                    client_id: project.clientId,
+                    client_name: project.client,
+                    status: project.status,
+                    price: project.price,
+                    progress: project.progress,
+                    tags: project.tags,
+                    color: project.color,
+                    notes: project.notes,
+                    deadline: project.deadline?.toISOString()
+                });
+            } catch (e) {
+                console.error('[Supabase] Project update failed:', e);
+            }
+        }
     };
 
-    const handleProjectDelete = (id: string) => {
+    const handleProjectDelete = async (id: string) => {
         if (!user) return;
         const result = Backend.projects.delete(user.id, id);
         setProjects(result.projects);
         setTasks(result.tasks);
         addToast('INFO', 'Project deleted (tasks unlinked)');
+
+        if (!user.isGuest) {
+            try {
+                await db.projects.delete(id);
+            } catch (e) {
+                console.error('[Supabase] Project delete failed:', e);
+            }
+        }
     };
 
-    const handleClientAdd = (client: Client, newProjects: Partial<Project>[]) => {
+    const handleClientAdd = async (client: Client, newProjects: Partial<Project>[]) => {
         if (!user) return;
         const finalProjects = newProjects.map(p => ({
             ...p,
@@ -343,9 +644,43 @@ function App() {
         setClients(result.clients);
         setProjects(result.projects);
         addToast('SUCCESS', 'Client added');
+
+        if (!user.isGuest) {
+            try {
+                await db.clients.create({
+                    id: client.id,
+                    user_id: user.id,
+                    name: client.name,
+                    email: client.email,
+                    revenue: client.revenue,
+                    status: client.status,
+                    notes: client.notes,
+                    avatar: client.avatar
+                });
+                // Also create the projects
+                for (const p of finalProjects) {
+                    await db.projects.create({
+                        id: p.id,
+                        user_id: user.id,
+                        title: p.title,
+                        client_id: client.id,
+                        client_name: client.name,
+                        status: p.status,
+                        price: p.price,
+                        progress: p.progress,
+                        tags: p.tags,
+                        color: p.color,
+                        notes: p.notes,
+                        deadline: p.deadline?.toISOString()
+                    });
+                }
+            } catch (e) {
+                console.error('[Supabase] Client create failed:', e);
+            }
+        }
     };
 
-    const handleClientUpdate = (client: Client, newProjects: Partial<Project>[]) => {
+    const handleClientUpdate = async (client: Client, newProjects: Partial<Project>[]) => {
         if (!user) return;
         const finalProjects = newProjects.map(p => ({
             ...p,
@@ -358,9 +693,24 @@ function App() {
         setClients(result.clients);
         setProjects(result.projects);
         addToast('SUCCESS', 'Client updated');
+
+        if (!user.isGuest) {
+            try {
+                await db.clients.update(client.id, {
+                    name: client.name,
+                    email: client.email,
+                    revenue: client.revenue,
+                    status: client.status,
+                    notes: client.notes,
+                    avatar: client.avatar
+                });
+            } catch (e) {
+                console.error('[Supabase] Client update failed:', e);
+            }
+        }
     };
 
-    const handleClientDelete = (id: string) => {
+    const handleClientDelete = async (id: string) => {
         if (!user) return;
         const result = Backend.clients.delete(user.id, id);
         setClients(result.clients);
@@ -368,6 +718,14 @@ function App() {
         setTasks(result.tasks);
         setFolders(result.folders);
         addToast('INFO', 'Client and associated data removed');
+
+        if (!user.isGuest) {
+            try {
+                await db.clients.delete(id);
+            } catch (e) {
+                console.error('[Supabase] Client delete failed:', e);
+            }
+        }
     };
 
     const createNewSession = useCallback(() => {
@@ -670,10 +1028,16 @@ function App() {
                     user={user as User}
                     tasks={tasks}
                     projects={projects}
+                    habits={habits}
                     onUpdateTask={handleTaskUpdate}
                     onDeleteTask={handleTaskDelete}
                     onAddTask={handleTaskCreate}
                     onUpdateUser={handleUpdateUser}
+                    onChangeColor={(taskId, color) => {
+                        const t = tasks.find(t => t.id === taskId);
+                        if (t) handleTaskUpdate({ ...t, color });
+                    }}
+                    onAddTasks={(newTasks) => newTasks.forEach(handleTaskCreate)}
                 />;
             case 'TASKS':
                 return <TasksPage

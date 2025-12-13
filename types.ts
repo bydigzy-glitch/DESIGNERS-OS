@@ -35,7 +35,7 @@ export interface Task {
   reminder?: number; // minutes before start (e.g., 15, 30, 60), undefined = no reminder
   priority?: 'HIGH' | 'MEDIUM' | 'LOW';
   statusLabel?: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
-  assignee?: string;
+  assignedTo?: string; // User ID of assignee
   projectId?: string;
   notes?: string;
 }
@@ -121,6 +121,7 @@ export interface UserPreferences {
   notifications: boolean;
   displayName?: string;
   navOrder?: ViewMode[]; // New field for sidebar order
+  geminiApiKey?: string;
 }
 
 export interface TeamMember {
@@ -193,6 +194,7 @@ export interface User {
   tokens: number; // Token balance for apps
   tokenWeekStart?: string; // ISO Date string for the start of the current token week
   notifications?: AppNotification[]; // In-app notifications
+  lastSeen?: Date;
 }
 
 export interface AppNotification {
@@ -203,9 +205,11 @@ export interface AppNotification {
   timestamp: Date;
   read: boolean;
   actionData?: {
-    type: 'TEAM_INVITE';
-    teamId: string;
-    teamName: string;
+    type: 'TEAM_INVITE' | 'CHAT_MESSAGE' | 'DEADLINE' | 'ROLE_ASSIGNMENT' | 'TASK_MODAL';
+    teamId?: string;
+    teamName?: string;
+    taskId?: string;
+    taskTitle?: string;
   };
 }
 

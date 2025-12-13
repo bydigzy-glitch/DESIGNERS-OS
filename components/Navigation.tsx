@@ -114,6 +114,9 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate,
         </div>
       </nav>
 
+      {/* MOBILE BOTTOM GRADIENT */}
+      <div className="md:hidden mobile-nav-gradient" />
+
       {/* MOBILE BOTTOM DOCK */}
       <nav className="md:hidden fixed bottom-6 left-6 right-6 h-[64px] bg-background/80 backdrop-blur-xl border border-border rounded-full shadow-2xl z-50 flex items-center justify-between px-2 pb-safe">
         {navOrder.slice(0, 5).map(id => {

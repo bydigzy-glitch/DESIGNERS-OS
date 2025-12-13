@@ -5,8 +5,10 @@
 @layer base {
   :root {
     /* Light Mode Defaults */
-    --background: 0 0% 98%;      /* Zinc 50 */
-    --foreground: 240 10% 3.9%;  /* Zinc 950 */
+    --background: 0 0% 98%;
+    /* Zinc 50 */
+    --foreground: 240 10% 3.9%;
+    /* Zinc 950 */
 
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -14,10 +16,12 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 25 95% 53%;       /* Orange 500 - TaskNovaPro Theme */
+    --primary: 25 95% 53%;
+    /* Orange 500 - TaskNovaPro Theme */
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 240 4.8% 95.9%; /* Zinc 100 */
+    --secondary: 240 4.8% 95.9%;
+    /* Zinc 100 */
     --secondary-foreground: 240 5.9% 10%;
 
     --muted: 240 4.8% 95.9%;
@@ -32,14 +36,16 @@
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 25 95% 53%;
-    
+
     --radius: 0.5rem;
   }
 
   .dark {
     /* Dark Mode Defaults */
-    --background: 240 10% 3.9%;  /* Zinc 950 */
-    --foreground: 0 0% 98%;      /* Zinc 50 */
+    --background: 240 10% 3.9%;
+    /* Zinc 950 */
+    --foreground: 0 0% 98%;
+    /* Zinc 50 */
 
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
@@ -47,10 +53,12 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 25 95% 53%;       /* Orange 500 - TaskNovaPro Theme */
+    --primary: 25 95% 53%;
+    /* Orange 500 - TaskNovaPro Theme */
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 240 3.7% 15.9%; /* Zinc 800 */
+    --secondary: 240 3.7% 15.9%;
+    /* Zinc 800 */
     --secondary-foreground: 0 0% 98%;
 
     --muted: 240 3.7% 15.9%;
@@ -70,7 +78,7 @@
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground;
   }
@@ -88,13 +96,72 @@
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
   border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
+}
+
+/* Mobile-first fixes */
+html,
+body {
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Prevent double-tap zoom */
+* {
+  touch-action: manipulation;
+}
+
+/* Mobile nav gradient overlay */
+.mobile-nav-gradient {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(to top, hsl(var(--background)) 0%, hsl(var(--background)) 40%, transparent 100%);
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* Safe area padding for iOS */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  }
+}
+
+/* Ensure chat input doesn't zoom on iOS */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+@media (max-width: 768px) {
+
+  /* Ensure content doesn't overflow on mobile */
+  .overflow-hidden {
+    overflow: hidden !important;
+  }
+
+  /* Add padding at bottom for mobile nav */
+  main {
+    padding-bottom: 100px !important;
+  }
 }

@@ -397,7 +397,15 @@ export const storageService = {
 
             if (existingIndex >= 0) {
                 const existing = users[existingIndex];
-                users[existingIndex] = { ...existing, ...user, preferences: { ...existing.preferences, ...user.preferences }, friends: user.friends || existing.friends, teamChat: user.teamChat || existing.teamChat };
+                users[existingIndex] = {
+                    ...existing,
+                    ...user,
+                    avatar: user.avatar || existing.avatar, // Preserve avatar if not provided
+                    preferences: { ...existing.preferences, ...user.preferences },
+                    friends: user.friends || existing.friends,
+                    teamChat: user.teamChat || existing.teamChat,
+                    notifications: user.notifications || existing.notifications // Preserve notifications
+                };
             } else {
                 users.push(user);
             }

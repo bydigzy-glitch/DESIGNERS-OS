@@ -79,7 +79,7 @@ function App() {
             setUser(safeUser);
             // Load notifications on session restore
             if (safeUser.notifications) {
-                setNotifications(safeUser.notifications);
+                setNotifications(safeUser.notifications.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             }
         }
 
@@ -103,7 +103,7 @@ function App() {
         setCurrentView('HQ');
         // Load notifications if user has any
         if (safeUser.notifications) {
-            setNotifications(safeUser.notifications);
+            setNotifications(safeUser.notifications.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
         }
     }, []);
 
@@ -132,7 +132,7 @@ function App() {
                     setUser(updatedUser);
                     // Sync notifications from updated user
                     if (updatedUser.notifications) {
-                        setNotifications(updatedUser.notifications);
+                        setNotifications(updatedUser.notifications.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
                     }
                 }
             }

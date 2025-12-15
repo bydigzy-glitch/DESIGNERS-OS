@@ -20,6 +20,7 @@ import { ChatOverlay } from './components/ChatOverlay';
 import { ManagerPage } from './components/ManagerPage';
 import { TeamPage } from './components/TeamPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
+import { AnimatedBackground } from './components/common/AnimatedBackground';
 import { ToastContainer, ToastMessage, ToastType } from './components/common/Toast';
 import { Message, ViewMode, Task, FileAsset, Folder, User, ChatSession, Client, Project, Habit, CanvasItem, AppNotification } from './types';
 import { RECOVERY_INSTRUCTION } from './constants';
@@ -1410,6 +1411,7 @@ function App() {
 
     return (
         <div className="flex flex-col md:flex-row h-[100dvh] bg-app-bg text-text-primary overflow-hidden animate-in fade-in duration-500 relative">
+            <AnimatedBackground />
             <DotPattern
                 className={cn(
                     "[mask-image:radial-gradient(900px_circle_at_center,white,transparent)]",

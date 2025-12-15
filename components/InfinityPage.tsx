@@ -1,23 +1,42 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { CanvasItem } from '../types';
-import { Plus, Minus, Move, Image as ImageIcon, Trash2, StickyNote, Type, MessageSquare, Undo, Redo } from 'lucide-react';
+import {
+  Plus, Minus, Move, Image as ImageIcon, Trash2, StickyNote, Type,
+  MessageSquare, Undo, Redo, Home, Link as LinkIcon, Bold, Italic,
+  AlignLeft, AlignCenter, AlignRight, Check, X, MousePointer2
+} from 'lucide-react';
 import { FadeIn } from './common/AnimatedComponents';
 import { DotPattern } from "@/components/magicui/dot-pattern";
 import { cn } from "@/lib/utils";
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Separator } from '@/components/ui/separator';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from '@/components/ui/context-menu';
 
 interface InfinityPageProps {
   items: CanvasItem[];
   setItems: React.Dispatch<React.SetStateAction<CanvasItem[]>>;
 }
 
+const MIN_FONT_SIZE = 12;
+const MAX_FONT_SIZE = 100;
+
 export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) => {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
-  const [draggedItem, setDraggedItem] = useState<{ id: string, startX: number, startY: number, initialX: number, initialY: number } | null>(null);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-  const [tool, setTool] = useState<'SELECT' | 'COMMENT'>('SELECT');
+  const [tool, setTool] = useState<'SELECT' | 'COMMENT' | 'CONNECT' | 'HAND'>('SELECT');
+
+  // Dragging
+  const [draggedItem, setDraggedItem] = useState<{ id: string, startX: number, startY: number, initialX: number, initialY: number } | null>(null);
+
+  // Connections
+  const [connectingNodeId, setConnectingNodeId] = useState<string | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  // Selection
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   // History Stack for Undo/Redo
   const [history, setHistory] = useState<CanvasItem[][]>([]);
@@ -31,7 +50,7 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
       setHistory([items]);
       setHistoryIndex(0);
     }
-  }, []); // Only runs once on mount/init logic handled inside if needed, but really we want to track changes
+  }, []);
 
   const pushToHistory = (newItems: CanvasItem[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -48,54 +67,83 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
     }
   }, [history, historyIndex, setItems]);
 
-  // Capture Undo Shortcut
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const nextItems = history[historyIndex + 1];
+      setItems(nextItems);
+      setHistoryIndex(historyIndex + 1);
+    }
+  }, [history, historyIndex, setItems]);
+
+  // Capture Undo/Redo Shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        handleUndo();
+        if (e.shiftKey) {
+          e.preventDefault();
+          handleRedo();
+        } else {
+          e.preventDefault();
+          handleUndo();
+        }
+      }
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedItemId && document.activeElement === canvasRef.current) {
+          deleteItem(selectedItemId);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo]);
+  }, [handleUndo, handleRedo, selectedItemId]);
 
-  // --- PANNING LOGIC ---
+
+  // --- PANNING & ZOOM ---
   const handleMouseDown = (e: React.MouseEvent) => {
-    // If tool is COMMENT, add comment
+    // If COMMENT tool
     if (tool === 'COMMENT') {
       const x = (e.clientX - offset.x) / scale;
       const y = (e.clientY - offset.y) / scale;
       const newComment: CanvasItem = {
         id: Date.now().toString(),
         type: 'COMMENT',
-        x: x - 100, // center it roughly
+        x: x - 100,
         y: y - 50,
         width: 200,
         height: 100,
-        content: 'New Comment',
+        content: '',
         color: '#fca5a5',
         zIndex: 100
       };
       const newItems = [...items, newComment];
       setItems(newItems);
       pushToHistory(newItems);
-      setTool('SELECT'); // Revert to select
+      setTool('SELECT');
       return;
     }
 
-    // Middle mouse or Space+Click initiates pan
-    if (e.button === 1 || e.shiftKey || tool === 'SELECT') {
-      // Check if clicking on empty space
-      if (e.target === canvasRef.current) {
+    if (e.button === 1 || e.shiftKey || tool === 'HAND') {
+      if (e.target === canvasRef.current || (e.target as HTMLElement).classList.contains('canvas-bg')) {
         setIsPanning(true);
         setPanStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
         e.preventDefault();
       }
+    } else if (e.target === canvasRef.current) {
+      // Deselect if clicking empty space
+      setSelectedItemId(null);
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    // Update mouse position for dynamic connection line
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      setMousePos({
+        x: (e.clientX - rect.left - offset.x) / scale,
+        y: (e.clientY - rect.top - offset.y) / scale
+      });
+    }
+
     if (isPanning) {
       setOffset({
         x: e.clientX - panStart.x,
@@ -104,7 +152,6 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
     }
 
     if (draggedItem) {
-      // Calculate delta considering zoom scale
       const deltaX = (e.clientX - draggedItem.startX) / scale;
       const deltaY = (e.clientY - draggedItem.startY) / scale;
 
@@ -119,7 +166,6 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
 
   const handleMouseUp = () => {
     if (draggedItem) {
-      // Commit drag to history
       pushToHistory(items);
     }
     setIsPanning(false);
@@ -131,17 +177,50 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
       e.preventDefault();
       const zoomSensitivity = 0.001;
       const newScale = Math.min(Math.max(0.1, scale - e.deltaY * zoomSensitivity), 5);
+
+      // Calculate zoom towards mouse position
+      // Simple approximation for now (zoom to center or top-left)
       setScale(newScale);
     } else {
-      // Standard Panning
       setOffset(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
     }
   };
 
-  // --- ITEM DRAGGING LOGIC ---
+  const resetView = () => {
+    setOffset({ x: 0, y: 0 });
+    setScale(1);
+  };
+
+  // --- ITEM LOGIC ---
   const startDragItem = (e: React.MouseEvent, item: CanvasItem) => {
+    if (tool === 'CONNECT') {
+      e.stopPropagation();
+      if (connectingNodeId === null) {
+        setConnectingNodeId(item.id);
+      } else {
+        // Complete connection
+        if (connectingNodeId !== item.id) {
+          setItems(prev => prev.map(i => {
+            if (i.id === connectingNodeId) {
+              const existing = i.connectedTo || [];
+              if (!existing.includes(item.id)) {
+                return { ...i, connectedTo: [...existing, item.id] };
+              }
+            }
+            return i;
+          }));
+          pushToHistory(items);
+        }
+        setConnectingNodeId(null);
+      }
+      return;
+    }
+
     if (tool !== 'SELECT') return;
+
     e.stopPropagation();
+    setSelectedItemId(item.id);
+
     setDraggedItem({
       id: item.id,
       startX: e.clientX,
@@ -151,66 +230,63 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
     });
   };
 
-  // --- PASTING LOGIC ---
-  useEffect(() => {
-    const handlePaste = (e: ClipboardEvent) => {
-      const clipboardItems = e.clipboardData?.items;
-      if (!clipboardItems) return;
-
-      for (let i = 0; i < clipboardItems.length; i++) {
-        const item = clipboardItems[i];
-        if (item.type.indexOf('image') !== -1) {
-          const blob = item.getAsFile();
-          if (blob) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              if (event.target?.result) {
-                const newItem: CanvasItem = {
-                  id: Date.now().toString(),
-                  type: 'IMAGE',
-                  x: (-offset.x + window.innerWidth / 2) / scale, // Center relative to viewport
-                  y: (-offset.y + window.innerHeight / 2) / scale,
-                  width: 300,
-                  content: event.target.result as string,
-                  zIndex: 1
-                };
-                const newItems = [...items, newItem];
-                setItems(newItems);
-                pushToHistory(newItems);
-              }
-            };
-            reader.readAsDataURL(blob);
-          }
-        } else if (item.type.indexOf('text') !== -1) {
-          item.getAsString((text) => {
-            const newItem: CanvasItem = {
-              id: Date.now().toString(),
-              type: 'NOTE',
-              x: (-offset.x + window.innerWidth / 2) / scale,
-              y: (-offset.y + window.innerHeight / 2) / scale,
-              width: 200,
-              height: 200,
-              content: text,
-              color: '#fef3c7',
-              zIndex: 1
-            };
-            const newItems = [...items, newItem];
-            setItems(newItems);
-            pushToHistory(newItems);
-          });
-        }
-      }
-    };
-
-    window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
-  }, [offset, scale, setItems, items, history, historyIndex]);
-
   const deleteItem = (id: string) => {
     const newItems = items.filter(i => i.id !== id);
-    setItems(newItems);
-    pushToHistory(newItems);
+    // Also remove any connections to this item
+    const cleanedItems = newItems.map(i => ({
+      ...i,
+      connectedTo: i.connectedTo?.filter(targetId => targetId !== id)
+    }));
+    setItems(cleanedItems);
+    pushToHistory(cleanedItems);
+    setSelectedItemId(null);
   };
+
+  const updateItemStyle = (id: string, newStyle: Partial<NonNullable<CanvasItem['style']>>) => {
+    setItems(prev => prev.map(i => {
+      if (i.id === id) {
+        return { ...i, style: { ...(i.style || {}), ...newStyle } };
+      }
+      return i;
+    }));
+    pushToHistory(items);
+  };
+
+  // --- DRAG AND DROP UPLOAD ---
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const files = Array.from(e.dataTransfer.files);
+    const droppedItems: CanvasItem[] = [];
+
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            const mouseX = (e.clientX - offset.x) / scale;
+            const mouseY = (e.clientY - offset.y) / scale;
+
+            const newItem: CanvasItem = {
+              id: Date.now().toString() + Math.random(),
+              type: 'IMAGE',
+              x: mouseX,
+              y: mouseY,
+              width: 300,
+              content: event.target.result as string,
+              zIndex: items.length + 1
+            };
+            setItems(prev => [...prev, newItem]);
+            pushToHistory([...items, newItem]);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+
+  const selectedItem = items.find(i => i.id === selectedItemId);
 
   return (
     <div
@@ -221,8 +297,11 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+      tabIndex={0}
       style={{
-        cursor: isPanning ? 'grabbing' : (tool === 'COMMENT' ? 'text' : 'default'),
+        cursor: isPanning || tool === 'HAND' ? 'grab' : (tool === 'COMMENT' ? 'text' : (tool === 'CONNECT' ? 'crosshair' : 'default')),
       }}
     >
       <DotPattern
@@ -232,144 +311,253 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
         cy={1}
         cr={1}
         className={cn(
-          "[mask-image:radial-gradient(800px_circle_at_center,white,transparent)]",
-          "fill-primary/20"
+          "[mask-image:radial-gradient(1200px_circle_at_center,white,transparent)]",
+          "fill-primary/20 canvas-bg pointer-events-none"
         )}
       />
-      {/* Controls */}
-      <FadeIn className="absolute top-4 left-4 z-50 flex flex-col gap-2">
-        <div className="bg-card border border-border rounded-xl p-2 shadow-lg flex flex-col gap-2">
-          <button onClick={() => setScale(s => Math.min(s + 0.1, 5))} className="p-1 hover:bg-secondary rounded" title="Zoom In"><Plus size={16} /></button>
-          <span className="text-xs text-center font-mono">{Math.round(scale * 100)}%</span>
-          <button onClick={() => setScale(s => Math.max(s - 0.1, 0.1))} className="p-1 hover:bg-secondary rounded" title="Zoom Out"><Minus size={16} /></button>
-        </div>
 
-        <div className="bg-card border border-border rounded-xl p-2 shadow-lg flex flex-col gap-2">
-          <button
-            onClick={() => setTool('SELECT')}
-            className={`p-1.5 rounded transition-colors ${tool === 'SELECT' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
-            title="Select / Pan"
-          >
-            <Move size={16} />
-          </button>
-          <button
-            onClick={() => setTool('COMMENT')}
-            className={`p-1.5 rounded transition-colors ${tool === 'COMMENT' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
-            title="Add Comment"
-          >
-            <MessageSquare size={16} />
-          </button>
-          <button
-            onClick={handleUndo}
-            className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground"
-            title="Undo (Ctrl+Z)"
-            disabled={historyIndex <= 0}
-          >
-            <Undo size={16} />
-          </button>
-        </div>
-
-        <div className="bg-card border border-border rounded-xl p-4 shadow-lg text-xs text-muted-foreground max-w-xs">
-          <p className="font-bold mb-1 text-foreground">Infinity Board</p>
-          <ul className="list-disc pl-4 space-y-1">
-            <li><strong>Ctrl+V</strong> to paste images/text</li>
-            <li><strong>Scroll</strong> to Pan</li>
-            <li><strong>Ctrl+Scroll</strong> to Zoom</li>
-          </ul>
+      {/* --- TOOLBAR --- */}
+      <FadeIn className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-background/80 backdrop-blur-md border border-border/50 p-2 rounded-2xl shadow-xl">
+        <Button
+          variant={tool === 'SELECT' ? "default" : "ghost"} size="icon" className="h-9 w-9" onClick={() => setTool('SELECT')} title="Select (V)"
+        >
+          <MousePointer2 size={18} />
+        </Button>
+        <Button
+          variant={tool === 'HAND' ? "default" : "ghost"} size="icon" className="h-9 w-9" onClick={() => setTool('HAND')} title="Pan (H)"
+        >
+          <Move size={18} />
+        </Button>
+        <Button
+          variant={tool === 'CONNECT' ? "default" : "ghost"} size="icon" className="h-9 w-9" onClick={() => setTool('CONNECT')} title="Connect (C)"
+        >
+          <LinkIcon size={18} />
+        </Button>
+        <Button
+          variant={tool === 'COMMENT' ? "default" : "ghost"} size="icon" className="h-9 w-9" onClick={() => setTool('COMMENT')} title="Comment (M)"
+        >
+          <MessageSquare size={18} />
+        </Button>
+        <Separator orientation="vertical" className="h-6" />
+        <Button
+          variant="ghost" size="icon" className="h-9 w-9" onClick={resetView} title="Reset View"
+        >
+          <Home size={18} />
+        </Button>
+        <div className="flex items-center gap-1 border-l border-border pl-2 ml-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleUndo} disabled={historyIndex <= 0}><Undo size={14} /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRedo} disabled={historyIndex >= history.length - 1}><Redo size={14} /></Button>
         </div>
       </FadeIn>
 
+      <div className="absolute top-6 right-6 z-50 bg-background/50 backdrop-blur border border-border rounded-lg px-2 py-1 text-xs font-mono">
+        {Math.round(scale * 100)}%
+      </div>
+
+      {/* --- SELECTED ITEM FORMATTING TOOLBAR --- */}
+      {selectedItem && selectedItem.type === 'NOTE' && (
+        <FadeIn className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 bg-background/90 backdrop-blur-xl border border-border rounded-xl p-2 shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5">
+          <Button
+            variant={selectedItem.style?.fontWeight === 'bold' ? 'secondary' : 'ghost'}
+            size="icon" className="h-8 w-8"
+            onClick={() => updateItemStyle(selectedItem.id, { fontWeight: selectedItem.style?.fontWeight === 'bold' ? 'normal' : 'bold' })}
+          >
+            <Bold size={14} />
+          </Button>
+          <Button
+            variant={selectedItem.style?.fontStyle === 'italic' ? 'secondary' : 'ghost'}
+            size="icon" className="h-8 w-8"
+            onClick={() => updateItemStyle(selectedItem.id, { fontStyle: selectedItem.style?.fontStyle === 'italic' ? 'normal' : 'italic' })}
+          >
+            <Italic size={14} />
+          </Button>
+          <Separator orientation="vertical" className="h-6" />
+          <div className="flex items-center gap-2 px-2">
+            <span className="text-xs text-muted-foreground">Size</span>
+            <Slider
+              value={[selectedItem.style?.fontSize || 14]}
+              min={MIN_FONT_SIZE} max={MAX_FONT_SIZE} step={1}
+              className="w-24"
+              onValueChange={([val]) => updateItemStyle(selectedItem.id, { fontSize: val })}
+            />
+            <span className="text-xs font-mono w-4">{selectedItem.style?.fontSize || 14}</span>
+          </div>
+          <Separator orientation="vertical" className="h-6" />
+          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => deleteItem(selectedItem.id)}>
+            <Trash2 size={14} />
+          </Button>
+        </FadeIn>
+      )}
+
+
+      {/* --- CANVAS CONTENT --- */}
       <div
         className="absolute origin-top-left transition-transform duration-75 ease-linear will-change-transform"
         style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}
       >
+        {/* CONNECTIONS LAYER */}
+        <svg className="absolute top-0 left-0 w-[50000px] h-[50000px] pointer-events-none -z-10 overflow-visible">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="gray" />
+            </marker>
+          </defs>
+          {items.map(source => (
+            source.connectedTo?.map(targetId => {
+              const target = items.find(i => i.id === targetId);
+              if (!target) return null;
+              const sx = source.x + (source.width || 200) / 2;
+              const sy = source.y + (source.height || 100) / 2;
+              const tx = target.x + (target.width || 200) / 2;
+              const ty = target.y + (target.height || 100) / 2;
+              return (
+                <line
+                  key={`${source.id}-${target.id}`}
+                  x1={sx} y1={sy} x2={tx} y2={ty}
+                  stroke="gray" strokeWidth="2"
+                  markerEnd="url(#arrowhead)"
+                  strokeDasharray="5,5"
+                />
+              );
+            })
+          ))}
+          {/* Active Connection Line */}
+          {tool === 'CONNECT' && connectingNodeId && (
+            (() => {
+              const source = items.find(i => i.id === connectingNodeId);
+              if (!source) return null;
+              const sx = source.x + (source.width || 200) / 2;
+              const sy = source.y + (source.height || 100) / 2;
+              return (
+                <line
+                  x1={sx} y1={sy} x2={mousePos.x} y2={mousePos.y}
+                  stroke="hsl(var(--primary))" strokeWidth="2"
+                  strokeDasharray="5,5"
+                  className="animate-pulse"
+                />
+              );
+            })()
+          )}
+        </svg>
+
         {items.map(item => (
-          <div
-            key={item.id}
-            onMouseDown={(e) => startDragItem(e, item)}
-            className={`absolute group ${tool === 'SELECT' ? 'cursor-grab active:cursor-grabbing' : ''}`}
-            style={{
-              left: item.x,
-              top: item.y,
-              zIndex: item.zIndex,
-              width: item.width,
-              height: item.height
-            }}
-          >
-            {item.type === 'IMAGE' && (
-              <div className="relative border-4 border-transparent hover:border-primary/50 transition-colors rounded-lg">
-                <img
-                  src={item.content}
-                  alt="Canvas Item"
-                  className="w-full h-auto rounded-md shadow-2xl pointer-events-none select-none"
-                  style={{ maxWidth: '600px' }}
-                />
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
-                  className="absolute -top-3 -right-3 bg-red-500 text-white p-1.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            )}
-
-            {item.type === 'NOTE' && (
+          <ContextMenu key={item.id}>
+            <ContextMenuTrigger>
               <div
-                className="p-4 shadow-xl rounded-sm text-black flex flex-col relative group hover:ring-2 ring-primary/50 transition-all"
-                style={{ backgroundColor: item.color || '#fef3c7', minHeight: '150px' }}
+                onMouseDown={(e) => startDragItem(e, item)}
+                className={cn(
+                  "absolute group transition-shadow duration-200",
+                  selectedItemId === item.id ? "ring-2 ring-primary shadow-2xl z-50" : "hover:ring-1 hover:ring-primary/50",
+                  tool === 'CONNECT' ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'
+                )}
+                style={{
+                  left: item.x,
+                  top: item.y,
+                  zIndex: item.zIndex,
+                  width: item.width,
+                  height: item.height
+                }}
               >
-                <textarea
-                  defaultValue={item.content}
-                  className="bg-transparent w-full h-full resize-none outline-none text-sm font-handwriting"
-                  onMouseDown={(e) => e.stopPropagation()} // Allow text selection
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setItems(prev => prev.map(i => i.id === item.id ? { ...i, content: val } : i));
-                  }}
-                  onBlur={() => pushToHistory(items)} // Save state on blur
-                />
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 size={10} />
-                </button>
-              </div>
-            )}
-
-            {item.type === 'COMMENT' && (
-              <div
-                className="p-3 shadow-lg rounded-xl bg-card border border-border flex flex-col relative group hover:ring-2 ring-primary/50 transition-all"
-                style={{ minWidth: '200px' }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">
-                    U
+                {item.type === 'IMAGE' && (
+                  <div className="relative rounded-lg overflow-hidden h-full">
+                    <img
+                      src={item.content}
+                      alt="Node"
+                      className="w-full h-full object-cover pointer-events-none select-none"
+                      style={{
+                        opacity: tool === 'CONNECT' && connectingNodeId && connectingNodeId !== item.id ? 0.8 : 1
+                      }}
+                    />
                   </div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Comment</span>
-                </div>
-                <textarea
-                  defaultValue={item.content}
-                  className="bg-transparent w-full h-full resize-none outline-none text-xs text-foreground min-h-[40px]"
-                  placeholder="Add a comment..."
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setItems(prev => prev.map(i => i.id === item.id ? { ...i, content: val } : i));
-                  }}
-                  onBlur={() => pushToHistory(items)}
-                />
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 size={10} />
-                </button>
+                )}
+
+                {item.type === 'NOTE' && (
+                  <div
+                    className="p-4 shadow-lg rounded-md flex flex-col h-full bg-[#fef3c7] text-black"
+                  >
+                    <textarea
+                      defaultValue={item.content}
+                      className="bg-transparent w-full h-full resize-none outline-none font-medium"
+                      style={{
+                        fontSize: item.style?.fontSize || 14,
+                        fontWeight: item.style?.fontWeight || 'normal',
+                        fontStyle: item.style?.fontStyle || 'normal',
+                        textAlign: item.style?.textAlign || 'left',
+                        fontFamily: 'inherit' // Or handwritten font
+                      }}
+                      onMouseDown={(e) => e.stopPropagation()} // Allow text editing
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setItems(prev => prev.map(i => i.id === item.id ? { ...i, content: val } : i));
+                      }}
+                      onBlur={() => pushToHistory(items)}
+                      placeholder="Type something..."
+                    />
+                  </div>
+                )}
+
+                {item.type === 'COMMENT' && (
+                  <div
+                    className="p-3 shadow-md rounded-xl bg-card border border-border flex flex-col h-full"
+                  >
+                    <div className="flex items-center gap-2 mb-1 opacity-50">
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                      <span className="text-[10px] font-bold uppercase">Comment</span>
+                    </div>
+                    <textarea
+                      defaultValue={item.content}
+                      className="bg-transparent w-full h-full resize-none outline-none text-sm"
+                      style={{ fontSize: 13 }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setItems(prev => prev.map(i => i.id === item.id ? { ...i, content: val } : i));
+                      }}
+                      onBlur={() => pushToHistory(items)}
+                      placeholder="Add comment..."
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </ContextMenuTrigger>
+            <ContextMenuContent className="w-48">
+              <ContextMenuItem onClick={() => {
+                // Duplicate logic
+                const newItem = { ...item, id: Date.now().toString(), x: item.x + 20, y: item.y + 20 };
+                setItems(prev => [...prev, newItem]);
+                pushToHistory([...items, newItem]);
+              }}>
+                Duplicate
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => {
+                // Bring to front
+                const maxZ = Math.max(...items.map(i => i.zIndex || 0));
+                setItems(prev => prev.map(i => i.id === item.id ? { ...i, zIndex: maxZ + 1 } : i));
+              }}>
+                Bring to Front
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => {
+                // Send to back
+                const minZ = Math.min(...items.map(i => i.zIndex || 0));
+                setItems(prev => prev.map(i => i.id === item.id ? { ...i, zIndex: minZ - 1 } : i));
+              }}>
+                Send to Back
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              <ContextMenuItem className="text-red-500 focus:text-red-500" onClick={() => deleteItem(item.id)}>
+                <Trash2 size={14} className="mr-2" /> Delete
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
         ))}
       </div>
+
+      {/* --- INSTRUCTION TOAST FOR CONNECT MODE --- */}
+      {tool === 'CONNECT' && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg text-sm font-medium animate-in fade-in slide-in-from-bottom-5 pointer-events-none">
+          {connectingNodeId ? "Click another note to connect" : "Select a note to start connection"}
+        </div>
+      )}
     </div>
   );
 };

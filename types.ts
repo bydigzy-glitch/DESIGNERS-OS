@@ -84,6 +84,13 @@ export interface CanvasItem {
   color?: string; // For notes
   zIndex: number;
   author?: string; // For comments
+  style?: {
+    fontSize?: number;
+    fontWeight?: 'normal' | 'bold';
+    fontStyle?: 'normal' | 'italic';
+    textAlign?: 'left' | 'center' | 'right';
+  };
+  connectedTo?: string[]; // IDs of items this item is connected to
 }
 
 export interface ContentAnalysisResult {

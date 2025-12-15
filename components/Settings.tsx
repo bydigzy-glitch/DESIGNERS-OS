@@ -203,6 +203,7 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                                 { name: 'Indigo', primary: '239 84% 67%', preview: 'bg-indigo-500' },
                                 { name: 'Red', primary: '0 72.2% 50.6%', preview: 'bg-red-500' },
                                 { name: 'Blue', primary: '221.2 83.2% 53.3%', preview: 'bg-blue-500' },
+                                { name: 'Taupe', primary: '22 17% 29%', preview: 'bg-[#54463A]' },
                             ].map(color => (
                                 <button
                                     key={color.name}

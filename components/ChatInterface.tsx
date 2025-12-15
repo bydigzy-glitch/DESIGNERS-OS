@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { GradientGlobe } from '@/components/ui/GradientGlobe';
 
 interface ChatInterfaceProps {
+  // ... existing interface ...
   user: User | null;
   messages: Message[];
   isLoading: boolean;
@@ -30,6 +32,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   sessions, currentSessionId, onSelectSession, onCreateSession, onDeleteSession,
   hideSidebar = false, overlayMode = false, tasks = []
 }) => {
+  // ... existing state ...
   const [inputText, setInputText] = useState('');
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [isIgniteMode, setIsIgniteMode] = useState(false);
@@ -152,9 +155,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div className="flex-shrink-0 border-b border-border/50 px-6 py-3 bg-background/80 backdrop-blur-sm">
             <div className="flex items-center justify-between max-w-4xl mx-auto">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot size={18} className="text-primary" />
-                </div>
+                <GradientGlobe size={32} />
                 <div>
                   <h2 className="text-sm font-semibold text-foreground">AI Assistant</h2>
                   <p className="text-xs text-muted-foreground">
@@ -172,7 +173,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     onClick={() => setIsIgniteMode(!isIgniteMode)}
                     className="gap-2"
                   >
-                    <Sparkles size={14} className={isIgniteMode ? "fill-current" : ""} />
+                    {isIgniteMode ? (
+                      <GradientGlobe size={16} />
+                    ) : (
+                      <Sparkles size={14} className="" />
+                    )}
                     <span className="hidden sm:inline">Ignite</span>
                   </Button>
                 </TooltipTrigger>
@@ -190,8 +195,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {messages.length === 0 ? (
               // Empty State - Centered and Minimal
               <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <Bot size={32} className="text-primary" />
+                <div className="flex items-center justify-center">
+                  <GradientGlobe size={80} />
                 </div>
                 <div className="space-y-2">
                   <h1 className="text-2xl font-bold text-foreground">How can I help you today?</h1>
@@ -199,6 +204,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     Ask me anything, or use <Badge variant="secondary" className="mx-1">@</Badge> to reference your tasks
                   </p>
                 </div>
+
 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg mt-8">

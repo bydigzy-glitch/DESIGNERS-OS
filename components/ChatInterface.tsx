@@ -296,8 +296,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors flex items-center gap-3 group"
                     >
                       <div className={`w-2 h-2 rounded-full ${task.priority === 'HIGH' ? 'bg-red-500' :
-                          task.priority === 'MEDIUM' ? 'bg-yellow-500' :
-                            'bg-blue-500'
+                        task.priority === 'MEDIUM' ? 'bg-yellow-500' :
+                          'bg-blue-500'
                         }`} />
                       <span className="text-sm text-foreground group-hover:text-primary transition-colors flex-1 truncate">
                         {task.title}
@@ -309,66 +309,82 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             )}
 
             {/* Input Form */}
-            <form onSubmit={handleSubmit} className="relative">
-              <div className="flex items-end gap-2 bg-card border border-border rounded-2xl p-2 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+            <form onSubmit={handleSubmit} className="relative w-full">
+              {/* New Gradient Border Container */}
+              <div className="relative flex w-full flex-col overflow-hidden rounded-[16px] p-[1.5px]">
+                {/* Gradient Background Layer */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#7e7e7e] via-[#363636] to-[#363636] pointer-events-none" />
 
-                {/* Attach Button */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex-shrink-0"
-                    >
-                      <Paperclip size={18} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Attach image</p>
-                  </TooltipContent>
-                </Tooltip>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
+                {/* Bloom Effect */}
+                <div className="absolute -left-[10px] -top-[10px] h-[30px] w-[30px] blur-[1px] bg-[radial-gradient(ellipse_at_center,#ffffff,rgba(255,255,255,0.3),rgba(255,255,255,0.1),transparent_70%)] pointer-events-none" />
 
-                {/* Text Input */}
-                <textarea
-                  ref={inputRef}
-                  value={inputText}
-                  onChange={handleInputChange}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmit();
-                    }
-                  }}
-                  placeholder={`Message AI... (use @ to mention tasks)`}
-                  className="flex-1 bg-transparent border-none focus:outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground min-h-[40px] max-h-[200px] py-2.5 scrollbar-hide"
-                  rows={1}
-                />
+                {/* Inner Content - Black bg */}
+                <div className="relative flex w-full flex-col overflow-hidden rounded-[15px] bg-black/50 backdrop-blur-sm">
 
-                {/* Send Button */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="submit"
-                      size="icon"
-                      disabled={(!inputText.trim() && !pendingImage) || isLoading}
-                      className="flex-shrink-0 rounded-xl"
-                    >
-                      <Send size={18} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Send message (Enter)</p>
-                  </TooltipContent>
-                </Tooltip>
+                  {/* Textarea Wrapper */}
+                  <div className="relative flex w-full">
+                    <textarea
+                      ref={inputRef}
+                      value={inputText}
+                      onChange={handleInputChange}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSubmit();
+                        }
+                      }}
+                      placeholder={`Message AI... (use @ to mention tasks)`}
+                      className="w-full resize-none border-none bg-transparent px-4 py-3 text-sm text-white focus:outline-none placeholder:text-[#f3f6fd] placeholder:transition-all placeholder:duration-300 focus:placeholder:text-[#363636] min-h-[50px] max-h-[200px] scrollbar-hide"
+                      rows={1}
+                    />
+                  </div>
+
+                  {/* Options Wrapper - Buttons */}
+                  <div className="flex items-end justify-between p-2.5">
+                    <div className="flex gap-2">
+                      {/* Attach Button */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex items-center justify-center text-white/10 hover:text-white hover:-translate-y-1 transition-all duration-300 p-1"
+                          >
+                            <Paperclip size={20} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p>Attach image</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                      />
+                    </div>
+
+                    {/* Submit Button */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="submit"
+                          disabled={(!inputText.trim() && !pendingImage) || isLoading}
+                          className="group relative flex items-center justify-center rounded-[10px] bg-gradient-to-t from-[#292929] via-[#555555] to-[#292929] p-[2px] shadow-[inset_0_6px_2px_-4px_rgba(255,255,255,0.5)] active:scale-95 transition-all duration-150 border-none outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                        >
+                          <div className="rounded-[8px] bg-black/10 p-1.5 backdrop-blur-[3px] text-[#8b8b8b] group-hover:text-[#f3f6fd] transition-colors duration-300 flex items-center justify-center">
+                            <Send size={18} className="transition-all duration-300 group-hover:drop-shadow-[0_0_5px_#ffffff] group-focus:scale-110 group-focus:-translate-x-0.5 group-focus:translate-y-0.5 group-focus:rotate-45" />
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>Send message (Enter)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
               </div>
 
               {/* Helper Text */}

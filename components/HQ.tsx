@@ -200,7 +200,9 @@ export const HQ: React.FC<HQProps> = ({
                                 <BorderBeam
                                     size={40}
                                     duration={3}
-                                    className="from-transparent via-indigo-500 to-transparent opacity-70"
+                                    colorFrom="hsl(var(--primary))"
+                                    colorTo="hsl(var(--primary) / 0)"
+                                    className="opacity-70"
                                 />
                             </Button>
                         </TooltipTrigger>

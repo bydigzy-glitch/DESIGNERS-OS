@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Task, ViewMode, Client, Project, User, Habit } from '../types';
 import { Zap, Plus, CheckCircle2, Briefcase, Sparkles, Flame, CheckSquare, Calendar, Trash2, ArrowUpRight, TrendingUp, MoreHorizontal, FileText, MessageSquare, Clock, AlertTriangle, Star, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BorderBeam } from "@/components/magicui/border-beam";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { EmptyState } from './common/EmptyState';
@@ -76,7 +77,7 @@ const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
 
         const getY = (val: number) => height - ((val - minVal) / (maxVal - minVal)) * height;
 
-        let d = `M 0 ${getY(data[0])}`;
+        let d = `M 0 ${getY(data[0])} `;
         for (let i = 1; i < data.length; i++) {
             const x = i * stepX;
             const y = getY(data[i]);
@@ -86,7 +87,7 @@ const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
             const cp1y = prevY;
             const cp2x = x - (stepX / 2);
             const cp2y = y;
-            d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y}`;
+            d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y} `;
         }
         return d;
     };
@@ -111,7 +112,7 @@ const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
             </div>
 
             <div className="flex-1 w-full relative">
-                <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                <svg viewBox={`0 0 ${width} ${height} `} className="w-full h-full overflow-visible" preserveAspectRatio="none">
                     <defs>
                         <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
@@ -191,10 +192,16 @@ export const HQ: React.FC<HQProps> = ({
                         <TooltipTrigger asChild>
                             <Button
                                 onClick={onOpenAiSidebar}
-                                className="flex items-center gap-2 shadow-glow"
+                                variant="outline"
+                                className="relative overflow-hidden flex items-center gap-2 shadow-glow border-primary/20 hover:border-primary/50 group bg-background/50 backdrop-blur-sm"
                             >
-                                <Flame size={16} fill="currentColor" />
-                                <span className="text-xs font-bold">Ignite</span>
+                                <Flame size={16} fill="currentColor" className="text-primary group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-bold text-primary">Ignite</span>
+                                <BorderBeam
+                                    size={40}
+                                    duration={3}
+                                    className="from-transparent via-indigo-500 to-transparent opacity-70"
+                                />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -287,7 +294,7 @@ export const HQ: React.FC<HQProps> = ({
 
                                     return (
                                         <div key={date} className="flex flex-col items-center gap-1 flex-1">
-                                            <div className={`w-full aspect-square rounded-md transition-all ${bgClass} ${isToday ? 'ring-2 ring-primary/20' : ''}`} title={`${completedCount} habits on ${date}`} />
+                                            <div className={`w - full aspect - square rounded - md transition - all ${bgClass} ${isToday ? 'ring-2 ring-primary/20' : ''} `} title={`${completedCount} habits on ${date} `} />
                                             <span className="text-[8px] font-bold text-muted-foreground uppercase">{new Date(date).toLocaleDateString('en-US', { weekday: 'narrow' })}</span>
                                         </div>
                                     )
@@ -331,7 +338,7 @@ export const HQ: React.FC<HQProps> = ({
                             <div className="flex-1 overflow-y-auto space-y-2 mt-2 max-h-[100px] scrollbar-hide">
                                 {focusTasks.length > 0 ? focusTasks.map(t => (
                                     <div key={t.id} onClick={() => { setSelectedTask(t); setIsTaskModalOpen(true); }} className="flex items-center gap-2 text-xs font-medium text-foreground hover:text-primary transition-colors">
-                                        <span className={`w-2 h-2 rounded-full ${new Date(t.date) < new Date() ? 'bg-red-500' : 'bg-primary'}`}></span>
+                                        <span className={`w - 2 h - 2 rounded - full ${new Date(t.date) < new Date() ? 'bg-red-500' : 'bg-primary'} `}></span>
                                         <span className="truncate">{t.title}</span>
                                     </div>
                                 )) : (
@@ -364,7 +371,7 @@ export const HQ: React.FC<HQProps> = ({
                         <div className="space-y-4 flex-1">
                             {activeProjects.length > 0 ? activeProjects.map(p => (
                                 <div key={p.id} onClick={(e) => { e.stopPropagation(); setSelectedProject(p); setIsProjectModalOpen(true); }} className="group flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 cursor-pointer transition-colors border border-transparent hover:border-border">
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm" style={{ backgroundColor: `${p.color}20`, color: p.color }}>
+                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm" style={{ backgroundColor: `${p.color} 20`, color: p.color }}>
                                         {p.title.charAt(0)}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -373,7 +380,7 @@ export const HQ: React.FC<HQProps> = ({
                                             <div className="text-xs font-medium text-muted-foreground">{p.progress}%</div>
                                         </div>
                                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${p.progress}%`, backgroundColor: p.color }}></div>
+                                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${p.progress}% `, backgroundColor: p.color }}></div>
                                         </div>
                                     </div>
                                     <ArrowUpRight size={16} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

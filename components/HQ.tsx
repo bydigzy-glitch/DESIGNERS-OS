@@ -4,6 +4,7 @@ import { Task, ViewMode, Client, Project, User, Habit } from '../types';
 import { Zap, Plus, CheckCircle2, Briefcase, Sparkles, Flame, CheckSquare, Calendar, Trash2, ArrowUpRight, TrendingUp, MoreHorizontal, FileText, MessageSquare, Clock, AlertTriangle, Star, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BorderBeam } from "@/components/magicui/border-beam";
+import { TextAnimate } from "@/components/magicui/text-animate";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { EmptyState } from './common/EmptyState';
@@ -218,7 +219,12 @@ export const HQ: React.FC<HQProps> = ({
                         <div className="flex flex-col gap-4 max-w-lg w-full">
                             <div>
                                 <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                                    Hey, {user?.name?.split(' ')[0] || 'Creator'}
+                                    <TextAnimate
+                                        animation="blurInUp"
+                                        by="character"
+                                        once
+                                        text={`Hey, ${user?.name?.split(' ')[0] || 'Creator'}`}
+                                    />
                                 </h1>
                                 <p className="text-muted-foreground">Ready to conquer the day?</p>
                             </div>

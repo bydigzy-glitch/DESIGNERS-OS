@@ -27,6 +27,7 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [tool, setTool] = useState<'SELECT' | 'COMMENT' | 'CONNECT' | 'HAND'>('SELECT');
+  const [spacePressed, setSpacePressed] = useState(false);
 
   // Dragging
   const [draggedItem, setDraggedItem] = useState<{ id: string, startX: number, startY: number, initialX: number, initialY: number } | null>(null);
@@ -37,6 +38,11 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
 
   // Selection
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+  // Draggable Toolbar
+  const [toolbarPos, setToolbarPos] = useState({ x: 0, y: 0 });
+  const [isDraggingToolbar, setIsDraggingToolbar] = useState(false);
+  const [toolbarDragStart, setToolbarDragStart] = useState({ x: 0, y: 0 });
 
   // History Stack for Undo/Redo
   const [history, setHistory] = useState<CanvasItem[][]>([]);
@@ -75,9 +81,13 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
     }
   }, [history, historyIndex, setItems]);
 
-  // Capture Undo/Redo Shortcut
+  // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in textarea
+      if ((e.target as HTMLElement).tagName === 'TEXTAREA') return;
+
+      // Undo/Redo
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         if (e.shiftKey) {
           e.preventDefault();
@@ -87,15 +97,52 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
           handleUndo();
         }
       }
+
+      // Delete
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedItemId && document.activeElement === canvasRef.current) {
           deleteItem(selectedItemId);
         }
       }
+
+      // Tool Shortcuts
+      if (e.key === 'v' || e.key === 'V') {
+        e.preventDefault();
+        setTool('SELECT');
+      }
+      if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        setTool('HAND');
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        setTool('CONNECT');
+      }
+      if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        setTool('COMMENT');
+      }
+
+      // Space for temporary pan
+      if (e.key === ' ' && !spacePressed) {
+        e.preventDefault();
+        setSpacePressed(true);
+      }
     };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === ' ') {
+        setSpacePressed(false);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo, selectedItemId]);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleUndo, handleRedo, selectedItemId, spacePressed]);
 
 
   // --- PANNING & ZOOM ---
@@ -122,13 +169,18 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
       return;
     }
 
-    if (e.button === 1 || e.shiftKey || tool === 'HAND') {
-      if (e.target === canvasRef.current || (e.target as HTMLElement).classList.contains('canvas-bg')) {
-        setIsPanning(true);
-        setPanStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-        e.preventDefault();
-      }
-    } else if (e.target === canvasRef.current) {
+    // Check if should pan (middle mouse, hand tool, or space key)
+    const shouldPan = e.button === 1 || tool === 'HAND' || spacePressed;
+    const clickedCanvas = e.target === canvasRef.current || (e.target as HTMLElement).classList.contains('canvas-bg');
+
+    if (shouldPan && clickedCanvas) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+      e.preventDefault();
+      return;
+    }
+
+    if (clickedCanvas) {
       // Deselect if clicking empty space
       setSelectedItemId(null);
     }
@@ -149,6 +201,7 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
         x: e.clientX - panStart.x,
         y: e.clientY - panStart.y
       });
+      return; // Don't process item dragging while panning
     }
 
     if (draggedItem) {
@@ -301,7 +354,7 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
       onDrop={handleDrop}
       tabIndex={0}
       style={{
-        cursor: isPanning || tool === 'HAND' ? 'grab' : (tool === 'COMMENT' ? 'text' : (tool === 'CONNECT' ? 'crosshair' : 'default')),
+        cursor: isPanning ? 'grabbing' : (spacePressed || tool === 'HAND' ? 'grab' : (tool === 'COMMENT' ? 'text' : (tool === 'CONNECT' ? 'crosshair' : 'default'))),
       }}
     >
       <DotPattern
@@ -356,7 +409,34 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
 
       {/* --- SELECTED ITEM FORMATTING TOOLBAR --- */}
       {selectedItem && selectedItem.type === 'NOTE' && (
-        <FadeIn className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 bg-background/90 backdrop-blur-xl border border-border rounded-xl p-2 shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5">
+        <div
+          className="absolute z-50 bg-background/90 backdrop-blur-xl border border-border rounded-xl p-2 shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5"
+          style={{
+            left: toolbarPos.x || '50%',
+            bottom: toolbarPos.y || '2rem',
+            transform: toolbarPos.x ? 'none' : 'translateX(-50%)',
+            cursor: isDraggingToolbar ? 'grabbing' : 'default'
+          }}
+          onMouseDown={(e) => {
+            if ((e.target as HTMLElement).classList.contains('drag-handle')) {
+              setIsDraggingToolbar(true);
+              setToolbarDragStart({ x: e.clientX - toolbarPos.x, y: e.clientY - toolbarPos.y });
+              e.stopPropagation();
+            }
+          }}
+          onMouseMove={(e) => {
+            if (isDraggingToolbar) {
+              setToolbarPos({
+                x: e.clientX - toolbarDragStart.x,
+                y: window.innerHeight - (e.clientY - toolbarDragStart.y)
+              });
+            }
+          }}
+          onMouseUp={() => setIsDraggingToolbar(false)}
+        >
+          <div className="drag-handle cursor-grab active:cursor-grabbing px-1 py-2 -ml-1 hover:bg-secondary/50 rounded transition-colors" title="Drag to move">
+            <div className="w-1 h-4 bg-border rounded-full" />
+          </div>
           <Button
             variant={selectedItem.style?.fontWeight === 'bold' ? 'secondary' : 'ghost'}
             size="icon" className="h-8 w-8"
@@ -386,7 +466,7 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
           <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => deleteItem(selectedItem.id)}>
             <Trash2 size={14} />
           </Button>
-        </FadeIn>
+        </div>
       )}
 
 

@@ -312,14 +312,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <form onSubmit={handleSubmit} className="relative w-full">
               {/* New Gradient Border Container */}
               <div className="relative flex w-full flex-col overflow-hidden rounded-[16px] p-[1.5px]">
-                {/* Gradient Background Layer */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#7e7e7e] via-[#363636] to-[#363636] pointer-events-none" />
+                {/* Gradient Background Layer - Themed */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/80 via-muted to-muted/20 pointer-events-none" />
 
-                {/* Bloom Effect */}
-                <div className="absolute -left-[10px] -top-[10px] h-[30px] w-[30px] blur-[1px] bg-[radial-gradient(ellipse_at_center,#ffffff,rgba(255,255,255,0.3),rgba(255,255,255,0.1),transparent_70%)] pointer-events-none" />
+                {/* Bloom Effect - Themed */}
+                <div className="absolute -left-[10px] -top-[10px] h-[30px] w-[30px] blur-[1px] bg-[radial-gradient(ellipse_at_center,var(--primary),rgba(255,255,255,0.1),transparent_70%)] pointer-events-none opacity-50" />
 
-                {/* Inner Content - Black bg */}
-                <div className="relative flex w-full flex-col overflow-hidden rounded-[15px] bg-black/50 backdrop-blur-sm">
+                {/* Inner Content - Glassy */}
+                <div className="relative flex w-full flex-col overflow-hidden rounded-[15px] bg-background/60 backdrop-blur-md">
 
                   {/* Textarea Wrapper */}
                   <div className="relative flex w-full">
@@ -334,7 +334,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         }
                       }}
                       placeholder={`Message AI... (use @ to mention tasks)`}
-                      className="w-full resize-none border-none bg-transparent px-4 py-3 text-sm text-white focus:outline-none placeholder:text-[#f3f6fd] placeholder:transition-all placeholder:duration-300 focus:placeholder:text-[#363636] min-h-[50px] max-h-[200px] scrollbar-hide"
+                      className="w-full resize-none border-none bg-transparent px-4 py-3 text-sm text-foreground focus:outline-none placeholder:text-muted-foreground placeholder:transition-all placeholder:duration-300 focus:placeholder:text-foreground/50 min-h-[50px] max-h-[200px] scrollbar-hide"
                       rows={1}
                     />
                   </div>
@@ -348,7 +348,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center justify-center text-white/10 hover:text-white hover:-translate-y-1 transition-all duration-300 p-1"
+                            className="flex items-center justify-center text-muted-foreground hover:text-foreground hover:-translate-y-1 transition-all duration-300 p-1"
                           >
                             <Paperclip size={20} />
                           </button>
@@ -372,10 +372,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         <button
                           type="submit"
                           disabled={(!inputText.trim() && !pendingImage) || isLoading}
-                          className="group relative flex items-center justify-center rounded-[10px] bg-gradient-to-t from-[#292929] via-[#555555] to-[#292929] p-[2px] shadow-[inset_0_6px_2px_-4px_rgba(255,255,255,0.5)] active:scale-95 transition-all duration-150 border-none outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                          className="group relative flex items-center justify-center rounded-[10px] bg-gradient-to-t from-primary via-primary/80 to-primary p-[2px] shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)] active:scale-95 transition-all duration-150 border-none outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                         >
-                          <div className="rounded-[8px] bg-black/10 p-1.5 backdrop-blur-[3px] text-[#8b8b8b] group-hover:text-[#f3f6fd] transition-colors duration-300 flex items-center justify-center">
-                            <Send size={18} className="transition-all duration-300 group-hover:drop-shadow-[0_0_5px_#ffffff] group-focus:scale-110 group-focus:-translate-x-0.5 group-focus:translate-y-0.5 group-focus:rotate-45" />
+                          <div className="rounded-[8px] bg-black/10 p-1.5 backdrop-blur-[3px] text-primary-foreground/90 group-hover:text-white transition-colors duration-300 flex items-center justify-center">
+                            <Send size={18} className="transition-all duration-300 group-focus:scale-110 group-focus:-translate-x-0.5 group-focus:translate-y-0.5 group-focus:rotate-45" />
                           </div>
                         </button>
                       </TooltipTrigger>

@@ -126,10 +126,21 @@ export default {
 						"offset-distance": "100%",
 					},
 				},
+				ani: {
+					"0%": { transform: "translateX(0%) scale(1)" },
+					"50%": { transform: "translateX(-100%) scale(0.8)" },
+					"100%": { transform: "translateX(0%) scale(1)" },
+				},
+				shine: {
+					"0%": { top: "100%", left: "-100%" },
+					"50%, 100%": { top: "0%", left: "70%" },
+				},
 			},
 			animation: {
 				shake: 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
 				"border-beam": "border-beam calc(var(--duration)*1s) infinite linear",
+				ani: "ani 28s ease-in-out infinite",
+				shine: "shine 10s ease infinite",
 			},
 		}
 	},

@@ -1,13 +1,43 @@
 
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Message } from '../types';
 import { Bot, User, Copy, ThumbsUp, ThumbsDown, CheckSquare } from 'lucide-react';
 
 interface ChatMessageProps {
   message: Message;
+  isLatest?: boolean;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+// Typewriter effect component
+const TypewriterText: React.FC<{ text: string; speed?: number }> = ({ text, speed = 20 }) => {
+  const [displayedText, setDisplayedText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+
+  useEffect(() => {
+    if (currentIndex < text.length) {
+      const timeout = setTimeout(() => {
+        setDisplayedText(prev => prev + text[currentIndex]);
+        setCurrentIndex(prev => prev + 1);
+      }, speed);
+      return () => clearTimeout(timeout);
+    } else {
+      setIsComplete(true);
+    }
+  }, [currentIndex, text, speed]);
+
+  return (
+    <span className="inline">
+      {displayedText}
+      {!isComplete && (
+        <span className="inline-block w-[2px] h-4 bg-primary ml-0.5 animate-cursor-blink align-middle"></span>
+      )}
+    </span>
+  );
+};
+
+export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLatest = false }) => {
   const isUser = message.role === 'user';
 
   // Custom parser to render stylized content
@@ -44,14 +74,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             <span>{parseInline(content)}</span>
           </li>
         );
-        
+
         if (!inList) {
           inList = true;
           return <ul key={`ul-${index}`} className="my-2 space-y-1">{item}</ul>;
         }
-        return item; 
+        return item;
       }
-      
+
       inList = false;
 
       if (!line.trim()) {
@@ -69,7 +99,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const parseInline = (text: string) => {
     // Regex matches: **bold**, `code`, or @[Task Name]
     const parts = text.split(/(\*\*.*?\*\*|`.*?`|@\[.*?\])/g);
-    
+
     return parts.map((part, i) => {
       // Bold
       if (part.startsWith('**') && part.endsWith('**')) {
@@ -83,10 +113,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       if (part.startsWith('@[') && part.endsWith(']')) {
         const taskName = part.slice(2, -1);
         return (
-            <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-500 border border-orange-500/20 text-xs font-bold mx-0.5 align-middle">
-                <CheckSquare size={10} strokeWidth={3} />
-                {taskName}
-            </span>
+          <span key={i} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 text-xs font-bold mx-1 align-middle shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+            <CheckSquare size={12} strokeWidth={2.5} />
+            {taskName}
+          </span>
         );
       }
       return part;
@@ -96,56 +126,64 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   return (
     <div className={`flex w-full mb-2 ${isUser ? 'justify-end' : 'justify-center'}`}>
       <div className={`flex w-full ${isUser ? 'max-w-2xl' : 'max-w-3xl'} gap-4 md:gap-6 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-        
+
         {/* Avatar */}
         <div className={`
             flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border shadow-sm mt-1
             ${isUser ? 'bg-primary border-primary text-white' : 'bg-card border-border text-primary'}
         `}>
-            {isUser ? <User size={16} /> : <Bot size={16} />}
+          {isUser ? <User size={16} /> : <Bot size={16} />}
         </div>
 
         {/* Bubble */}
         <div className={`flex-1 min-w-0 ${isUser ? 'text-right' : ''}`}>
-            
-           {/* Author Name */}
-           <div className={`text-xs font-bold text-foreground mb-1 ${isUser ? 'mr-1' : 'ml-1'}`}>
-               {isUser ? 'You' : 'Mentor AI'}
-           </div>
 
-           <div 
-             className={`
+          {/* Author Name */}
+          <div className={`text-xs font-bold text-foreground mb-1 ${isUser ? 'mr-1' : 'ml-1'}`}>
+            {isUser ? 'You' : 'Mentor AI'}
+          </div>
+
+          <div
+            className={`
                p-4 md:p-5 rounded-2xl shadow-sm border text-left
-               ${isUser 
-                 ? 'bg-secondary/50 text-foreground rounded-tr-sm border-border' 
-                 : 'bg-card text-foreground rounded-tl-sm border-border'
-               }
+               ${isUser
+                ? 'bg-secondary/50 text-foreground rounded-tr-sm border-border'
+                : 'bg-card text-foreground rounded-tl-sm border-border'
+              }
              `}
-           >
-              {message.image && (
-                  <div className="w-full max-w-[300px] rounded-xl overflow-hidden mb-4 border border-border">
-                      <img src={message.image} alt="Attachment" className="w-full h-auto object-cover" />
-                  </div>
-              )}
-              <div className="font-sans">
-                 {isUser ? <p className="text-sm leading-7 whitespace-pre-wrap">{parseInline(message.text)}</p> : renderContent(message.text)}
+          >
+            {message.image && (
+              <div className="w-full max-w-[300px] rounded-xl overflow-hidden mb-4 border border-border">
+                <img src={message.image} alt="Attachment" className="w-full h-auto object-cover" />
               </div>
-           </div>
+            )}
+            <div className="font-sans">
+              {isUser ? (
+                <p className="text-sm leading-7 whitespace-pre-wrap">{parseInline(message.text)}</p>
+              ) : isLatest ? (
+                <div className="text-sm leading-7">
+                  <TypewriterText text={message.text} speed={15} />
+                </div>
+              ) : (
+                renderContent(message.text)
+              )}
+            </div>
+          </div>
 
-           {/* Actions Row (Bot Only) */}
-           {!isUser && (
-               <div className="flex items-center gap-2 mt-2 ml-1">
-                   <button className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Copy">
-                       <Copy size={14} />
-                   </button>
-                   <button className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Good response">
-                       <ThumbsUp size={14} />
-                   </button>
-                   <button className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Bad response">
-                       <ThumbsDown size={14} />
-                   </button>
-               </div>
-           )}
+          {/* Actions Row (Bot Only) */}
+          {!isUser && (
+            <div className="flex items-center gap-2 mt-2 ml-1">
+              <button className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Copy">
+                <Copy size={14} />
+              </button>
+              <button className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Good response">
+                <ThumbsUp size={14} />
+              </button>
+              <button className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors" title="Bad response">
+                <ThumbsDown size={14} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

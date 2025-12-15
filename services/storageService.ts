@@ -43,7 +43,6 @@ export const Backend = {
 
     _saveData: (userId: string, data: UserData) => {
         localStorage.setItem(`${STORAGE_KEYS.DATA_PREFIX}${userId}`, JSON.stringify(data));
-        window.dispatchEvent(new StorageEvent('storage', { key: `${STORAGE_KEYS.DATA_PREFIX}${userId}` }));
     },
 
     // --- TEAMS BACKEND ---
@@ -348,7 +347,8 @@ export const Backend = {
         deduct: (userId: string, cost: number, feature: string, requestId: string): { success: boolean, newBalance: number, message?: string } => {
             // 1. Load User (Simulate DB Fetch)
             const users = storageService.getUsers();
-            const userIndex = users.findIndex(u => u.id === userId);
+            // Fuzzy match fallback: check if ID ends with or is included (for different ID formats)
+            const userIndex = users.findIndex(u => u.id === userId || (userId.length > 5 && u.id.includes(userId)));
 
             if (userIndex === -1) throw new Error("User not found.");
             const user = users[userIndex];

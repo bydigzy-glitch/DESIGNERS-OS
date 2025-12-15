@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { initializeGemini, sendMessageToGemini, resetGeminiSession, sendToolResponseToGemini } from './services/geminiService';
 import { storageService, Backend, TOKEN_COSTS } from './services/storageService';
-import { db, supabase, subscribeToChanges } from './services/supabaseClient';
+import { db, supabase, subscribeToChanges, dbNotifications, subscribeToNotifications, dbTeamMembers } from './services/supabaseClient';
 import { ChatInterface } from './components/ChatInterface';
 import { Navigation } from './components/Navigation';
 import { HQ } from './components/HQ';
@@ -12,6 +12,7 @@ import { Apps } from './components/Apps';
 import { Calendar } from './components/Calendar';
 import { FileManager } from './components/FileManager';
 import { Settings } from './components/Settings';
+// import { ShadcnDemo } from './components/ShadcnDemo';
 import { Auth } from './components/Auth';
 import { ChatOverlay } from './components/ChatOverlay';
 import { ManagerPage } from './components/ManagerPage';
@@ -69,20 +70,42 @@ function App() {
         setTimeout(() => setIsAppLoading(false), 2500);
         storageService.checkVersion();
 
-        const existingUsers = storageService.getUsers();
-        const adminExists = existingUsers.some(u => u.email === DUMMY_USER.email);
-        if (!adminExists) storageService.saveUser(DUMMY_USER);
+        const validateSession = async () => {
+            const existingUsers = storageService.getUsers();
+            const adminExists = existingUsers.some(u => u.email === DUMMY_USER.email);
+            if (!adminExists) storageService.saveUser(DUMMY_USER);
 
-        const sessionUser = storageService.getSession();
-        if (sessionUser) {
-            const freshUser = storageService.getUser(sessionUser.id);
-            const safeUser = freshUser ? { ...freshUser, tokens: freshUser.tokens ?? 10 } : { ...sessionUser, tokens: sessionUser.tokens ?? 10 };
-            setUser(safeUser);
-            // Load notifications on session restore
-            if (safeUser.notifications) {
-                setNotifications(safeUser.notifications.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+            const sessionUser = storageService.getSession();
+            if (sessionUser) {
+                // CRITICAL FIX: Verify Supabase Session Matches
+                if (!sessionUser.isGuest) {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) {
+                        console.warn("[Auth Mismatch] Local user found but Supabase session missing. Forcing logout.");
+                        storageService.logout();
+                        setUser(null);
+                        return; // Stop loading data
+                    }
+                }
+
+                const freshUser = storageService.getUser(sessionUser.id);
+                const safeUser = freshUser ? { ...freshUser, tokens: freshUser.tokens ?? 10 } : { ...sessionUser, tokens: sessionUser.tokens ?? 10 };
+
+                // Self-Repair: If user exists in session but not in main storage, restore them immediately
+                if (!freshUser) {
+                    console.warn("[Self-Repair] User found in session but missing from registry. Restoring...", safeUser.id);
+                    storageService.saveUser(safeUser);
+                }
+
+                setUser(safeUser);
+                // Load notifications on session restore
+                if (safeUser.notifications) {
+                    setNotifications(safeUser.notifications.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+                }
             }
-        }
+        };
+
+        validateSession();
 
         const lastVersion = localStorage.getItem('app_last_version');
         if (lastVersion !== APP_VERSION) {
@@ -178,19 +201,33 @@ function App() {
                 // Load tasks
                 const { data: tasksData } = await db.tasks.getAll(user.id);
                 if (tasksData) {
-                    const mappedTasks: Task[] = tasksData.map(t => ({
-                        id: t.id,
-                        title: t.title,
-                        date: new Date(t.date),
-                        category: t.category as Task['category'],
-                        priority: t.priority as Task['priority'],
-                        statusLabel: t.status_label,
-                        duration: t.duration,
-                        completed: t.completed,
-                        color: t.color,
-                        projectId: t.project_id,
-                        notes: t.notes
-                    }));
+                    const mappedTasks: Task[] = tasksData.map(t => {
+                        // Ensure date is always a Date object
+                        let taskDate: Date;
+                        try {
+                            taskDate = t.date instanceof Date ? t.date : new Date(t.date);
+                            // Validate the date is valid
+                            if (isNaN(taskDate.getTime())) {
+                                taskDate = new Date(); // Fallback to today
+                            }
+                        } catch (e) {
+                            taskDate = new Date(); // Fallback to today
+                        }
+
+                        return {
+                            id: t.id,
+                            title: t.title,
+                            date: taskDate,
+                            category: t.category as Task['category'],
+                            priority: t.priority as Task['priority'],
+                            statusLabel: t.status_label,
+                            duration: t.duration,
+                            completed: t.completed,
+                            color: t.color,
+                            projectId: t.project_id,
+                            notes: t.notes
+                        };
+                    });
                     setTasks(mappedTasks);
                 }
 
@@ -240,6 +277,37 @@ function App() {
                         category: h.category as Habit['category']
                     }));
                     setHabits(mappedHabits);
+                } else {
+                    // MIGRATION: If no habits in Supabase, check localStorage and migrate
+                    try {
+                        const localData = storageService.getUserData(user.id);
+                        if (localData.habits && localData.habits.length > 0) {
+                            console.log('[Migration] Found', localData.habits.length, 'habits in localStorage, migrating to Supabase...');
+
+                            // Migrate each habit to Supabase
+                            for (const habit of localData.habits) {
+                                try {
+                                    await db.habits.create({
+                                        id: habit.id,
+                                        user_id: user.id,
+                                        title: habit.title,
+                                        category: habit.category,
+                                        frequency: habit.frequency,
+                                        streak: habit.streak,
+                                        completed_dates: habit.completedDates || []
+                                    });
+                                } catch (e) {
+                                    console.error('[Migration] Failed to migrate habit:', habit.id, e);
+                                }
+                            }
+
+                            // Set the migrated habits
+                            setHabits(localData.habits);
+                            console.log('[Migration] Habits migrated successfully');
+                        }
+                    } catch (e) {
+                        console.error('[Migration] Failed to migrate habits:', e);
+                    }
                 }
 
                 // Load chat sessions
@@ -259,6 +327,70 @@ function App() {
                     setCurrentSessionId(sorted[0].id);
                 } else if (chatSessions.length === 0) {
                     createNewSession();
+                }
+
+                // Load notifications
+                try {
+                    const { data: notificationsData } = await dbNotifications.getByUser(user.id);
+                    if (notificationsData) {
+                        const mappedNotifications: AppNotification[] = notificationsData.map(n => ({
+                            id: n.id,
+                            title: n.title,
+                            message: n.message,
+                            type: n.type,
+                            timestamp: new Date(n.created_at),
+                            read: n.read,
+                            actionData: n.action_type ? {
+                                type: n.action_type,
+                                teamId: n.team_id,
+                                teamName: n.team_name,
+                                taskId: n.task_id,
+                                taskTitle: n.task_title
+                            } : undefined
+                        }));
+                        setNotifications(mappedNotifications);
+                    }
+                } catch (e) {
+                    console.error('[Supabase] Notifications load failed:', e);
+                }
+
+                // Check for pending team invitations and create notifications
+                try {
+                    const { data: pendingInvites } = await dbTeamMembers.getByUser(user.id);
+
+                    if (pendingInvites) {
+                        const pendingTeams = pendingInvites.filter((m: any) => m.status === 'PENDING');
+
+                        for (const invite of pendingTeams) {
+                            // Check if notification already exists for this invite
+                            const existingNotif = notifications.find(n =>
+                                n.actionData?.type === 'TEAM_INVITE' &&
+                                n.actionData?.teamId === invite.team_id
+                            );
+
+                            if (!existingNotif) {
+                                // Create notification for pending invite
+                                const newNotif: AppNotification = {
+                                    id: `team-invite-${invite.team_id}-${Date.now()}`,
+                                    title: 'Team Invitation',
+                                    message: `You've been invited to join ${invite.team_name || 'a team'}`,
+                                    type: 'SYSTEM',
+                                    timestamp: new Date(),
+                                    read: false,
+                                    actionData: {
+                                        type: 'TEAM_INVITE',
+                                        teamId: invite.team_id,
+                                        teamName: invite.team_name
+                                    }
+                                };
+
+                                addNotification(newNotif);
+                                console.log('[Team] Created notification for pending invite:', invite.team_id);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('[Team] Failed to check pending invites:', e);
                 }
 
                 console.log('[Supabase] Data loaded successfully');
@@ -376,15 +508,58 @@ function App() {
             }
         );
 
-        return unsubscribe;
+        // Subscribe to notifications
+        const unsubNotifications = subscribeToNotifications(user.id, (payload: any) => {
+            console.log('[Realtime] Notification change:', payload.eventType);
+            if (payload.eventType === 'INSERT') {
+                const n = payload.new;
+                addNotification({
+                    id: n.id,
+                    title: n.title,
+                    message: n.message,
+                    type: n.type,
+                    timestamp: new Date(n.created_at),
+                    read: n.read,
+                    actionData: n.action_type ? {
+                        type: n.action_type,
+                        teamId: n.team_id,
+                        teamName: n.team_name,
+                        taskId: n.task_id,
+                        taskTitle: n.task_title
+                    } : undefined
+                });
+            } else if (payload.eventType === 'UPDATE') {
+                const n = payload.new;
+                setNotifications(prev => prev.map(x => x.id === n.id ? {
+                    ...x,
+                    read: n.read
+                } : x));
+            } else if (payload.eventType === 'DELETE') {
+                setNotifications(prev => prev.filter(x => x.id !== payload.old.id));
+            }
+        });
+
+        return () => {
+            unsubscribe();
+            unsubNotifications();
+        };
     }, [user?.id, user?.isGuest]);
 
 
     // --- DATA SAVING ---
     useEffect(() => {
         if (user && !user.isGuest) {
+            // Strip images from chat sessions to prevent localStorage quota exceeded
+            const chatSessionsWithoutImages = chatSessions.map(session => ({
+                ...session,
+                messages: session.messages.map(msg => ({
+                    ...msg,
+                    image: undefined // Remove images to save space
+                }))
+            }));
+
             storageService.saveUserData(user.id, {
-                tasks, files, folders, clients, projects, chatSessions, habits: habits as any, infinityItems: infinityItems as any
+                tasks, files, folders, clients, projects, chatSessions: chatSessionsWithoutImages, habits: habits as any, infinityItems: infinityItems as any
             });
         }
     }, [tasks, files, folders, clients, projects, chatSessions, habits, infinityItems, user?.id]); // Only save if user ID is stable
@@ -397,6 +572,14 @@ function App() {
         }
     }, [user?.aiMemory]);
 
+    // Apply saved theme color (only primary - light/dark mode handles the rest)
+    useEffect(() => {
+        if (user?.preferences?.themeColor) {
+            document.documentElement.style.setProperty('--primary', user.preferences.themeColor);
+            document.documentElement.style.setProperty('--ring', user.preferences.themeColor);
+        }
+    }, [user?.preferences?.themeColor]);
+
     const addToast = (type: ToastType, message: string) => {
         const id = Date.now().toString();
         setToasts(prev => [...prev, { id, type, message }]);
@@ -406,9 +589,9 @@ function App() {
         setToasts(prev => prev.filter(t => t.id !== id));
     };
 
-    const addNotification = (note: AppNotification) => {
+    const addNotification = useCallback((note: AppNotification) => {
         setNotifications(prev => [note, ...prev]);
-    };
+    }, []);
 
     const handleTeamInviteResponse = (teamId: string, accept: boolean, notificationId: string) => {
         if (!user) return;
@@ -452,6 +635,23 @@ function App() {
                 return true;
             }
         } catch (e: any) {
+            // Self-repair: If user is missing from storage, add them and retry
+            if (e.message && e.message.includes("User not found")) {
+                console.warn("User missing from storage during token deduction. Attempting self-repair...");
+                try {
+                    storageService.saveUser(user);
+                    // Retry deduction
+                    const retryResult = Backend.tokens.deduct(user.id, amount, feature, requestId);
+                    if (retryResult.success) {
+                        const updatedUser = { ...user, tokens: retryResult.newBalance };
+                        setUser(updatedUser);
+                        return true;
+                    }
+                } catch (retryError) {
+                    console.error("Token deduction failed after repair:", retryError);
+                }
+            }
+
             addToast('ERROR', e.message || "Insufficient tokens.");
             return false;
         }
@@ -470,8 +670,10 @@ function App() {
         }
     };
 
-    const handleToggleHabit = (id: string) => {
+    const handleToggleHabit = async (id: string) => {
         const today = new Date().toISOString().split('T')[0];
+
+        // Update local state first for immediate UI feedback
         setHabits(prev => prev.map(h => {
             if (h.id === id) {
                 const isCompleted = h.completedDates.includes(today);
@@ -489,6 +691,33 @@ function App() {
             }
             return h;
         }));
+
+        // Sync to Supabase for non-guest users
+        if (user && !user.isGuest) {
+            try {
+                const habit = habits.find(h => h.id === id);
+                if (habit) {
+                    const isCompleted = habit.completedDates.includes(today);
+                    let newDates = [...habit.completedDates];
+                    let newStreak = habit.streak;
+
+                    if (isCompleted) {
+                        newDates = newDates.filter(d => d !== today);
+                        if (newStreak > 0) newStreak--;
+                    } else {
+                        newDates.push(today);
+                        newStreak++;
+                    }
+
+                    await db.habits.update(id, {
+                        streak: newStreak,
+                        completed_dates: newDates
+                    });
+                }
+            } catch (e) {
+                console.error('[Supabase] Habit update failed:', e);
+            }
+        }
     };
 
     const handleTaskCreate = async (task: Task) => {
@@ -496,12 +725,12 @@ function App() {
         // Update local state immediately
         const updatedTasks = Backend.tasks.create(user.id, task);
         setTasks(updatedTasks);
-        addToast('SUCCESS', 'Task created successfully');
+        addToast('SUCCESS', 'Task created');
 
         // Sync to cloud for non-guest users
         if (!user.isGuest) {
             try {
-                await db.tasks.create({
+                const { error } = await db.tasks.create({
                     id: task.id,
                     user_id: user.id,
                     title: task.title,
@@ -515,33 +744,44 @@ function App() {
                     project_id: task.projectId,
                     notes: task.notes
                 });
-            } catch (e) {
+                if (error) throw error;
+            } catch (e: any) {
                 console.error('[Supabase] Task create failed:', e);
+                addToast('ERROR', `Save Failed: ${e.message || 'Unknown error'}`);
             }
         }
     };
 
     const handleTaskUpdate = async (task: Task) => {
         if (!user) return;
-        const updatedTasks = Backend.tasks.update(user.id, task);
+
+        // Ensure date is a Date object
+        const validatedTask = {
+            ...task,
+            date: task.date instanceof Date ? task.date : new Date(task.date)
+        };
+
+        const updatedTasks = Backend.tasks.update(user.id, validatedTask);
         setTasks(updatedTasks);
 
         if (!user.isGuest) {
             try {
-                await db.tasks.update(task.id, {
-                    title: task.title,
-                    date: task.date.toISOString(),
-                    category: task.category,
-                    priority: task.priority,
-                    status_label: task.statusLabel,
-                    duration: task.duration,
-                    completed: task.completed,
-                    color: task.color,
-                    project_id: task.projectId,
-                    notes: task.notes
+                const { error } = await db.tasks.update(validatedTask.id, {
+                    title: validatedTask.title,
+                    date: validatedTask.date.toISOString(),
+                    category: validatedTask.category,
+                    priority: validatedTask.priority,
+                    status_label: validatedTask.statusLabel,
+                    duration: validatedTask.duration,
+                    completed: validatedTask.completed,
+                    color: validatedTask.color,
+                    project_id: validatedTask.projectId,
+                    notes: validatedTask.notes
                 });
-            } catch (e) {
+                if (error) throw error;
+            } catch (e: any) {
                 console.error('[Supabase] Task update failed:', e);
+                addToast('ERROR', `Update Failed: ${e.message}`);
             }
         }
     };
@@ -554,9 +794,11 @@ function App() {
 
         if (!user.isGuest) {
             try {
-                await db.tasks.delete(id);
-            } catch (e) {
+                const { error } = await db.tasks.delete(id);
+                if (error) throw error;
+            } catch (e: any) {
                 console.error('[Supabase] Task delete failed:', e);
+                addToast('ERROR', `Delete Failed: ${e.message}`);
             }
         }
     };
@@ -569,7 +811,7 @@ function App() {
 
         if (!user.isGuest) {
             try {
-                await db.projects.create({
+                const { error } = await db.projects.create({
                     id: project.id,
                     user_id: user.id,
                     title: project.title,
@@ -583,8 +825,10 @@ function App() {
                     notes: project.notes,
                     deadline: project.deadline?.toISOString()
                 });
-            } catch (e) {
+                if (error) throw error;
+            } catch (e: any) {
                 console.error('[Supabase] Project create failed:', e);
+                addToast('ERROR', `Project Save Failed: ${e.message}`);
             }
         }
     };
@@ -597,7 +841,7 @@ function App() {
 
         if (!user.isGuest) {
             try {
-                await db.projects.update(project.id, {
+                const { error } = await db.projects.update(project.id, {
                     title: project.title,
                     client_id: project.clientId,
                     client_name: project.client,
@@ -609,8 +853,10 @@ function App() {
                     notes: project.notes,
                     deadline: project.deadline?.toISOString()
                 });
-            } catch (e) {
+                if (error) throw error;
+            } catch (e: any) {
                 console.error('[Supabase] Project update failed:', e);
+                addToast('ERROR', `Project Update Failed: ${e.message}`);
             }
         }
     };
@@ -620,13 +866,15 @@ function App() {
         const result = Backend.projects.delete(user.id, id);
         setProjects(result.projects);
         setTasks(result.tasks);
-        addToast('INFO', 'Project deleted (tasks unlinked)');
+        addToast('INFO', 'Project deleted');
 
         if (!user.isGuest) {
             try {
-                await db.projects.delete(id);
-            } catch (e) {
+                const { error } = await db.projects.delete(id);
+                if (error) throw error;
+            } catch (e: any) {
                 console.error('[Supabase] Project delete failed:', e);
+                addToast('ERROR', `Project Delete Failed: ${e.message}`);
             }
         }
     };
@@ -854,55 +1102,97 @@ function App() {
                 if (isIgnite) setLoadingStep("Executing Tools...");
 
                 for (const call of response.functionCalls) {
-                    if (call.name === 'createTask' && user) {
-                        // Tool calls here are technically covered by the initial chat cost in this architecture
-                        // unless we strictly want to charge CRUD separately. For now, chat cost covers interaction.
-                        const args = call.args;
-                        if (args.action === 'CREATE') {
-                            const newTask: Task = {
-                                id: Date.now().toString() + Math.random(),
-                                title: args.title,
-                                category: args.category || 'PRODUCT',
-                                priority: args.priority || 'MEDIUM',
-                                duration: 60,
-                                date: args.date ? new Date(args.date) : new Date(),
-                                completed: false,
-                                statusLabel: 'TODO'
-                            };
-                            const newTasks = Backend.tasks.create(user.id, newTask);
-                            setTasks(newTasks);
-                            addToast('SUCCESS', `Task created: ${newTask.title}`);
-                            if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true, taskId: newTask.id });
-                        }
-                        else if (args.action === 'UPDATE') {
-                            const target = tasks.find(t => t.id === args.id || (args.title && t.title.toLowerCase().includes(args.title.toLowerCase())));
-                            if (target) {
-                                const updated = {
-                                    ...target,
-                                    ...args,
-                                    date: args.date ? new Date(args.date) : target.date,
-                                    completed: args.status === 'DONE' ? true : (args.status ? false : target.completed),
-                                    statusLabel: args.status || target.statusLabel
-                                };
-                                const newTasks = Backend.tasks.update(user.id, updated);
-                                setTasks(newTasks);
-                                addToast('SUCCESS', `Task updated: ${updated.title}`);
-                                if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true });
-                            } else {
-                                if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: false, error: "Task not found" });
+                    const args = call.args as any;
+                    let result: any = { success: false, error: "Action blocked or failed" };
+
+                    if (user) {
+                        try {
+                            // CREATE TASK
+                            if (call.name === 'createTask') {
+                                if (args.action === 'CREATE') {
+                                    const newTask: Task = {
+                                        id: Date.now().toString() + Math.random(),
+                                        title: args.title,
+                                        category: args.category || 'PRODUCT',
+                                        priority: args.priority || 'MEDIUM',
+                                        duration: 60,
+                                        date: args.date ? new Date(args.date) : new Date(),
+                                        completed: false,
+                                        statusLabel: 'TODO'
+                                    };
+                                    await handleTaskCreate(newTask);
+                                    result = { success: true, taskId: newTask.id };
+                                    addToast('SUCCESS', `Task created: ${newTask.title}`);
+                                } else if (args.action === 'UPDATE') {
+                                    const target = tasks.find(t => t.id === args.id || (args.title && t.title.toLowerCase().includes(args.title.toLowerCase())));
+                                    if (target) {
+                                        const updated = {
+                                            ...target,
+                                            ...args,
+                                            date: args.date ? new Date(args.date) : target.date,
+                                            completed: args.status === 'DONE' ? true : (args.status ? false : target.completed),
+                                            statusLabel: args.status || target.statusLabel
+                                        };
+                                        await handleTaskUpdate(updated);
+                                        result = { success: true };
+                                        addToast('SUCCESS', `Task updated: ${updated.title}`);
+                                    } else {
+                                        result = { success: false, error: "Task not found" };
+                                    }
+                                } else if (args.action === 'DELETE') {
+                                    const target = tasks.find(t => t.id === args.id || (args.title && t.title.toLowerCase().includes(args.title.toLowerCase())));
+                                    if (target) {
+                                        await handleTaskDelete(target.id);
+                                        result = { success: true };
+                                    } else {
+                                        result = { success: false, error: "Task not found" };
+                                    }
+                                }
                             }
-                        }
-                        else if (args.action === 'DELETE') {
-                            const target = tasks.find(t => t.id === args.id || (args.title && t.title.toLowerCase().includes(args.title.toLowerCase())));
-                            if (target) {
-                                const newTasks = Backend.tasks.delete(user.id, target.id);
-                                setTasks(newTasks);
-                                addToast('INFO', 'Task deleted');
-                                if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: true });
-                            } else {
-                                if (activeRequestRef.current) await sendToolResponseToGemini(call.name, call.id, { success: false, error: "Task not found" });
+                            // MANAGE PROJECT
+                            else if (call.name === 'manageProject') {
+                                if (args.action === 'CREATE') {
+                                    const newProject: Project = {
+                                        id: Date.now().toString() + Math.random(),
+                                        title: args.title,
+                                        client: args.clientName || 'Unassigned',
+                                        clientId: undefined,
+                                        status: args.status || 'ACTIVE',
+                                        price: args.price || 0,
+                                        progress: args.progress || 0,
+                                        tags: [],
+                                        color: '#f97316',
+                                        notes: ''
+                                    };
+                                    await handleProjectCreate(newProject);
+                                    result = { success: true, projectId: newProject.id };
+                                }
                             }
+                            // MANAGE CLIENT
+                            else if (call.name === 'manageClient') {
+                                if (args.action === 'CREATE') {
+                                    const newClient: Client = {
+                                        id: Date.now().toString() + Math.random(),
+                                        name: args.name,
+                                        email: args.email || '',
+                                        revenue: 0,
+                                        status: 'ACTIVE',
+                                        notes: args.notes || '',
+                                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${args.name}`
+                                    };
+                                    await handleClientAdd(newClient, []);
+                                    result = { success: true, clientId: newClient.id };
+                                }
+                            }
+                        } catch (e: any) {
+                            console.error("Tool Execution Failed", e);
+                            result = { success: false, error: e.message || "Unknown error" };
                         }
+                    }
+
+                    if (activeRequestRef.current) {
+                        // Pass dummy ID for functionId since new SDK handles mapping implicitly via sequence or name
+                        await sendToolResponseToGemini(call.name, "call_id_placeholder", result);
                     }
                 }
             }
@@ -983,9 +1273,27 @@ function App() {
         }
     };
 
-    const handleUpdateUser = (updatedUser: User) => {
+    const handleUpdateUser = async (updatedUser: User) => {
         setUser(updatedUser);
         storageService.saveUser(updatedUser);
+
+        // Sync to Supabase for cross-device sync
+        if (!updatedUser.isGuest) {
+            try {
+                await db.users.upsert({
+                    id: updatedUser.id,
+                    name: updatedUser.name,
+                    email: updatedUser.email,
+                    avatar: updatedUser.avatar,
+                    preferences: updatedUser.preferences,
+                    ai_memory: updatedUser.aiMemory,
+                    tokens: updatedUser.tokens
+                } as any);
+            } catch (error) {
+                console.error('Failed to sync user to Supabase:', error);
+            }
+        }
+
         addToast('SUCCESS', 'Profile updated');
     };
 
@@ -1022,22 +1330,6 @@ function App() {
                     onAddProject={handleProjectCreate}
                     onUpdateProject={handleProjectUpdate}
                     onDeleteProject={handleProjectDelete}
-                />;
-            case 'TEAMS':
-                return <TeamPage
-                    user={user as User}
-                    tasks={tasks}
-                    projects={projects}
-                    habits={habits}
-                    onUpdateTask={handleTaskUpdate}
-                    onDeleteTask={handleTaskDelete}
-                    onAddTask={handleTaskCreate}
-                    onUpdateUser={handleUpdateUser}
-                    onChangeColor={(taskId, color) => {
-                        const t = tasks.find(t => t.id === taskId);
-                        if (t) handleTaskUpdate({ ...t, color });
-                    }}
-                    onAddTasks={(newTasks) => newTasks.forEach(handleTaskCreate)}
                 />;
             case 'TASKS':
                 return <TasksPage
@@ -1089,6 +1381,8 @@ function App() {
                     isDriveConnected={isDriveConnected}
                     onUpdateUser={handleUpdateUser}
                 />;
+            // case 'DEMO':
+            //     return <ShadcnDemo />;
             case 'CHAT':
             default:
                 return <ChatInterface
@@ -1132,6 +1426,8 @@ function App() {
                     onClearNotifications={() => setNotifications([])}
                     onMarkNotificationRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
                     onTeamInviteResponse={handleTeamInviteResponse}
+                    onNavigate={setCurrentView}
+                    currentView={currentView}
                 />
                 <div className="flex-1 h-full w-full max-w-[1920px] mx-auto overflow-hidden p-4 md:p-8 transition-all">
                     {renderView()}

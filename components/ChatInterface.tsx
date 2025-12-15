@@ -1,15 +1,18 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowUp, Sparkles, MessageSquare, Image as ImageIcon, X, Plus, Trash2, PanelLeftClose, PanelLeftOpen, StopCircle, Zap, TrendingUp, Lightbulb, Paperclip, MoreHorizontal, Bot, ChevronDown, Flame, CheckCircle2, Search } from 'lucide-react';
+import { Send, Sparkles, Bot, AtSign, X, Paperclip, Loader2 } from 'lucide-react';
 import { Message, ChatSession, User, Task } from '../types';
 import { ChatMessage } from './ChatMessage';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ChatInterfaceProps {
   user: User | null;
   messages: Message[];
   isLoading: boolean;
-  loadingStep?: string; // New prop for Ignite thinking steps
+  loadingStep?: string;
   onSendMessage: (text: string, image?: string, isIgnite?: boolean, mentionedTaskIds?: string[]) => void;
   onStopGeneration?: () => void;
   sessions: ChatSession[];
@@ -18,90 +21,102 @@ interface ChatInterfaceProps {
   onCreateSession: () => void;
   onDeleteSession: (id: string) => void;
   hideSidebar?: boolean;
-  overlayMode?: boolean; // New prop to force drawer behavior
-  tasks?: Task[]; // Added tasks for mentions
+  overlayMode?: boolean;
+  tasks?: Task[];
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
-    user, messages, isLoading, loadingStep, onSendMessage, onStopGeneration,
-    sessions, currentSessionId, onSelectSession, onCreateSession, onDeleteSession,
-    hideSidebar = false, overlayMode = false, tasks = []
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  user, messages, isLoading, loadingStep, onSendMessage, onStopGeneration,
+  sessions, currentSessionId, onSelectSession, onCreateSession, onDeleteSession,
+  hideSidebar = false, overlayMode = false, tasks = []
 }) => {
   const [inputText, setInputText] = useState('');
   const [pendingImage, setPendingImage] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(!hideSidebar); 
   const [isIgniteMode, setIsIgniteMode] = useState(false);
-  
-  // Mention State
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionIndex, setMentionIndex] = useState<number>(-1); // Where the @ started
-  const [mentionedTaskIds, setMentionedTaskIds] = useState<string[]>([]);
+
+  // @ Mention State
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionedTasks, setMentionedTasks] = useState<Task[]>([]);
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const centerInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => { scrollToBottom(); }, [messages, isLoading, pendingImage, loadingStep]);
-  
-  // Focus appropriate input based on state
-  useEffect(() => { 
-      if (messages.length === 0) {
-          centerInputRef.current?.focus();
-      } else {
-          inputRef.current?.focus(); 
-      }
-  }, [currentSessionId, isLoading, messages.length]);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [currentSessionId]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if ((inputText.trim() || pendingImage) && !isLoading) {
-      onSendMessage(inputText, pendingImage || undefined, isIgniteMode, mentionedTaskIds);
+      const taskIds = mentionedTasks.map(t => t.id);
+      onSendMessage(inputText, pendingImage || undefined, isIgniteMode, taskIds);
       setInputText('');
       setPendingImage(null);
-      setMentionedTaskIds([]);
-      // Ensure focus remains on input
-      if (messages.length > 0) {
-          setTimeout(() => inputRef.current?.focus(), 10);
-      }
+      setMentionedTasks([]);
+      setShowMentions(false);
+      setTimeout(() => inputRef.current?.focus(), 10);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-      const val = e.target.value;
-      setInputText(val);
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursor = e.target.selectionStart;
+    setInputText(value);
+    setCursorPosition(cursor);
 
-      // Simple detection for @ mention
-      const lastChar = val.slice(-1);
-      if (lastChar === '@') {
-          setMentionQuery('');
-          setMentionIndex(val.length - 1);
-      } else if (mentionQuery !== null) {
-          // If we are in mention mode, update query
-          const query = val.slice(mentionIndex + 1);
-          if (query.includes(' ')) {
-              setMentionQuery(null); // Stop mentioning if space
-          } else {
-              setMentionQuery(query);
-          }
+    // Detect @ mention
+    const textBeforeCursor = value.substring(0, cursor);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+      // Check if there's a space after @ (which would end the mention)
+      if (!textAfterAt.includes(' ')) {
+        setMentionQuery(textAfterAt);
+        setShowMentions(true);
+      } else {
+        setShowMentions(false);
       }
+    } else {
+      setShowMentions(false);
+    }
   };
 
   const handleSelectMention = (task: Task) => {
-      if (mentionIndex !== -1) {
-          const before = inputText.slice(0, mentionIndex);
-          const after = inputText.slice(mentionIndex + (mentionQuery?.length || 0) + 1); // +1 for @
-          const newTaskRef = `@[${task.title}]`;
-          setInputText(`${before}${newTaskRef} ${after}`);
-          setMentionedTaskIds(prev => [...prev, task.id]);
-          setMentionQuery(null);
-          setMentionIndex(-1);
-          inputRef.current?.focus();
-      }
+    const textBeforeCursor = inputText.substring(0, cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+      const before = inputText.substring(0, lastAtIndex);
+      const after = inputText.substring(cursorPosition);
+      const taskMention = `@${task.title}`;
+
+      setInputText(`${before}${taskMention} ${after}`);
+      setMentionedTasks(prev => [...prev, task]);
+      setShowMentions(false);
+      setMentionQuery('');
+
+      setTimeout(() => {
+        inputRef.current?.focus();
+        const newPosition = (before + taskMention + ' ').length;
+        inputRef.current?.setSelectionRange(newPosition, newPosition);
+      }, 0);
+    }
+  };
+
+  const removeMentionedTask = (taskId: string) => {
+    setMentionedTasks(prev => prev.filter(t => t.id !== taskId));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,253 +130,267 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  // Filter tasks for mention
-  const filteredTasks = mentionQuery !== null 
-      ? tasks.filter(t => t.title.toLowerCase().includes(mentionQuery.toLowerCase()) && !t.completed).slice(0, 5)
-      : [];
+  // Filter tasks for mentions
+  const filteredTasks = tasks
+    .filter(t => !t.completed && t.title.toLowerCase().includes(mentionQuery.toLowerCase()))
+    .slice(0, 5);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 200) + 'px';
+    }
+  }, [inputText]);
 
   return (
-    <div className="flex h-full w-full bg-background overflow-hidden relative">
-      
-      {/* SIDEBAR (Desktop / Collapsible) */}
-      {!hideSidebar && (
-        <div 
-          className={`${sidebarOpen ? 'w-64' : 'w-0'} bg-card border-r border-border transition-all duration-300 flex flex-col overflow-hidden flex-shrink-0`}
-        >
-          <div className="p-4 border-b border-border flex justify-between items-center whitespace-nowrap">
-            <h2 className="font-bold text-foreground">Chats</h2>
-            <button onClick={onCreateSession} className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground">
-              <Plus size={18} />
-            </button>
+    <TooltipProvider delayDuration={300}>
+      <div className="flex flex-col h-full w-full bg-background">
+
+        {/* Minimal Header - Only show when there are messages */}
+        {messages.length > 0 && (
+          <div className="flex-shrink-0 border-b border-border/50 px-6 py-3 bg-background/80 backdrop-blur-sm">
+            <div className="flex items-center justify-between max-w-4xl mx-auto">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Bot size={18} className="text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground">AI Assistant</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {isIgniteMode ? 'Ignite Mode Active' : 'Standard Mode'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Ignite Toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isIgniteMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsIgniteMode(!isIgniteMode)}
+                    className="gap-2"
+                  >
+                    <Sparkles size={14} className={isIgniteMode ? "fill-current" : ""} />
+                    <span className="hidden sm:inline">Ignite</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Toggle Ignite Mode - Enhanced AI capabilities</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-          
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-             {sessions.map(session => (
-               <div 
-                 key={session.id}
-                 onClick={() => onSelectSession(session.id)}
-                 className={`group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${currentSessionId === session.id ? 'bg-secondary text-foreground' : 'hover:bg-secondary/50 text-muted-foreground'}`}
-               >
-                 <MessageSquare size={16} className="flex-shrink-0" />
-                 <div className="flex-1 truncate text-sm font-medium">
-                   {session.title || 'New Chat'}
-                 </div>
-                 <button 
-                    onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id); }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 hover:text-red-500 rounded transition-all"
-                 >
-                   <Trash2 size={14} />
-                 </button>
-               </div>
-             ))}
+        )}
+
+        {/* Messages Area */}
+        <ScrollArea className="flex-1 px-4 md:px-6">
+          <div className="max-w-4xl mx-auto py-8 space-y-6">
+            {messages.length === 0 ? (
+              // Empty State - Centered and Minimal
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                  <Bot size={32} className="text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h1 className="text-2xl font-bold text-foreground">How can I help you today?</h1>
+                  <p className="text-muted-foreground max-w-md">
+                    Ask me anything, or use <Badge variant="secondary" className="mx-1">@</Badge> to reference your tasks
+                  </p>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg mt-8">
+                  {[
+                    'Review my tasks for today',
+                    'Help me plan this week',
+                    'Analyze my productivity',
+                    'Create a new project plan'
+                  ].map((prompt, i) => (
+                    <button
+                      key={i}
+                      onClick={() => onSendMessage(prompt, undefined, isIgniteMode, [])}
+                      className="p-4 text-left bg-card hover:bg-accent border border-border rounded-xl transition-all hover:shadow-md group"
+                    >
+                      <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                        {prompt}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                {messages.map((msg, idx) => (
+                  <ChatMessage
+                    key={msg.id || idx}
+                    message={msg}
+                    isLatest={!isLoading && idx === messages.length - 1 && msg.role === 'model'}
+                  />
+                ))}
+
+                {/* Loading Indicator */}
+                {isLoading && (
+                  <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl border border-border/50 animate-in fade-in slide-in-from-bottom-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">
+                      {loadingStep || "Thinking..."}
+                    </span>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Input Area - Fixed at bottom */}
+        <div className="flex-shrink-0 border-t border-border/50 bg-background/80 backdrop-blur-sm p-4 md:p-6">
+          <div className="max-w-4xl mx-auto space-y-3">
+
+            {/* Mentioned Tasks Pills */}
+            {mentionedTasks.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {mentionedTasks.map(task => (
+                  <Badge key={task.id} variant="secondary" className="gap-2 pr-1">
+                    <AtSign size={12} />
+                    <span className="text-xs">{task.title}</span>
+                    <button
+                      onClick={() => removeMentionedTask(task.id)}
+                      className="ml-1 hover:bg-background rounded-full p-0.5"
+                    >
+                      <X size={12} />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Image Preview */}
+            {pendingImage && (
+              <div className="relative inline-block">
+                <img src={pendingImage} alt="Upload preview" className="h-20 rounded-lg border border-border" />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => setPendingImage(null)}
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                >
+                  <X size={14} />
+                </Button>
+              </div>
+            )}
+
+            {/* Mention Suggestions */}
+            {showMentions && filteredTasks.length > 0 && (
+              <div className="bg-card border border-border rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                <div className="p-2 text-xs font-medium text-muted-foreground bg-muted/50">
+                  Select a task to mention
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredTasks.map(task => (
+                    <button
+                      key={task.id}
+                      onClick={() => handleSelectMention(task)}
+                      className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors flex items-center gap-3 group"
+                    >
+                      <div className={`w-2 h-2 rounded-full ${task.priority === 'HIGH' ? 'bg-red-500' :
+                          task.priority === 'MEDIUM' ? 'bg-yellow-500' :
+                            'bg-blue-500'
+                        }`} />
+                      <span className="text-sm text-foreground group-hover:text-primary transition-colors flex-1 truncate">
+                        {task.title}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Input Form */}
+            <form onSubmit={handleSubmit} className="relative">
+              <div className="flex items-end gap-2 bg-card border border-border rounded-2xl p-2 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+
+                {/* Attach Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-shrink-0"
+                    >
+                      <Paperclip size={18} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Attach image</p>
+                  </TooltipContent>
+                </Tooltip>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+
+                {/* Text Input */}
+                <textarea
+                  ref={inputRef}
+                  value={inputText}
+                  onChange={handleInputChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
+                  placeholder={`Message AI... (use @ to mention tasks)`}
+                  className="flex-1 bg-transparent border-none focus:outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground min-h-[40px] max-h-[200px] py-2.5 scrollbar-hide"
+                  rows={1}
+                />
+
+                {/* Send Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="submit"
+                      size="icon"
+                      disabled={(!inputText.trim() && !pendingImage) || isLoading}
+                      className="flex-shrink-0 rounded-xl"
+                    >
+                      <Send size={18} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send message (Enter)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              {/* Helper Text */}
+              <div className="flex items-center justify-between mt-2 px-2">
+                <p className="text-xs text-muted-foreground">
+                  {isIgniteMode ? (
+                    <span className="text-primary flex items-center gap-1">
+                      <Sparkles size={10} className="fill-current" />
+                      Ignite Mode: Enhanced capabilities
+                    </span>
+                  ) : (
+                    'Press @ to mention tasks'
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Shift + Enter for new line
+                </p>
+              </div>
+            </form>
           </div>
         </div>
-      )}
-      
-      {/* Toggle Sidebar Button (Overlay over content if hidden sidebar) */}
-      {!hideSidebar && !sidebarOpen && (
-          <button 
-            onClick={() => setSidebarOpen(true)}
-            className="absolute top-4 left-4 z-10 p-2 bg-card border border-border rounded-lg shadow-sm text-muted-foreground hover:text-foreground"
-          >
-             <PanelLeftOpen size={20} />
-          </button>
-      )}
-
-      {/* MAIN CHAT AREA */}
-      <div className="flex-1 flex flex-col min-w-0 bg-background relative">
-          
-          {/* Header (optional if needed context) */}
-          {!hideSidebar && sidebarOpen && (
-             <div className="absolute top-4 left-4 z-10">
-               <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-secondary rounded-lg text-muted-foreground">
-                   <PanelLeftClose size={20} />
-               </button>
-             </div>
-          )}
-
-          {/* MESSAGES LIST */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scrollbar-thin scrollbar-thumb-border">
-              {messages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-8 max-w-2xl mx-auto opacity-0 animate-in fade-in zoom-in-95 duration-500 delay-100 fill-mode-forwards" style={{ opacity: 1 }}>
-                      <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-6 shadow-glow text-primary">
-                          <Bot size={40} />
-                      </div>
-                      <h2 className="text-3xl font-bold text-foreground mb-3 tracking-tight">How can I help you execute today?</h2>
-                      <p className="text-muted-foreground text-lg mb-8 max-w-md leading-relaxed">I'm here to act as your Art Director, Strategist, and Manager.</p>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                          {[
-                              { label: 'Critique this design', icon: <ImageIcon size={16} /> },
-                              { label: 'Plan my week', icon: <TrendingUp size={16} /> },
-                              { label: 'Generate content ideas', icon: <Lightbulb size={16} /> },
-                              { label: 'Review my tasks', icon: <CheckCircle2 size={16} /> }
-                          ].map((suggestion, i) => (
-                              <button 
-                                key={i}
-                                onClick={() => onSendMessage(suggestion.label, undefined, isIgniteMode, [])}
-                                className="p-4 bg-card border border-border hover:border-primary/50 hover:bg-secondary/50 rounded-xl text-left transition-all group flex items-center gap-3"
-                              >
-                                  <div className="p-2 bg-secondary rounded-lg text-muted-foreground group-hover:text-primary transition-colors">
-                                      {suggestion.icon}
-                                  </div>
-                                  <span className="text-sm font-medium text-foreground">{suggestion.label}</span>
-                              </button>
-                          ))}
-                      </div>
-                  </div>
-              ) : (
-                  <>
-                    {messages.map((msg, idx) => (
-                        <ChatMessage key={msg.id || idx} message={msg} />
-                    ))}
-                    {isLoading && (
-                        <div className="flex w-full justify-center mb-4">
-                            <div className="bg-card border border-border px-6 py-4 rounded-2xl shadow-lg flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2">
-                                <div className="relative w-5 h-5">
-                                    <div className="absolute inset-0 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                </div>
-                                <span className="text-sm font-medium text-foreground animate-pulse">
-                                    {loadingStep || "Thinking..."}
-                                </span>
-                                {onStopGeneration && (
-                                    <button onClick={onStopGeneration} className="ml-2 p-1 hover:bg-secondary rounded text-muted-foreground hover:text-red-500 transition-colors" title="Stop">
-                                        <StopCircle size={16} />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                  </>
-              )}
-          </div>
-
-          {/* INPUT AREA */}
-          <div className="p-4 md:p-6 pt-0 bg-background/50 backdrop-blur-sm z-20">
-              <div className="max-w-3xl mx-auto relative">
-                  
-                  {/* Mention Dropdown */}
-                  {mentionQuery !== null && filteredTasks.length > 0 && (
-                      <div className="absolute bottom-full left-0 mb-2 w-64 bg-card border border-border rounded-xl shadow-xl overflow-hidden z-30">
-                          <div className="p-2 text-xs font-bold text-muted-foreground uppercase bg-secondary/30">Select Task</div>
-                          {filteredTasks.map(t => (
-                              <button
-                                key={t.id}
-                                onClick={() => handleSelectMention(t)}
-                                className="w-full text-left px-4 py-3 hover:bg-secondary text-sm flex items-center gap-2 transition-colors"
-                              >
-                                  <div className={`w-2 h-2 rounded-full ${t.priority === 'HIGH' ? 'bg-red-500' : 'bg-blue-500'}`}></div>
-                                  <span className="truncate">{t.title}</span>
-                              </button>
-                          ))}
-                      </div>
-                  )}
-
-                  {/* Image Preview */}
-                  {pendingImage && (
-                      <div className="absolute bottom-full left-0 mb-4 p-2 bg-card border border-border rounded-xl shadow-lg flex items-start gap-2 animate-in fade-in slide-in-from-bottom-2">
-                          <img src={pendingImage} alt="Preview" className="h-20 w-auto rounded-lg object-cover" />
-                          <button 
-                            onClick={() => setPendingImage(null)}
-                            className="p-1 bg-secondary rounded-full hover:bg-red-500 hover:text-white transition-colors"
-                          >
-                              <X size={14} />
-                          </button>
-                      </div>
-                  )}
-
-                  <form 
-                    onSubmit={handleSubmit}
-                    className={`
-                        relative bg-card border rounded-3xl shadow-lg transition-all duration-300
-                        ${isIgniteMode 
-                            ? 'border-orange-500 shadow-orange-500/10 ring-1 ring-orange-500/20' 
-                            : 'border-border focus-within:border-foreground/20'
-                        }
-                    `}
-                  >
-                      {/* Ignite Toggle */}
-                      <div className="absolute -top-10 left-0 flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setIsIgniteMode(!isIgniteMode)}
-                            className={`
-                                flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border
-                                ${isIgniteMode 
-                                    ? 'bg-orange-500 text-white border-orange-600 shadow-glow' 
-                                    : 'bg-secondary text-muted-foreground border-border hover:bg-secondary/80'
-                                }
-                            `}
-                          >
-                              <Flame size={12} fill={isIgniteMode ? "currentColor" : "none"} />
-                              Ignite Mode {isIgniteMode ? 'ON' : 'OFF'}
-                          </button>
-                          {isIgniteMode && <span className="text-[10px] text-orange-500 font-medium animate-pulse">Super Agent Active</span>}
-                      </div>
-
-                      <div className="flex items-end p-2 pr-4">
-                          <button 
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="p-3 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-2xl transition-colors flex-shrink-0"
-                            title="Upload Image"
-                          >
-                              <Paperclip size={20} />
-                          </button>
-                          <input 
-                            type="file" 
-                            ref={fileInputRef} 
-                            className="hidden" 
-                            accept="image/*" 
-                            onChange={handleImageUpload}
-                          />
-
-                          <textarea
-                            ref={inputRef}
-                            value={inputText}
-                            onChange={handleInputChange}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSubmit();
-                                }
-                            }}
-                            placeholder={isIgniteMode ? "Ignite Command... (e.g. 'Create a task for...')" : "Ask anything or type @ to link a task..."}
-                            className="flex-1 max-h-40 min-h-[50px] py-3 px-2 bg-transparent border-none focus:ring-0 outline-none resize-none text-sm text-foreground placeholder:text-muted-foreground/50 scrollbar-hide"
-                            rows={1}
-                            style={{ height: 'auto', minHeight: '50px' }}
-                          />
-
-                          <button
-                            type="submit"
-                            disabled={!inputText.trim() && !pendingImage || isLoading}
-                            className={`
-                                p-3 rounded-2xl transition-all flex-shrink-0 mb-1 ml-2
-                                ${(inputText.trim() || pendingImage) && !isLoading
-                                    ? isIgniteMode ? 'bg-orange-500 text-white shadow-glow hover:bg-orange-600' : 'bg-primary text-white shadow-glow hover:bg-primary/90' 
-                                    : 'bg-secondary text-muted-foreground cursor-not-allowed'
-                                }
-                            `}
-                          >
-                              <ArrowUp size={20} strokeWidth={3} />
-                          </button>
-                      </div>
-                  </form>
-                  
-                  <div className="text-center mt-3 text-[10px] text-muted-foreground">
-                      {isIgniteMode ? (
-                          <span className="text-orange-500 flex items-center justify-center gap-1">
-                              <Zap size={10} fill="currentColor" /> Costs {0.6} tokens per request.
-                          </span>
-                      ) : (
-                          <span>AI can make mistakes. Check important info.</span>
-                      )}
-                  </div>
-              </div>
-          </div>
-
       </div>
-    </div>
+    </TooltipProvider>
   );
 };

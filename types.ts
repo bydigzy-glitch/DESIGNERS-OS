@@ -20,7 +20,7 @@ export interface ChatState {
   error: string | null;
 }
 
-export type ViewMode = 'CHAT' | 'HQ' | 'TASKS' | 'HABITS' | 'APPS' | 'CALENDAR' | 'FILES' | 'SETTINGS' | 'MANAGER' | 'TEAMS';
+export type ViewMode = 'CHAT' | 'HQ' | 'TASKS' | 'HABITS' | 'APPS' | 'CALENDAR' | 'FILES' | 'SETTINGS' | 'MANAGER' | 'TEAMS' | 'DEMO';
 
 export type TaskCategory = 'PRODUCT' | 'CONTENT' | 'MONEY' | 'ADMIN' | 'MEETING' | string;
 
@@ -122,6 +122,9 @@ export interface UserPreferences {
   displayName?: string;
   navOrder?: ViewMode[]; // New field for sidebar order
   geminiApiKey?: string;
+  themeColor?: string; // HSL color value for primary theme color
+  themeBackground?: string; // HSL color value for background
+  themeForeground?: string; // HSL color value for foreground text
 }
 
 export interface TeamMember {

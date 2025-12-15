@@ -4,10 +4,16 @@ import { User, Task, Project, TeamMember, TeamMessage, Habit } from '../types';
 import { Users, Plus, TrendingUp, Send, MoreVertical, Trash2, Mail, Flame, Smile, Layout, Calendar as CalendarIcon, CheckSquare, MessageSquare } from 'lucide-react';
 import { FadeIn, CountUp } from './common/AnimatedComponents';
 import { storageService, Backend } from '../services/storageService';
-import { dbTeams, dbTeamMembers, dbTeamMessages, subscribeToTeamMessages, subscribeToTeamMembers, db } from '../services/supabaseClient';
+import { dbTeams, dbTeamMembers, dbTeamMessages, dbNotifications, subscribeToTeamMessages, subscribeToTeamMembers, db, supabase } from '../services/supabaseClient';
 import { Calendar } from './Calendar';
 import { TaskModal } from './modals/TaskModal';
 import { TasksTable } from './common/TasksTable';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface TeamPageProps {
     user: User;
@@ -297,6 +303,58 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                 });
 
                 if (data && !error) {
+                    // Find the invited user by email to create notification
+                    try {
+                        // Query to get the auth user ID by email using SQL
+                        const { data: authUserData, error: authError } = await supabase.rpc('get_user_id_by_email', {
+                            user_email: newMemberEmail.trim().toLowerCase()
+                        });
+
+                        if (authError) {
+                            console.error('[Team] Failed to get user by email:', authError);
+                            // Fallback: try public.users table
+                            const { data: publicUser } = await supabase
+                                .from('users')
+                                .select('id')
+                                .eq('email', newMemberEmail.trim().toLowerCase())
+                                .single();
+
+                            if (publicUser) {
+                                await dbNotifications.create({
+                                    user_id: publicUser.id,
+                                    title: 'Team Invitation',
+                                    message: `${user.name} invited you to join ${team.name}`,
+                                    type: 'SYSTEM',
+                                    read: false,
+                                    action_type: 'TEAM_INVITE',
+                                    team_id: team.id,
+                                    team_name: team.name
+                                });
+                                console.log('[Team] Notification created for user from public.users');
+                            }
+                        } else if (authUserData) {
+                            // Create notification using the auth user's ID
+                            const notifResult = await dbNotifications.create({
+                                user_id: authUserData,
+                                title: 'Team Invitation',
+                                message: `${user.name} invited you to join ${team.name}`,
+                                type: 'SYSTEM',
+                                read: false,
+                                action_type: 'TEAM_INVITE',
+                                team_id: team.id,
+                                team_name: team.name
+                            });
+
+                            if (notifResult.error) {
+                                console.error('[Team] Failed to create notification:', notifResult.error);
+                            } else {
+                                console.log('[Team] Notification created successfully');
+                            }
+                        }
+                    } catch (notifError) {
+                        console.error('[Team] Failed to create notification', notifError);
+                    }
+
                     setTeam(prev => prev ? {
                         ...prev,
                         members: [...prev.members, {
@@ -393,188 +451,206 @@ export const TeamPage: React.FC<TeamPageProps> = ({
     }
 
     return (
-        <div className="flex h-full w-full overflow-hidden bg-background">
-            {/* LEFT SIDEBAR - MEMBERS & CHANNELS */}
-            <div className="w-64 border-r border-border flex-col hidden md:flex bg-card/30 backdrop-blur-sm">
-                <div className="p-4 border-b border-border">
-                    <h1 className="font-bold text-foreground text-lg truncate" title={team.name}>{team.name}</h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                        <span className="text-xs text-muted-foreground">{onlineMembersCount} Online</span>
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-3 space-y-6">
-                    <div>
-                        <h3 className="text-xs font-bold text-muted-foreground uppercase px-2 mb-2">Channels</h3>
-                        <div className="space-y-1">
-                            {['General', 'Design', 'Engineering', 'Random'].map(c => (
-                                <button key={c} className={`w-full text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${c === 'General' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}>
-                                    # {c}
-                                </button>
-                            ))}
+        <TooltipProvider delayDuration={300}>
+            <div className="flex h-full w-full overflow-hidden bg-background">
+                {/* LEFT SIDEBAR - MEMBERS & CHANNELS */}
+                <div className="w-64 border-r border-border flex-col hidden md:flex bg-card/30 backdrop-blur-sm">
+                    <div className="p-4 border-b border-border">
+                        <h1 className="font-bold text-foreground text-lg truncate" title={team.name}>{team.name}</h1>
+                        <div className="flex items-center gap-2 mt-1">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            <span className="text-xs text-muted-foreground">{onlineMembersCount} Online</span>
                         </div>
                     </div>
 
-                    <div>
-                        <h3 className="text-xs font-bold text-muted-foreground uppercase px-2 mb-2 flex justify-between items-center">
-                            Members <span className="bg-secondary px-1.5 rounded-md text-[10px] text-foreground">{teamMembers.length}</span>
-                        </h3>
-                        <div className="space-y-1">
-                            {teamMembers.map((m: any) => {
-                                const online = isOnline(m.lastSeen) || m.id === user.id;
-                                return (
-                                    <div key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors group">
-                                        <div className="relative">
-                                            <img src={m.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.email}`} className="w-6 h-6 rounded-full bg-secondary object-cover" />
-                                            <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border-2 border-card rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />
-                                        </div>
-                                        <span className="text-sm text-foreground truncate">{m.name || m.email.split('@')[0]}</span>
-                                        {m.role === 'ADMIN' && <span className="text-[10px] text-primary ml-auto opacity-0 group-hover:opacity-100 transition-opacity">Owner</span>}
-                                    </div>
-                                )
-                            })}
-                            <button onClick={() => setIsInviting(true)} className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-primary transition-colors w-full">
-                                <Plus size={14} /> Invite People
-                            </button>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-6">
+                        <div>
+                            <h3 className="text-xs font-bold text-muted-foreground uppercase px-2 mb-2">Channels</h3>
+                            <div className="space-y-1">
+                                {['General', 'Design', 'Engineering', 'Random'].map(c => (
+                                    <button key={c} className={`w-full text-left px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${c === 'General' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}>
+                                        # {c}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            {/* MAIN CONTENT AREA */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-                {/* Mobile Header */}
-                <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
-                    <h1 className="font-bold text-foreground">{team.name}</h1>
-                    <button onClick={() => setIsInviting(true)} className="text-primary"><Plus size={20} /></button>
-                </div>
-
-                {/* Tabs */}
-                <div className="flex items-center border-b border-border px-4 bg-background z-10">
-                    {[
-                        { id: 'CHAT', label: 'Chat', icon: MessageSquare },
-                        { id: 'CALENDAR', label: 'Calendar', icon: CalendarIcon },
-                        { id: 'PLANNER', label: 'Planner', icon: CheckSquare },
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-                        >
-                            <tab.icon size={16} /> {tab.label}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="flex-1 overflow-hidden relative">
-                    {/* CHAT TAB */}
-                    {activeTab === 'CHAT' && (
-                        <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-dots">
-                                {teamChat.length === 0 && (
-                                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50">
-                                        <Users size={48} className="mb-2" />
-                                        <p>No messages yet.</p>
-                                    </div>
-                                )}
-                                {teamChat.map((msg: any, i: number) => {
-                                    const isMe = msg.senderId === user.id;
-                                    if (msg.isSystem) return (
-                                        <div key={i} className="flex justify-center my-4"><span className="bg-secondary/50 text-muted-foreground text-[10px] px-3 py-1 rounded-full uppercase font-bold">{msg.text}</span></div>
-                                    );
+                        <div>
+                            <h3 className="text-xs font-bold text-muted-foreground uppercase px-2 mb-2 flex justify-between items-center">
+                                Members <span className="bg-secondary px-1.5 rounded-md text-[10px] text-foreground">{teamMembers.length}</span>
+                            </h3>
+                            <div className="space-y-1">
+                                {teamMembers.map((m: any) => {
+                                    const online = isOnline(m.lastSeen) || m.id === user.id;
                                     return (
-                                        <div key={i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                                            <img src={isMe ? (user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`) : msg.senderAvatar} className="w-8 h-8 rounded-full bg-secondary object-cover flex-shrink-0" />
-                                            <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[70%]`}>
-                                                {!isMe && <span className="text-[10px] text-muted-foreground mb-1 ml-1">{msg.senderName}</span>}
-                                                <div className={`p-3 rounded-2xl text-sm ${isMe ? 'bg-primary text-white rounded-tr-sm' : 'bg-secondary text-foreground rounded-tl-sm'}`}>{msg.text}</div>
-                                                <span className="text-[9px] text-muted-foreground mt-1 opacity-70">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <div key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors group">
+                                            <div className="relative">
+                                                <img src={m.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.email}`} className="w-6 h-6 rounded-full bg-secondary object-cover" />
+                                                <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border-2 border-card rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />
                                             </div>
+                                            <span className="text-sm text-foreground truncate">{m.name || m.email.split('@')[0]}</span>
+                                            {m.role === 'ADMIN' && <span className="text-[10px] text-primary ml-auto opacity-0 group-hover:opacity-100 transition-opacity">Owner</span>}
                                         </div>
-                                    );
+                                    )
                                 })}
-                                <div ref={chatEndRef} />
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button onClick={() => setIsInviting(true)} className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-primary transition-colors w-full">
+                                            <Plus size={14} /> Invite People
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Add team members</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
-                            <form onSubmit={handleSendMessage} className="p-4 bg-card border-t border-border">
-                                <div className="flex items-center gap-2 bg-secondary/50 rounded-xl p-2 px-4 border border-transparent focus-within:border-primary transition-colors">
-                                    <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder={`Message #${"General"}`} className="flex-1 bg-transparent text-foreground focus:outline-none py-1" />
-                                    <button type="submit" disabled={!chatInput.trim()} className="bg-primary text-primary-foreground p-1.5 rounded-lg disabled:opacity-50"><Send size={16} /></button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* MAIN CONTENT AREA */}
+                <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+                    {/* Mobile Header */}
+                    <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
+                        <h1 className="font-bold text-foreground">{team.name}</h1>
+                        <button onClick={() => setIsInviting(true)} className="text-primary"><Plus size={20} /></button>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex items-center border-b border-border px-4 bg-background z-10">
+                        {[
+                            { id: 'CHAT', label: 'Chat', icon: MessageSquare },
+                            { id: 'CALENDAR', label: 'Calendar', icon: CalendarIcon },
+                            { id: 'PLANNER', label: 'Planner', icon: CheckSquare },
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                            >
+                                <tab.icon size={16} /> {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex-1 overflow-hidden relative">
+                        {/* CHAT TAB */}
+                        {activeTab === 'CHAT' && (
+                            <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-dots">
+                                    {teamChat.length === 0 && (
+                                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50">
+                                            <Users size={48} className="mb-2" />
+                                            <p>No messages yet.</p>
+                                        </div>
+                                    )}
+                                    {teamChat.map((msg: any, i: number) => {
+                                        const isMe = msg.senderId === user.id;
+                                        if (msg.isSystem) return (
+                                            <div key={i} className="flex justify-center my-4"><span className="bg-secondary/50 text-muted-foreground text-[10px] px-3 py-1 rounded-full uppercase font-bold">{msg.text}</span></div>
+                                        );
+                                        return (
+                                            <div key={i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                                                <img src={isMe ? (user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`) : msg.senderAvatar} className="w-8 h-8 rounded-full bg-secondary object-cover flex-shrink-0" />
+                                                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[70%]`}>
+                                                    {!isMe && <span className="text-[10px] text-muted-foreground mb-1 ml-1">{msg.senderName}</span>}
+                                                    <div className={`p-3 rounded-2xl text-sm ${isMe ? 'bg-primary text-white rounded-tr-sm' : 'bg-secondary text-foreground rounded-tl-sm'}`}>{msg.text}</div>
+                                                    <span className="text-[9px] text-muted-foreground mt-1 opacity-70">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    <div ref={chatEndRef} />
                                 </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* CALENDAR TAB */}
-                    {activeTab === 'CALENDAR' && (
-                        <div className="h-full overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <Calendar
-                                tasks={tasks}
-                                onUpdateTask={onUpdateTask}
-                                onDeleteTask={onDeleteTask}
-                                onAddTask={onAddTask}
-                                onChangeColor={onChangeColor}
-                                onAddTasks={onAddTasks}
-                            />
-                        </div>
-                    )}
-
-                    {/* PLANNER TAB */}
-                    {activeTab === 'PLANNER' && (
-                        <div className="h-full overflow-y-auto p-4 md:p-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            {/* Top Row: Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto md:h-64">
-                                <TeamHabits habits={habits} />
-                                <TeamWorkload members={teamMembers} tasks={tasks} />
-                                <TeamAnnouncements />
+                                <form onSubmit={handleSendMessage} className="p-4 bg-card border-t border-border">
+                                    <div className="flex items-center gap-2 bg-secondary/50 rounded-xl p-2 px-4 border border-transparent focus-within:border-primary transition-colors">
+                                        <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder={`Message #${"General"}`} className="flex-1 bg-transparent text-foreground focus:outline-none py-1" />
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button type="submit" disabled={!chatInput.trim()} className="bg-primary text-primary-foreground p-1.5 rounded-lg disabled:opacity-50">
+                                                    <Send size={16} />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Send message</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                </form>
                             </div>
+                        )}
 
-                            {/* Detailed Tasks List */}
-                            <div>
-                                <h3 className="text-lg font-bold text-foreground mb-4">Team Tasks</h3>
-                                {/* Determine which tasks to show. Showing all user tasks for now as 'Team' context isn't fully separated yet */}
-                                <TasksTable
+                        {/* CALENDAR TAB */}
+                        {activeTab === 'CALENDAR' && (
+                            <div className="h-full overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <Calendar
                                     tasks={tasks}
-                                    teamMembers={teamMembers}
-                                    projects={projects}
                                     onUpdateTask={onUpdateTask}
                                     onDeleteTask={onDeleteTask}
-                                    onAddTask={() => { setSelectedTask(null); setIsTaskModalOpen(true); }}
-                                    onSelectTask={(t) => { setSelectedTask(t); setIsTaskModalOpen(true); }}
+                                    onAddTask={onAddTask}
+                                    onChangeColor={onChangeColor}
+                                    onAddTasks={onAddTasks}
                                 />
                             </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+                        )}
 
-            <TaskModal
-                isOpen={isTaskModalOpen}
-                onClose={() => setIsTaskModalOpen(false)}
-                onSave={(t) => {
-                    if (selectedTask) onUpdateTask({ ...selectedTask, ...t });
-                    else onAddTask({ id: Date.now().toString(), date: new Date(), duration: 60, completed: false, ...t } as Task);
-                }}
-                onDelete={onDeleteTask}
-                initialTask={selectedTask}
-                projects={projects}
-                teamMembers={teamMembers}
-            />
+                        {/* PLANNER TAB */}
+                        {activeTab === 'PLANNER' && (
+                            <div className="h-full overflow-y-auto p-4 md:p-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                {/* Top Row: Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto md:h-64">
+                                    <TeamHabits habits={habits} />
+                                    <TeamWorkload members={teamMembers} tasks={tasks} />
+                                    <TeamAnnouncements />
+                                </div>
 
-            {isInviting && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setIsInviting(false)}>
-                    <div className="bg-card border border-border p-6 rounded-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                        <h3 className="font-bold text-lg mb-4 text-foreground">Invite to Squad</h3>
-                        <form onSubmit={handleInvite}>
-                            <div className="relative mb-4">
-                                <input type="email" value={newMemberEmail} onChange={e => setNewMemberEmail(e.target.value)} className="w-full bg-secondary border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:outline-none focus:border-primary" placeholder="colleague@brand.com" autoFocus required />
-                                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                {/* Detailed Tasks List */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-foreground mb-4">Team Tasks</h3>
+                                    {/* Determine which tasks to show. Showing all user tasks for now as 'Team' context isn't fully separated yet */}
+                                    <TasksTable
+                                        tasks={tasks}
+                                        teamMembers={teamMembers}
+                                        projects={projects}
+                                        onUpdateTask={onUpdateTask}
+                                        onDeleteTask={onDeleteTask}
+                                        onAddTask={() => { setSelectedTask(null); setIsTaskModalOpen(true); }}
+                                        onSelectTask={(t) => { setSelectedTask(t); setIsTaskModalOpen(true); }}
+                                    />
+                                </div>
                             </div>
-                            <button type="submit" className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-xl text-sm hover:bg-primary/90 transition-colors shadow-glow">Send Invite</button>
-                        </form>
+                        )}
                     </div>
                 </div>
-            )}
-        </div>
+
+                <TaskModal
+                    isOpen={isTaskModalOpen}
+                    onClose={() => setIsTaskModalOpen(false)}
+                    onSave={(t) => {
+                        if (selectedTask) onUpdateTask({ ...selectedTask, ...t });
+                        else onAddTask({ id: Date.now().toString(), date: new Date(), duration: 60, completed: false, ...t } as Task);
+                    }}
+                    onDelete={onDeleteTask}
+                    initialTask={selectedTask}
+                    projects={projects}
+                    teamMembers={teamMembers}
+                />
+
+                {isInviting && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setIsInviting(false)}>
+                        <div className="bg-card border border-border p-6 rounded-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                            <h3 className="font-bold text-lg mb-4 text-foreground">Invite to Squad</h3>
+                            <form onSubmit={handleInvite}>
+                                <div className="relative mb-4">
+                                    <input type="email" value={newMemberEmail} onChange={e => setNewMemberEmail(e.target.value)} className="w-full bg-secondary border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:outline-none focus:border-primary" placeholder="colleague@brand.com" autoFocus required />
+                                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                </div>
+                                <button type="submit" className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-xl text-sm hover:bg-primary/90 transition-colors shadow-glow">Send Invite</button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </TooltipProvider>
     );
 };

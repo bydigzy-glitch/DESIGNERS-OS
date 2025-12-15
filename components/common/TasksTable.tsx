@@ -1,7 +1,10 @@
 
+
 import React from 'react';
 import { Task, Project, TeamMember } from '../../types';
 import { CheckCircle2, Trash2, Calendar, Plus, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface TasksTableProps {
     tasks: Task[];
@@ -35,9 +38,9 @@ export const TasksTable: React.FC<TasksTableProps> = ({
         <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm flex-1 flex flex-col min-h-[300px]">
             <div className="p-6 border-b border-border flex justify-between items-center flex-shrink-0">
                 <h3 className="text-lg font-bold text-foreground">{title}</h3>
-                <button onClick={onAddTask} className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors">
+                <Button onClick={onAddTask} size="sm" className="gap-2">
                     <Plus size={14} /> Add Task
-                </button>
+                </Button>
             </div>
 
             <div className="flex-1 overflow-x-auto">
@@ -59,12 +62,14 @@ export const TasksTable: React.FC<TasksTableProps> = ({
                             return (
                                 <div key={task.id} onClick={() => onSelectTask(task)} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-secondary/20 transition-colors cursor-pointer group">
                                     <div className="col-span-1 flex justify-center">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); onUpdateTask({ ...task, completed: !task.completed, statusLabel: !task.completed ? 'DONE' : 'TODO' }); }}
-                                            className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${task.completed ? 'bg-emerald-500 border-emerald-500' : 'border-muted-foreground hover:border-primary'}`}
-                                        >
-                                            {task.completed && <CheckCircle2 size={12} className="text-black" />}
-                                        </button>
+                                        <Checkbox
+                                            checked={task.completed}
+                                            onCheckedChange={(checked) => {
+                                                onUpdateTask({ ...task, completed: checked as boolean, statusLabel: checked ? 'DONE' : 'TODO' });
+                                            }}
+                                            className="w-5 h-5"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
                                     </div>
                                     <div className="col-span-4">
                                         <div className={`text-sm font-bold truncate ${task.completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{task.title}</div>
@@ -101,9 +106,14 @@ export const TasksTable: React.FC<TasksTableProps> = ({
                                         )}
                                     </div>
                                     <div className="col-span-2 flex justify-end">
-                                        <button onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all h-8 w-8"
+                                        >
                                             <Trash2 size={16} />
-                                        </button>
+                                        </Button>
                                     </div>
                                 </div>
                             );

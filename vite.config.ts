@@ -1,12 +1,18 @@
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './'),
+    },
+  },
   define: {
     // Polyfill process.env to prevent crashes in client-side code accessing it directly
-    'process.env': {} 
+    'process.env': {}
   }
 });

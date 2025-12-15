@@ -2,6 +2,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, ViewMode } from '../types';
 import { LogOut, User as UserIcon, Bell, ArrowLeft, Save, Upload, Menu, ChevronUp, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 import { FadeIn } from './common/AnimatedComponents';
 
 interface SettingsProps {
@@ -127,35 +132,33 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                     <div className="flex-1">
                         {isEditing ? (
                             <div className="space-y-3">
-                                <input
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="w-full bg-surface-highlight border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary font-bold text-xl"
-                                    placeholder="Full Name"
-                                    aria-label="Edit Name"
-                                />
-                                <input
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-surface-highlight border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary"
-                                    placeholder="Email Address"
-                                    aria-label="Edit Email"
-                                />
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Full Name</Label>
+                                    <Input
+                                        id="name"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Full Name"
+                                        className="font-bold text-xl"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">Email Address</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Email Address"
+                                    />
+                                </div>
                                 <div className="flex gap-2">
-                                    <button
-                                        onClick={handleSave}
-                                        className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg text-sm font-bold hover:bg-indigo-600 transition-colors active:scale-95"
-                                        aria-label="Save Profile Changes"
-                                    >
+                                    <Button onClick={handleSave} className="flex items-center gap-2">
                                         <Save size={14} /> Save
-                                    </button>
-                                    <button
-                                        onClick={() => setIsEditing(false)}
-                                        className="px-4 py-2 bg-white/5 text-text-secondary rounded-lg text-sm font-bold hover:text-white transition-colors active:scale-95"
-                                        aria-label="Cancel Editing"
-                                    >
+                                    </Button>
+                                    <Button variant="outline" onClick={() => setIsEditing(false)}>
                                         Cancel
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         ) : (
@@ -169,42 +172,65 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                 </div>
 
                 <div className="space-y-4 mt-8">
-                    <div className="p-5 bg-surface-highlight rounded-2xl border border-white/5">
-                        <h3 className="text-white font-bold mb-4 flex items-center gap-2"><UserIcon size={18} /> Profile Information</h3>
+                    <div className="p-5 bg-card rounded-2xl border border-border">
+                        <h3 className="text-foreground font-bold mb-4 flex items-center gap-2"><UserIcon size={18} /> Profile Information</h3>
                         <p className="text-sm text-muted-foreground">Manage your personal details and avatar.</p>
                     </div>
 
-                    <div className="flex items-center justify-between p-5 bg-surface-highlight rounded-2xl border border-white/5">
+                    <div className="flex items-center justify-between p-5 bg-card rounded-2xl border border-border">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-white/10 rounded-lg"><Bell size={18} /></div>
-                            <span className="text-white font-medium">Notifications</span>
+                            <div className="p-2 bg-secondary rounded-lg"><Bell size={18} /></div>
+                            <span className="text-foreground font-medium">Notifications</span>
                         </div>
                         <button
                             onClick={handleToggleNotifications}
-                            className={`w-12 h-6 rounded-full p-1 transition-colors ${notificationsEnabled ? 'bg-primary' : 'bg-gray-600'}`}
+                            className={`w-12 h-6 rounded-full p-1 transition-colors ${notificationsEnabled ? 'bg-primary' : 'bg-muted'}`}
                         >
                             <div className={`w-4 h-4 bg-white rounded-full transition-transform ${notificationsEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
                         </button>
                     </div>
 
-                    {/* API Key Section */}
-                    <div className="p-5 bg-surface-highlight rounded-2xl border border-white/5">
-                        <h3 className="text-white font-bold mb-4 flex items-center gap-2"><div className="p-1 bg-white/10 rounded"><Upload size={14} /></div> Gemini API Key</h3>
-                        <p className="text-sm text-text-secondary mb-3">Enter your custom API key to enable AI features.</p>
-                        <input
-                            type="password"
-                            value={user.preferences.geminiApiKey || ''}
-                            onChange={(e) => {
-                                if (onUpdateUser) {
-                                    onUpdateUser({
-                                        ...user,
-                                        preferences: { ...user.preferences, geminiApiKey: e.target.value }
-                                    });
-                                }
-                            }}
-                            className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-accent-primary"
-                            placeholder="AIzaSy..."
-                        />
+
+
+                    {/* Theme Color Picker */}
+                    <div className="p-5 bg-card rounded-2xl border border-border">
+                        <h3 className="text-foreground font-bold mb-4">Theme Color</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Choose your accent color</p>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { name: 'Orange', primary: '24.6 95% 53.1%', preview: 'bg-orange-500' },
+                                { name: 'Indigo', primary: '239 84% 67%', preview: 'bg-indigo-500' },
+                                { name: 'Red', primary: '0 72.2% 50.6%', preview: 'bg-red-500' },
+                                { name: 'Blue', primary: '221.2 83.2% 53.3%', preview: 'bg-blue-500' },
+                            ].map(color => (
+                                <button
+                                    key={color.name}
+                                    onClick={() => {
+                                        // Only update primary color - let light/dark mode handle the rest
+                                        document.documentElement.style.setProperty('--primary', color.primary);
+                                        document.documentElement.style.setProperty('--ring', color.primary);
+
+                                        if (onUpdateUser) {
+                                            onUpdateUser({
+                                                ...user,
+                                                preferences: {
+                                                    ...user.preferences,
+                                                    themeColor: color.primary
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:scale-105 ${user.preferences.themeColor === color.primary
+                                        ? 'border-white bg-white/10'
+                                        : 'border-white/10 hover:border-white/30'
+                                        }`}
+                                >
+                                    <div className={`w-8 h-8 rounded-full ${color.preview}`}></div>
+                                    <span className="text-xs font-medium text-white">{color.name}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Sidebar Customization */}

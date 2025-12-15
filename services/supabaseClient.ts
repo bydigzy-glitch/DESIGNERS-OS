@@ -5,6 +5,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xcunrqfrxbfgdc
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjdW5ycWZyeGJmZ2RjcXpmZWN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1MDczMTYsImV4cCI6MjA4MTA4MzMxNn0.WgphgxJ-KVT6dD-t6-hKnsR9tTARBYaaJihwZjwgww8';
 
 // Create Supabase client
+
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Database types
@@ -395,6 +397,21 @@ export interface DbTeamMessage {
     created_at: string;
 }
 
+export interface DbNotification {
+    id: string;
+    user_id: string;
+    title: string;
+    message: string;
+    type: 'INFO' | 'WARNING' | 'SUCCESS' | 'SYSTEM';
+    read: boolean;
+    action_type?: 'TEAM_INVITE' | 'CHAT_MESSAGE' | 'DEADLINE' | 'ROLE_ASSIGNMENT' | 'TASK_MODAL';
+    team_id?: string;
+    team_name?: string;
+    task_id?: string;
+    task_title?: string;
+    created_at: string;
+}
+
 export const dbTeams = {
     // Get user's team
     get: async (teamId: string) => {
@@ -552,6 +569,76 @@ export const subscribeToTeamMembers = (
             table: 'team_members',
             filter: `team_id=eq.${teamId}`
         }, onMemberChange)
+        .subscribe();
+
+    return () => channel.unsubscribe();
+};
+
+// Notifications database functions
+export const dbNotifications = {
+    // Get user's notifications
+    getByUser: async (userId: string) => {
+        const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        return { data: data || [], error };
+    },
+
+    // Create notification
+    create: async (notification: Omit<DbNotification, 'id' | 'created_at'>) => {
+        const { data, error } = await supabase
+            .from('notifications')
+            .insert(notification)
+            .select()
+            .single();
+        return { data, error };
+    },
+
+    // Mark as read
+    markAsRead: async (notificationId: string) => {
+        const { data, error } = await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('id', notificationId)
+            .select()
+            .single();
+        return { data, error };
+    },
+
+    // Delete notification
+    delete: async (notificationId: string) => {
+        const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('id', notificationId);
+        return { error };
+    },
+
+    // Clear all notifications for user
+    clearAll: async (userId: string) => {
+        const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('user_id', userId);
+        return { error };
+    }
+};
+
+// Subscribe to user notifications (real-time)
+export const subscribeToNotifications = (
+    userId: string,
+    onNotification: (payload: any) => void
+) => {
+    const channel = supabase
+        .channel(`notifications-${userId}`)
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`
+        }, onNotification)
         .subscribe();
 
     return () => channel.unsubscribe();

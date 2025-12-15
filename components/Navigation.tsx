@@ -1,7 +1,15 @@
 
+
 import React, { useEffect, useState } from 'react';
 import { ViewMode, User, AppNotification } from '../types';
 import { LayoutGrid, Layers, Calendar as CalendarIcon, MessageSquare, FolderOpen, Settings, Hexagon, CheckSquare, Sun, Moon, Flame, Bell, Briefcase, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface NavigationProps {
   currentView: ViewMode;
@@ -12,13 +20,12 @@ interface NavigationProps {
   onClearAll: () => void;
 }
 
-const DEFAULT_ORDER: ViewMode[] = ['HQ', 'TEAMS', 'MANAGER', 'TASKS', 'HABITS', 'APPS', 'CALENDAR', 'CHAT', 'FILES'];
+const DEFAULT_ORDER: ViewMode[] = ['HQ', 'MANAGER', 'TASKS', 'HABITS', 'APPS', 'CALENDAR', 'CHAT', 'FILES'];
 
 export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, user, notifications, onMarkRead, onClearAll }) => {
   // Static definition of all available items
   const allNavItems: Record<string, { id: ViewMode; label: string; icon: React.ReactNode }> = {
     'HQ': { id: 'HQ', label: 'Workspace', icon: <LayoutGrid size={18} /> },
-    'TEAMS': { id: 'TEAMS', label: 'Teams', icon: <Users size={18} /> },
     'MANAGER': { id: 'MANAGER', label: 'Manager', icon: <Briefcase size={18} /> },
     'TASKS': { id: 'TASKS', label: 'Tasks', icon: <CheckSquare size={18} /> },
     'HABITS': { id: 'HABITS', label: 'Habits', icon: <Flame size={18} /> },
@@ -50,7 +57,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate,
   }, []);
 
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
       {/* DESKTOP SIDEBAR */}
       <nav className="hidden md:flex flex-col w-64 h-full bg-background border-r border-border p-4 justify-between flex-shrink-0 z-50">
         <div>
@@ -70,21 +77,34 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate,
             {navOrder.map(id => {
               const item = allNavItems[id];
               if (!item) return null;
+
+              const tooltipText = {
+                'HQ': 'Your main workspace dashboard',
+                'MANAGER': 'Manage clients and projects',
+                'TASKS': 'View and organize your tasks',
+                'HABITS': 'Track your daily habits',
+                'APPS': 'Browse available apps',
+                'CALENDAR': 'Schedule and events',
+                'CHAT': 'AI-powered assistant',
+                'FILES': 'Manage your assets and files'
+              }[item.id] || item.label;
+
               return (
-                <button
-                  key={item.id}
-                  onClick={() => onNavigate(item.id)}
-                  className={`
-                                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                ${currentView === item.id
-                      ? 'bg-secondary text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                    }
-                            `}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
+                <Tooltip key={item.id}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={currentView === item.id ? "secondary" : "ghost"}
+                      onClick={() => onNavigate(item.id)}
+                      className="w-full justify-start gap-3"
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>{tooltipText}</p>
+                  </TooltipContent>
+                </Tooltip>
               );
             })}
           </div>
@@ -92,13 +112,21 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate,
 
         {/* Bottom Actions */}
         <div className="space-y-1">
-          <button
-            onClick={() => onNavigate('SETTINGS')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${currentView === 'SETTINGS' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'}`}
-          >
-            <Settings size={18} />
-            <span className="text-sm font-medium">Settings</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={currentView === 'SETTINGS' ? "secondary" : "ghost"}
+                onClick={() => onNavigate('SETTINGS')}
+                className="w-full justify-start gap-3"
+              >
+                <Settings size={18} />
+                <span>Settings</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Customize your preferences</p>
+            </TooltipContent>
+          </Tooltip>
 
           <div className="pt-4 mt-2 border-t border-border">
             <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer group">
@@ -114,39 +142,49 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate,
         </div>
       </nav>
 
-      {/* MOBILE BOTTOM GRADIENT */}
-      <div className="md:hidden mobile-nav-gradient" />
 
-      {/* MOBILE BOTTOM DOCK */}
-      <nav className="md:hidden fixed bottom-6 left-6 right-6 h-[64px] bg-background/80 backdrop-blur-xl border border-border rounded-full shadow-2xl z-50 flex items-center justify-between px-2 pb-safe">
-        {navOrder.slice(0, 5).map(id => {
-          const item = allNavItems[id];
-          if (!item) return null;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              className={`
-                        relative p-3 rounded-full transition-all duration-300 flex items-center justify-center
-                        ${currentView === item.id
-                  ? 'text-white bg-primary shadow-glow'
-                  : 'text-muted-foreground hover:text-foreground'
-                }
-                    `}
-            >
-              {item.icon}
-            </button>
-          );
-        })}
-        <button
-          onClick={() => onNavigate('SETTINGS')}
-          className="p-1 rounded-full overflow-hidden border border-border"
+      {/* MOBILE BOTTOM DOCK - 4 Main Items */}
+      <nav className="md:hidden fixed bottom-4 left-4 right-4 h-[68px] bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-50 flex items-center justify-around px-4">
+        {/* HQ */}
+        <Button
+          variant={currentView === 'HQ' ? "default" : "ghost"}
+          onClick={() => onNavigate('HQ')}
+          className="flex flex-col items-center justify-center gap-1 h-auto py-3"
         >
-          <div className="w-8 h-8 rounded-full overflow-hidden">
-            <img src={user?.avatar} alt="User" className="w-full h-full object-cover" />
-          </div>
-        </button>
+          <LayoutGrid size={20} />
+          <span className="text-[9px] font-bold uppercase tracking-wider">HQ</span>
+        </Button>
+
+        {/* TASKS */}
+        <Button
+          variant={currentView === 'TASKS' ? "default" : "ghost"}
+          onClick={() => onNavigate('TASKS')}
+          className="flex flex-col items-center justify-center gap-1 h-auto py-3"
+        >
+          <CheckSquare size={20} />
+          <span className="text-[9px] font-bold uppercase tracking-wider">TASK</span>
+        </Button>
+
+        {/* AI CHAT */}
+        <Button
+          variant={currentView === 'CHAT' ? "default" : "ghost"}
+          onClick={() => onNavigate('CHAT')}
+          className="flex flex-col items-center justify-center gap-1 h-auto py-3"
+        >
+          <MessageSquare size={20} />
+          <span className="text-[9px] font-bold uppercase tracking-wider">AI</span>
+        </Button>
+
+        {/* CALENDAR */}
+        <Button
+          variant={currentView === 'CALENDAR' ? "default" : "ghost"}
+          onClick={() => onNavigate('CALENDAR')}
+          className="flex flex-col items-center justify-center gap-1 h-auto py-3"
+        >
+          <CalendarIcon size={20} />
+          <span className="text-[9px] font-bold uppercase tracking-wider">CALE</span>
+        </Button>
       </nav>
-    </>
+    </TooltipProvider>
   );
 };

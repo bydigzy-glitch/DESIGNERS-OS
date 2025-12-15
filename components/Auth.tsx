@@ -2,14 +2,17 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { signIn, signUp, supabase } from '../services/supabaseClient';
-import { Sparkles, ArrowRight, Lock, Mail, AlertCircle, Check, KeyRound, ArrowLeft, Eye, EyeOff, Hexagon, User as UserIcon } from 'lucide-react';
+import { Sparkles, ArrowRight, Lock, Mail, AlertCircle, Check, ArrowLeft, Eye, EyeOff, Hexagon, User as UserIcon, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface AuthProps {
     onLogin: (user: User) => void;
 }
 
 export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
-    const [view, setView] = useState<'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD' | 'RESET_CODE'>('LOGIN');
+    const [view, setView] = useState<'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD'>('LOGIN');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
@@ -17,18 +20,9 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [shake, setShake] = useState(false);
-
-    // Forgot Password State
-    const [resetCode, setResetCode] = useState('');
-    const [generatedCode, setGeneratedCode] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [demoCodeVisible, setDemoCodeVisible] = useState<string | null>(null);
 
     const triggerError = (msg: string) => {
         setError(msg);
-        setShake(true);
-        setTimeout(() => setShake(false), 500);
         setIsLoading(false);
     };
 
@@ -47,7 +41,6 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             },
             tokens: 10
         };
-        // Guest users don't persist to cloud - local session only
         onLogin(guestUser);
     };
 
@@ -59,8 +52,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
         const cleanEmail = email.trim();
 
-        // Validation
-        if (view !== 'RESET_CODE' && (!cleanEmail.includes('@') || !cleanEmail.includes('.'))) {
+        if (view !== 'LOGIN' && (!cleanEmail.includes('@') || !cleanEmail.includes('.'))) {
             triggerError("Please enter a valid email address.");
             return;
         }
@@ -72,19 +64,30 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
         try {
             if (view === 'LOGIN') {
-                // SUPABASE LOGIN
                 const { data, error: authError } = await signIn(cleanEmail, password);
                 if (authError) {
                     triggerError(authError.message || "Login failed. Check your credentials.");
                     return;
                 }
                 if (data.user) {
-                    // Fetch user profile from our users table
-                    const { data: profile } = await supabase
+                    let { data: profile } = await supabase
                         .from('users')
                         .select('*')
                         .eq('id', data.user.id)
                         .single();
+
+                    if (!profile) {
+                        const newProfile = {
+                            id: data.user.id,
+                            email: data.user.email || cleanEmail,
+                            name: data.user.user_metadata?.name || 'User',
+                            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.id}`,
+                            tokens: 50000,
+                            created_at: new Date().toISOString()
+                        };
+                        const { error: createError } = await supabase.from('users').insert(newProfile);
+                        if (!createError) profile = newProfile;
+                    }
 
                     const appUser: User = {
                         id: data.user.id,
@@ -99,7 +102,6 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                     onLogin(appUser);
                 }
             } else if (view === 'REGISTER') {
-                // SUPABASE REGISTER
                 if (!name.trim()) {
                     triggerError("Full Name is required.");
                     return;
@@ -107,19 +109,12 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
                 const { data, error: authError } = await signUp(cleanEmail, password, name);
                 if (authError) {
-                    if (authError.message.includes('already registered')) {
-                        triggerError("Account already exists. Try logging in.");
-                        setView('LOGIN');
-                    } else {
-                        triggerError(authError.message || "Registration failed.");
-                    }
+                    triggerError(authError.message || "Registration failed.");
                     return;
                 }
 
                 if (data.user) {
-                    // Wait a moment for the trigger to create the user profile
                     await new Promise(resolve => setTimeout(resolve, 1000));
-
                     const { data: profile } = await supabase
                         .from('users')
                         .select('*')
@@ -138,7 +133,6 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                     onLogin(appUser);
                 }
             } else if (view === 'FORGOT_PASSWORD') {
-                // SUPABASE PASSWORD RESET
                 const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
                     redirectTo: window.location.origin + '/reset-password'
                 });
@@ -148,12 +142,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 }
                 setSuccessMsg("Password reset email sent! Check your inbox.");
                 setView('LOGIN');
-            } else if (view === 'RESET_CODE') {
-                // This flow is handled by Supabase magic link now
-                setSuccessMsg("Please check your email for the reset link.");
-                setView('LOGIN');
             }
-
         } catch (err) {
             console.error('Auth error:', err);
             triggerError("System error. Please try again.");
@@ -163,243 +152,207 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
-            {/* Background Ambience */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px]"></div>
-            </div>
+        <div className="w-full h-screen flex overflow-hidden bg-background">
 
-            <div className={`w-full max-w-md bg-card border border-border p-8 rounded-[2.5rem] relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-500 ${shake ? 'animate-shake' : ''}`}>
+            {/* Left Side - Form */}
+            <div className="w-full lg:w-1/2 flex flex-col p-8 lg:p-12 xl:p-24 justify-center relative animate-in slide-in-from-left-4 duration-500">
+                <div className="max-w-sm mx-auto w-full space-y-8">
 
-                {/* Header */}
-                <div className="text-center mb-8 relative">
-                    {view !== 'LOGIN' && (
-                        <button
-                            onClick={() => { setView('LOGIN'); setError(null); setSuccessMsg(null); setDemoCodeVisible(null); }}
-                            className="absolute left-0 top-0 p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            <ArrowLeft size={20} />
-                        </button>
-                    )}
-
-                    <div className="flex justify-center mb-4">
-                        <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-glow">
-                            <Hexagon size={32} className="text-white" strokeWidth={3} />
+                    {/* Header */}
+                    <div className="space-y-2 text-center">
+                        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-primary/10 mb-4 shadow-glow">
+                            <Hexagon size={32} className="text-primary" strokeWidth={2.5} />
                         </div>
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                            {view === 'LOGIN' ? 'Welcome back' : view === 'REGISTER' ? 'Create an account' : 'Reset password'}
+                        </h1>
+                        <p className="text-muted-foreground">
+                            {view === 'LOGIN' ? 'Enter your credentials to access your workspace' :
+                                view === 'REGISTER' ? 'Start your journey as a Designpreneur' :
+                                    'Enter your email to receive a recovery link'}
+                        </p>
                     </div>
 
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight mb-2">
-                        {view === 'LOGIN' ? 'Welcome Back' :
-                            view === 'REGISTER' ? 'Create Account' :
-                                view === 'FORGOT_PASSWORD' ? 'Forgot Password?' : 'Reset Password'}
-                    </h1>
-                    <p className="text-muted-foreground text-sm">
-                        {view === 'LOGIN' ? 'Access your War Room and Assets.' :
-                            view === 'REGISTER' ? 'Start your Designpreneur journey today.' :
-                                view === 'FORGOT_PASSWORD' ? 'Enter your email to receive a reset code.' :
-                                    'Create a new password for your account.'}
-                    </p>
-                </div>
-
-                {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-500 text-sm font-bold animate-in fade-in slide-in-from-top-2">
-                        <AlertCircle size={18} />
-                        {error}
-                    </div>
-                )}
-
-                {successMsg && (
-                    <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center gap-3 text-green-500 text-sm font-bold animate-in fade-in slide-in-from-top-2">
-                        <Check size={18} />
-                        {successMsg}
-                    </div>
-                )}
-
-                {/* DEMO EMAIL SIMULATION BOX */}
-                {demoCodeVisible && view === 'RESET_CODE' && (
-                    <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl animate-in fade-in slide-in-from-top-2">
-                        <div className="flex items-center gap-2 text-blue-500 text-xs font-bold uppercase mb-2">
-                            <Mail size={14} /> Simulated Email Inbox
-                        </div>
-                        <p className="text-muted-foreground text-sm mb-2">To: {email}</p>
-                        <div className="bg-secondary/50 p-3 rounded-lg border border-border text-center">
-                            <span className="text-muted-foreground text-xs block mb-1">Your Verification Code</span>
-                            <span className="text-xl font-mono font-bold text-foreground tracking-widest">{demoCodeVisible}</span>
-                        </div>
-                    </div>
-                )}
-
-                <form onSubmit={handleManualSubmit} className="space-y-4">
-
-                    {/* Full Name - Only for Register */}
-                    <div className={`transition-all duration-300 overflow-hidden ${view === 'REGISTER' ? 'h-[80px] opacity-100' : 'h-0 opacity-0'}`}>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Full Name</label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-secondary/50 border border-border rounded-xl p-4 pl-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground"
-                                placeholder="Ex. Virgil Abloh"
-                                required={view === 'REGISTER'}
-                            />
-                            <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                        </div>
-                    </div>
-
-                    {/* Email - For Login, Register, Forgot Password */}
-                    {(view === 'LOGIN' || view === 'REGISTER' || view === 'FORGOT_PASSWORD') && (
-                        <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Email Address</label>
-                            <div className="relative">
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-secondary/50 border border-border rounded-xl p-4 pl-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground"
-                                    placeholder="name@brand.com"
-                                    required
-                                />
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    {/* Alerts */}
+                    <div className="space-y-4">
+                        {error && (
+                            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-destructive text-sm font-medium animate-in fade-in slide-in-from-top-1">
+                                <AlertCircle size={16} />
+                                {error}
                             </div>
-                        </div>
-                    )}
-
-                    {/* Password - For Login, Register */}
-                    {(view === 'LOGIN' || view === 'REGISTER') && (
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Password</label>
-                                {view === 'LOGIN' && (
-                                    <button
-                                        type="button"
-                                        onClick={() => { setView('FORGOT_PASSWORD'); setError(null); setSuccessMsg(null); }}
-                                        className="text-xs text-primary font-bold hover:underline"
-                                    >
-                                        Forgot?
-                                    </button>
-                                )}
+                        )}
+                        {successMsg && (
+                            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-2 text-green-600 text-sm font-medium animate-in fade-in slide-in-from-top-1">
+                                <Check size={16} />
+                                {successMsg}
                             </div>
-                            <div className="relative">
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-secondary/50 border border-border rounded-xl p-4 pl-12 pr-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground"
-                                    placeholder="••••••••"
-                                    required
-                                />
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
-                    {/* Reset Code Fields */}
-                    {view === 'RESET_CODE' && (
-                        <>
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Verification Code</label>
+                    {/* Form */}
+                    <form onSubmit={handleManualSubmit} className="space-y-4">
+
+                        {view === 'REGISTER' && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <Label htmlFor="name">Full Name</Label>
                                 <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={resetCode}
-                                        onChange={(e) => setResetCode(e.target.value)}
-                                        className="w-full bg-secondary/50 border border-border rounded-xl p-4 pl-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all tracking-widest text-center font-mono text-lg placeholder:text-muted-foreground"
-                                        placeholder="123456"
-                                        maxLength={6}
+                                    <Input
+                                        id="name"
+                                        placeholder="Virgil Abloh"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="pl-10 h-12"
                                         required
                                     />
-                                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                                    <UserIcon className="absolute left-3 top-3.5 text-muted-foreground" size={18} />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">New Password</label>
+                        )}
+
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <div className="relative">
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="name@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="pl-10 h-12"
+                                    required
+                                />
+                                <Mail className="absolute left-3 top-3.5 text-muted-foreground" size={18} />
+                            </div>
+                        </div>
+
+                        {view !== 'FORGOT_PASSWORD' && (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password">Password</Label>
+                                    {view === 'LOGIN' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setView('FORGOT_PASSWORD')}
+                                            className="text-xs text-primary font-medium hover:underline"
+                                        >
+                                            Forgot password?
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="relative">
-                                    <input
+                                    <Input
+                                        id="password"
                                         type={showPassword ? "text" : "password"}
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-full bg-secondary/50 border border-border rounded-xl p-4 pl-12 pr-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground"
-                                        placeholder="New strong password"
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="pl-10 pr-10 h-12"
                                         required
                                     />
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                                    <Lock className="absolute left-3 top-3.5 text-muted-foreground" size={18} />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                        className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground hover:scale-110 transition-all"
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
                             </div>
-                        </>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl mt-6 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-glow"
-                    >
-                        {isLoading ? (
-                            <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                            <>
-                                {view === 'LOGIN' ? 'Sign In' :
-                                    view === 'REGISTER' ? 'Create Account' :
-                                        view === 'FORGOT_PASSWORD' ? 'Send Code' : 'Reset Password'}
-                                <ArrowRight size={18} />
-                            </>
                         )}
-                    </button>
 
-                    {view === 'LOGIN' && (
-                        <button
-                            type="button"
-                            onClick={handleGuestLogin}
-                            className="w-full bg-secondary/50 border border-border text-foreground font-bold py-3 rounded-xl hover:bg-secondary transition-all flex items-center justify-center gap-2 mt-2"
+                        <Button
+                            type="submit"
+                            className="w-full h-12 text-base font-medium shadow-glow hover:translate-y-[-2px] transition-all"
+                            disabled={isLoading}
                         >
-                            <UserIcon size={16} /> Login as Guest
-                        </button>
-                    )}
-                </form>
+                            {isLoading ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    {view === 'LOGIN' ? 'Sign In' : view === 'REGISTER' ? 'Create Account' : 'Send Reset Link'}
+                                    <ArrowRight size={18} className="ml-2" />
+                                </>
+                            )}
+                        </Button>
 
-                {/* Toggle Mode */}
-                <div className="mt-8 text-center">
-                    {view === 'LOGIN' && (
-                        <button
-                            onClick={() => { setView('REGISTER'); setError(null); setName(''); }}
-                            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            Don't have an account? <span className="text-primary font-bold">Sign Up</span>
-                        </button>
-                    )}
-                    {view === 'REGISTER' && (
-                        <button
-                            onClick={() => { setView('LOGIN'); setError(null); }}
-                            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            Already have an account? <span className="text-primary font-bold">Log In</span>
-                        </button>
-                    )}
-                    {view === 'FORGOT_PASSWORD' && (
-                        <button
-                            onClick={() => { setView('LOGIN'); setError(null); }}
-                            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            Remember it? <span className="text-primary font-bold">Log In</span>
-                        </button>
-                    )}
+                        <div className="relative flex py-2 items-center">
+                            <div className="flex-grow border-t border-border"></div>
+                            <span className="flex-shrink-0 mx-4 text-xs text-muted-foreground uppercase">Or</span>
+                            <div className="flex-grow border-t border-border"></div>
+                        </div>
+
+                        {view === 'LOGIN' && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full h-12 hover:bg-secondary/50"
+                                onClick={handleGuestLogin}
+                            >
+                                <Sparkles size={18} className="mr-2 text-primary" />
+                                Continue as Guest
+                            </Button>
+                        )}
+
+                        <div className="text-center text-sm pt-2">
+                            {view === 'LOGIN' ? (
+                                <p className="text-muted-foreground">
+                                    Don't have an account?{' '}
+                                    <button onClick={() => setView('REGISTER')} className="text-primary font-semibold hover:underline">
+                                        Sign up
+                                    </button>
+                                </p>
+                            ) : (
+                                <p className="text-muted-foreground">
+                                    Already have an account?{' '}
+                                    <button onClick={() => setView('LOGIN')} className="text-primary font-semibold hover:underline">
+                                        Sign in
+                                    </button>
+                                </p>
+                            )}
+                        </div>
+
+                    </form>
                 </div>
-
             </div>
+
+            {/* Right Side - Animated Gradient */}
+            <div className="hidden lg:block lg:w-1/2 relative overflow-hidden bg-black">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 via-purple-900/40 to-black z-10"></div>
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
+
+                {/* Animated Gradient Blobs */}
+                <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-indigo-500/30 rounded-full blur-[120px] animate-blob mix-blend-screen"></div>
+                <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-purple-500/30 rounded-full blur-[120px] animate-blob animation-delay-2000 mix-blend-screen"></div>
+                <div className="absolute top-[40%] left-[40%] w-[60%] h-[60%] bg-pink-500/20 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-screen"></div>
+
+                <div className="absolute bottom-12 left-12 z-20 max-w-lg">
+                    <blockquote className="space-y-2">
+                        <p className="text-2xl font-medium text-white/90 leading-relaxed">
+                            "Design is not just what it looks like and feels like. Design is how it works."
+                        </p>
+                        <footer className="text-white/60 font-medium">— Steve Jobs</footer>
+                    </blockquote>
+                </div>
+            </div>
+
+            <style>{`
+                @keyframes blob {
+                    0% { transform: translate(0px, 0px) scale(1); }
+                    33% { transform: translate(30px, -50px) scale(1.1); }
+                    66% { transform: translate(-20px, 20px) scale(0.9); }
+                    100% { transform: translate(0px, 0px) scale(1); }
+                }
+                .animate-blob {
+                    animation: blob 7s infinite;
+                }
+                .animation-delay-2000 {
+                    animation-delay: 2s;
+                }
+                .animation-delay-4000 {
+                    animation-delay: 4s;
+                }
+            `}</style>
         </div>
     );
 };

@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { initializeGemini, sendMessageToGemini, resetGeminiSession, sendToolResponseToGemini } from './services/geminiService';
+import { DotPattern } from "@/components/magicui/dot-pattern";
+import { cn } from "@/lib/utils";
 import { storageService, Backend, TOKEN_COSTS } from './services/storageService';
 import { db, supabase, subscribeToChanges, dbNotifications, subscribeToNotifications, dbTeamMembers } from './services/supabaseClient';
 import { ChatInterface } from './components/ChatInterface';
@@ -1407,7 +1409,14 @@ function App() {
     if (!user) return <Auth onLogin={handleLogin} />;
 
     return (
-        <div className="flex flex-col md:flex-row h-[100dvh] bg-app-bg text-text-primary overflow-hidden animate-in fade-in duration-500">
+        <div className="flex flex-col md:flex-row h-[100dvh] bg-app-bg text-text-primary overflow-hidden animate-in fade-in duration-500 relative">
+            <DotPattern
+                className={cn(
+                    "[mask-image:radial-gradient(900px_circle_at_center,white,transparent)]",
+                    "fill-primary/20",
+                    "z-0"
+                )}
+            />
             <Navigation
                 currentView={currentView}
                 onNavigate={setCurrentView}

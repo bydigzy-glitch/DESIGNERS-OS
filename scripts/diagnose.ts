@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-const geminiKey = "AIzaSyAigVAteOW8Y--QFajiv5f64ghB49k0FEU";
+const geminiKey = process.env.VITE_GEMINI_API_KEY;
 
 console.log("--- FINAL DIAGNOSTIC ---");
 

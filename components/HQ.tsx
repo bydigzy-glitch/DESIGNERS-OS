@@ -139,6 +139,7 @@ export const HQ: React.FC<HQProps> = ({
     onToggleHabit
 }) => {
     const [aiInput, setAiInput] = useState('');
+    const [isLoaded, setIsLoaded] = useState(false);
 
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -146,12 +147,23 @@ export const HQ: React.FC<HQProps> = ({
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
+    // Set loaded state after component mounts
+    useEffect(() => {
+        const timer = setTimeout(() => setIsLoaded(true), 100);
+        return () => clearTimeout(timer);
+    }, []);
+
     const activeProjects = projects.filter(p => p.status === 'ACTIVE').slice(0, 3);
     const pendingTasks = tasks.filter(t => !t.completed);
 
     const totalStreak = useMemo(() => {
         return habits.reduce((acc, h) => acc + h.streak, 0);
     }, [habits]);
+
+    // Memoize greeting text to prevent re-renders
+    const greetingText = useMemo(() => {
+        return `Hey, ${user?.name?.split(' ')[0] || 'Creator'}`;
+    }, [user?.name]);
 
     // Priority Logic
     const overdueTasks = tasks.filter(t => !t.completed && new Date(t.date) < new Date());
@@ -219,12 +231,18 @@ export const HQ: React.FC<HQProps> = ({
                         <div className="flex flex-col gap-4 max-w-lg w-full">
                             <div>
                                 <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                                    <TextAnimate
-                                        animation="blurInUp"
-                                        by="character"
-                                        once
-                                        text={`Hey, ${user?.name?.split(' ')[0] || 'Creator'}`}
-                                    />
+                                    {isLoaded ? (
+                                        <TextAnimate
+                                            key={greetingText}
+                                            animation="blurInUp"
+                                            by="character"
+                                            once
+                                            startOnView={false}
+                                            text={greetingText}
+                                        />
+                                    ) : (
+                                        <span className="opacity-0">{greetingText}</span>
+                                    )}
                                 </h1>
                                 <p className="text-muted-foreground">Ready to conquer the day?</p>
                             </div>

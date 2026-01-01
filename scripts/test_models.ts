@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-const geminiKey = "AIzaSyAigVAteOW8Y--QFajiv5f64ghB49k0FEU";
+const geminiKey = process.env.VITE_GEMINI_API_KEY;
 
 async function listModels() {
     if (!geminiKey) { console.error("Missing Key"); return; }

@@ -20,7 +20,17 @@ export interface ChatState {
   error: string | null;
 }
 
-export type ViewMode = 'CHAT' | 'HQ' | 'TASKS' | 'HABITS' | 'APPS' | 'CALENDAR' | 'FILES' | 'SETTINGS' | 'MANAGER' | 'TEAMS' | 'DEMO';
+// Navigation structure for Designers Hub (includes legacy for backwards compatibility)
+export type ViewMode =
+  // New Designers Hub routes
+  | 'COMMAND_CENTER' | 'CLIENTS' | 'WORK' | 'TIME' | 'MONEY'
+  // Shared routes
+  | 'FILES' | 'SETTINGS'
+  // Legacy routes (kept for transition period)
+  | 'CHAT' | 'HQ' | 'TASKS' | 'HABITS' | 'APPS' | 'CALENDAR' | 'MANAGER' | 'TEAMS' | 'DEMO';
+
+// Autopilot modes for Brain system
+export type AutopilotMode = 'ASSIST' | 'CONFIDENT' | 'STRICT';
 
 export type TaskCategory = 'PRODUCT' | 'CONTENT' | 'MONEY' | 'ADMIN' | 'MEETING' | string;
 
@@ -44,24 +54,58 @@ export interface Client {
   id: string;
   name: string;
   email?: string;
-  revenue: number; // This can now be a cache, but real value derived from projects
-  status: 'ACTIVE' | 'INACTIVE';
+  revenue: number; // Calculated from projects
+  status: 'ACTIVE' | 'INACTIVE' | 'PAUSED' | 'RED_FLAG';
   notes?: string;
   avatar?: string;
+
+  // Designers Hub: Client scoring system
+  scores?: {
+    paymentReliability: number;    // 0-100, based on payment history
+    scopeCreepRisk: number;        // 0-100, based on revision requests
+    stressCost: number;            // 0-100, based on communication patterns
+    lifetimeValue: number;         // Total revenue from client
+  };
+
+  // Communication tracking
+  communicationHistory?: {
+    lastContact: Date;
+    averageResponseTime: number;   // hours
+    totalMessages: number;
+    sentimentScore: number;        // AI-analyzed
+  };
+
+  // Intake metadata
+  source?: 'INSTAGRAM' | 'WEBSITE' | 'EMAIL' | 'REFERRAL' | 'OTHER';
+  intakeDate?: Date;
+  intakeScore?: number;            // AI quality score from intake
 }
 
 export interface Project {
   id: string;
   title: string;
-  client: string; // Name of client (legacy) or ID
+  client: string; // Name of client (legacy)
   clientId?: string; // ID link
-  status: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+  status: 'INTAKE' | 'ACTIVE' | 'PAUSED' | 'REVISION' | 'COMPLETED' | 'ARCHIVED';
   progress: number; // 0-100%
   deadline?: Date;
   tags: string[];
   color: string;
   notes?: string;
   price: number; // Project value
+
+  // Designers Hub: Invoice tracking
+  invoiceStatus?: 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE';
+  invoiceId?: string;
+
+  // Scope management
+  revisionsUsed?: number;
+  revisionsAllowed?: number;        // Default 2
+  scopeChangeRequests?: number;
+
+  // Automation tracking
+  lastClientActivity?: Date;
+  autoActions?: AutoActionLog[];    // History of system actions
 }
 
 export interface Habit {
@@ -230,4 +274,76 @@ export interface TokenTransaction {
   feature: string;
   cost: number;
   timestamp: Date;
+}
+
+// ============================================
+// DESIGNERS HUB: Automation System Types
+// ============================================
+
+export interface AutoActionLog {
+  id: string;
+  timestamp: Date;
+  action: string;
+  trigger: string;
+  result: 'SUCCESS' | 'FAILED' | 'PENDING_APPROVAL';
+  userOverride?: boolean;
+}
+
+export interface ApprovalRequest {
+  id: string;
+  timestamp: Date;
+  type: 'DEADLINE_ADJUSTMENT' | 'PRICE_CHANGE' | 'CLIENT_PAUSE' | 'CLIENT_REJECT' | 'MEETING_DECLINE' | 'INVOICE_SEND' | 'SCOPE' | 'COMMUNICATION';
+  title: string;
+  message: string;
+  data: Record<string, any>;
+  urgency: 'LOW' | 'MEDIUM' | 'HIGH';
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+}
+
+export interface RiskAlert {
+  id: string;
+  timestamp: Date;
+  type: 'LATE_PAYMENT' | 'SCOPE_CREEP' | 'BURNOUT' | 'UNDERCHARGING' | 'SLOW_PERIOD' | 'CLIENT_SILENT' | 'FINANCIAL' | 'DEADLINE';
+  severity: 'INFO' | 'WARNING' | 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  title: string;
+  message: string;
+  acknowledged: boolean;
+  data?: Record<string, any>;
+}
+
+export interface HandledAction {
+  id: string;
+  timestamp: Date;
+  action: string;
+  trigger: string;
+  result: string;
+  icon?: string;
+}
+
+export interface IntakeSubmission {
+  id: string;
+  timestamp: Date;
+  data: {
+    name: string;
+    email: string;
+    budget: string;
+    timeline: string;
+    description: string;
+    source: string;
+  };
+  status: 'PENDING' | 'QUALIFIED' | 'REJECTED' | 'CONVERTED';
+  aiScore?: number;
+  aiAnalysis?: any;
+}
+
+// Designers Hub system state
+export interface DesignersHubState {
+  autopilotMode: AutopilotMode;
+  pendingApprovals: ApprovalRequest[];
+  riskAlerts: RiskAlert[];
+  handledToday: HandledAction[];
+  brainOpen: boolean;
+  projects: Project[];
+  clients: Client[];
+  tasks: Task[];
 }

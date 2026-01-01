@@ -2,8 +2,8 @@
 import { GoogleGenerativeAI, ChatSession, Part, FunctionDeclaration, SchemaType } from "@google/generative-ai";
 import { SYSTEM_INSTRUCTION } from "../constants";
 
-// Module-level variable for API Key
-let activeApiKey = "AIzaSyAigVAteOW8Y--QFajiv5f64ghB49k0FEU";
+// Module-level variable for API Key - loaded from environment variable
+let activeApiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
 let chatSession: ChatSession | null = null;
 let genAI: GoogleGenerativeAI | null = null;
 
@@ -282,4 +282,62 @@ export const extendImage = async (imageBase64: string, aspectRatio: string, user
   ]);
 
   return result.response.text();
+};
+
+export interface IntakeAnalysis {
+  paymentReliability: number;
+  scopeCreepRisk: number;
+  stressCost: number;
+  summary: string;
+  recommendation: 'APPROVE' | 'REJECT' | 'NEEDS_CLARITY';
+  redFlags: string[];
+}
+
+export const analyzeIntakeSubmission = async (data: any): Promise<IntakeAnalysis> => {
+  const ai = getGenAI();
+  const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+  const prompt = `ACT AS AN EXPERT DESIGN BUSINESS ADVISOR. Analyze this client intake submission and provide a risk score (0-100) and analysis.
+  
+  INTAKE DATA:
+  Name: ${data.name}
+  Email: ${data.email}
+  Budget: ${data.budget}
+  Timeline: ${data.timeline}
+  Description: ${data.description}
+  
+  RETURN JSON ONLY in the following format:
+  {
+    "paymentReliability": number,
+    "scopeCreepRisk": number,
+    "stressCost": number,
+    "summary": "string",
+    "redFlags": ["string"],
+    "recommendation": "APPROVE" | "REJECT" | "NEEDS_CLARITY"
+  }
+  
+  Scoring Guidelines:
+  - Low budget + rush timeline = high stressCost and scopeCreepRisk.
+  - Vague descriptions = high scopeCreepRisk.
+  - Large enterprise budget = high paymentReliability.`;
+
+  const result = await model.generateContent(prompt);
+  const responseText = result.response.text().trim();
+
+  // Clean potential markdown code blocks
+  const jsonString = responseText.replace(/```json|```/gi, '').trim();
+
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    console.error("Failed to parse AI scoring:", jsonString);
+    return {
+      paymentReliability: 70,
+      scopeCreepRisk: 50,
+      stressCost: 40,
+      summary: "AI analysis failed, using conservative estimates.",
+      recommendation: 'NEEDS_CLARITY',
+      redFlags: ["System could not parse AI response"]
+    };
+  }
 };

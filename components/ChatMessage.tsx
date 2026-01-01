@@ -8,23 +8,26 @@ interface ChatMessageProps {
   isLatest?: boolean;
 }
 
-// Typewriter effect component
-const TypewriterText: React.FC<{ text: string; speed?: number }> = ({ text, speed = 20 }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
+// Typewriter effect component - only animates once when first rendered
+const TypewriterText: React.FC<{ text: string; speed?: number; shouldAnimate?: boolean }> = ({ text, speed = 20, shouldAnimate = true }) => {
+  const [displayedText, setDisplayedText] = useState(shouldAnimate ? '' : text);
+  const [currentIndex, setCurrentIndex] = useState(shouldAnimate ? 0 : text.length);
+  const [isComplete, setIsComplete] = useState(!shouldAnimate);
+  const [hasAnimated, setHasAnimated] = useState(!shouldAnimate);
 
   useEffect(() => {
-    if (currentIndex < text.length) {
+    // Only animate if we haven't animated yet and shouldAnimate is true
+    if (!hasAnimated && shouldAnimate && currentIndex < text.length) {
       const timeout = setTimeout(() => {
         setDisplayedText(prev => prev + text[currentIndex]);
         setCurrentIndex(prev => prev + 1);
       }, speed);
       return () => clearTimeout(timeout);
-    } else {
+    } else if (currentIndex >= text.length && !isComplete) {
       setIsComplete(true);
+      setHasAnimated(true);
     }
-  }, [currentIndex, text, speed]);
+  }, [currentIndex, text, speed, shouldAnimate, hasAnimated, isComplete]);
 
   return (
     <span className="inline">

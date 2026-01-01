@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
-export const CountUp: React.FC<{ value: number, duration?: number, prefix?: string, suffix?: string, className?: string, decimals?: number }> = ({ 
+export const CountUp: React.FC<{ value: number, duration?: number, prefix?: string, suffix?: string, className?: string, decimals?: number }> = ({
     value, duration = 1.5, prefix = '', suffix = '', className = '', decimals = 0
 }) => {
     const [displayValue, setDisplayValue] = useState(0);
@@ -37,9 +37,13 @@ export const CountUp: React.FC<{ value: number, duration?: number, prefix?: stri
 
 export const FadeIn: React.FC<{ children: React.ReactNode, delay?: number, className?: string, onClick?: () => void }> = ({ children, delay = 0, className = "", onClick }) => (
     <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay, ease: "easeOut" }}
+        transition={{
+            duration: 0.23, // 230ms 
+            delay,
+            ease: [0.4, 0, 0.2, 1] // Standard ease-out
+        }}
         className={className}
         onClick={onClick}
     >

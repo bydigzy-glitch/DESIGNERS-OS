@@ -20,7 +20,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   const [title, setTitle] = useState('');
   const [clientId, setClientId] = useState('');
   const [customClientName, setCustomClientName] = useState(''); // Fallback if no client ID
-  const [status, setStatus] = useState<'ACTIVE' | 'COMPLETED' | 'ARCHIVED'>('ACTIVE');
+  const [status, setStatus] = useState<Project['status']>('ACTIVE');
   const [deadline, setDeadline] = useState('');
   const [tags, setTags] = useState('');
   const [color, setColor] = useState('#6366f1');
@@ -186,7 +186,10 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                 className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary appearance-none"
                 aria-label="Project Status"
               >
+                <option value="INTAKE">Intake</option>
                 <option value="ACTIVE">Active</option>
+                <option value="PAUSED">Paused</option>
+                <option value="REVISION">Revision</option>
                 <option value="COMPLETED">Completed</option>
                 <option value="ARCHIVED">Archived</option>
               </select>

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Task, TaskCategory } from '../types';
 import { ChevronLeft, ChevronRight, Plus, MoreHorizontal, Calendar as CalendarIcon, Clock, Trash2, Filter } from 'lucide-react';
@@ -107,7 +105,7 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                     completed: false,
                     date: new Date(ev.start.dateTime || ev.start.date),
                     duration: 60,
-                    color: '#f59e0b',
+                    color: '#6366f1',
                     statusLabel: 'TODO'
                 }));
                 onAddTasks(newTasks);
@@ -137,14 +135,26 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
         setContextMenu({ x: e.clientX, y: e.clientY, taskId });
     };
 
+    const navigateDate = (direction: 'prev' | 'next') => {
+        const newDate = new Date(currentDate);
+        if (view === 'MONTH') {
+            newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
+        } else if (view === 'WEEK') {
+            newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+        } else {
+            newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+        }
+        setCurrentDate(newDate);
+    };
+
     // Helper for Day/Week View Grid
     const renderTimeGrid = (daysToRender: Date[]) => (
-        <div className="flex-1 overflow-y-auto relative scrollbar-hide">
-            <div className="flex relative min-h-[1440px] min-w-[600px] md:min-w-0"> {/* Fixed width for mobile scroll */}
+        <div className="flex-1 overflow-y-auto relative scrollbar-thin">
+            <div className="flex relative min-h-[1440px] min-w-[600px] md:min-w-0">
                 {/* Time Column */}
                 <div className="w-16 border-r border-border bg-card z-10 sticky left-0 flex-shrink-0">
                     {Array.from({ length: 24 }).map((_, i) => (
-                        <div key={i} className="h-[60px] border-b border-border text-xs font-bold text-muted-foreground p-2 text-right relative">
+                        <div key={i} className="h-[60px] border-b border-border text-xs font-medium text-muted-foreground p-2 text-right relative">
                             <span className="relative -top-3">{i}:00</span>
                         </div>
                     ))}
@@ -160,7 +170,7 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                         {Array.from({ length: 24 }).map((_, hour) => (
                             <div
                                 key={hour}
-                                className="h-[60px] border-b border-border hover:bg-secondary/10 transition-colors cursor-pointer"
+                                className="h-[60px] border-b border-border hover:bg-secondary/30 transition-colors cursor-pointer"
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={(e) => handleDrop(e, hour, day)}
                                 onClick={() => handleSlotClick(day, hour)}
@@ -182,7 +192,7 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                                         onDragStart={() => handleDragStart(task)}
                                         onClick={(e) => handleEventClick(e, task)}
                                         onContextMenu={(e) => handleContextMenu(e, task.id)}
-                                        className="absolute w-[90%] left-[5%] rounded-xl p-2 text-xs font-bold text-white shadow-lg cursor-pointer hover:brightness-110 transition-all z-10 overflow-hidden"
+                                        className="absolute w-[90%] left-[5%] rounded-xl p-2 text-xs font-bold text-white shadow-lg cursor-pointer hover:brightness-110 hover:scale-[1.02] transition-all z-10 overflow-hidden"
                                         style={{
                                             top: `${topPos}px`,
                                             height: `${Math.max(durationHeight, 30)}px`,
@@ -216,11 +226,14 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
         <FadeIn className="flex flex-col h-full w-full overflow-hidden relative pb-20 md:pb-0" onClick={() => setContextMenu(null)}>
             {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 flex-shrink-0">
-                <h1 className="text-3xl font-bold text-foreground tracking-tight">Calendar</h1>
+                <div>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Calendar</h1>
+                    <p className="text-sm text-muted-foreground">Manage your schedule</p>
+                </div>
 
                 <div className="flex flex-wrap items-center gap-3">
                     {/* View Toggle */}
-                    <div className="flex items-center gap-1 bg-card p-1 rounded-2xl border border-border">
+                    <div className="flex items-center gap-1 bg-secondary p-1 rounded-xl border border-border">
                         {['DAY', 'WEEK', 'MONTH'].map((v) => (
                             <Button
                                 key={v}
@@ -235,11 +248,11 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                     </div>
 
                     {/* Date Navigation */}
-                    <div className="flex items-center gap-2 bg-card p-1.5 rounded-2xl border border-border">
+                    <div className="flex items-center gap-2 bg-secondary p-1.5 rounded-xl border border-border">
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - (view === 'MONTH' ? 30 : view === 'WEEK' ? 7 : 1))))}
+                            onClick={() => navigateDate('prev')}
                             className="h-8 w-8"
                         >
                             <ChevronLeft size={18} />
@@ -250,7 +263,7 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + (view === 'MONTH' ? 30 : view === 'WEEK' ? 7 : 1))))}
+                            onClick={() => navigateDate('next')}
                             className="h-8 w-8"
                         >
                             <ChevronRight size={18} />
@@ -269,16 +282,15 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                     {/* Add Event */}
                     <Button
                         onClick={() => handleSlotClick(new Date(), new Date().getHours())}
-                        size="icon"
-                        className="shadow-glow"
+                        className="gap-2"
                     >
-                        <Plus size={20} />
+                        <Plus size={16} /> Add Event
                     </Button>
                 </div>
             </div>
 
             {/* CALENDAR BODY */}
-            <div className="flex-1 bg-card rounded-[2rem] border border-border relative shadow-soft overflow-hidden flex flex-col w-full">
+            <div className="flex-1 bg-card rounded-2xl border border-border relative shadow-soft overflow-hidden flex flex-col w-full">
 
                 {view === 'DAY' && (
                     <div className="flex-1 flex flex-col overflow-hidden">
@@ -319,13 +331,13 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                                 <div
                                     key={i}
                                     onClick={() => handleSlotClick(dayObj.date, 9)}
-                                    className={`p-2 border-b border-r border-border relative group hover:bg-secondary/10 transition-colors cursor-pointer flex flex-col gap-1 overflow-hidden min-h-[100px] ${!dayObj.isCurrentMonth ? 'opacity-30 bg-black/20' : ''}`}
+                                    className={`p-2 border-b border-r border-border relative group hover:bg-secondary/30 transition-colors cursor-pointer flex flex-col gap-1 overflow-hidden min-h-[100px] ${!dayObj.isCurrentMonth ? 'opacity-30 bg-secondary/10' : ''}`}
                                 >
                                     <div className={`text-sm font-bold mb-1 ${dayObj.date.toDateString() === new Date().toDateString() ? 'text-primary' : 'text-muted-foreground'}`}>
                                         {dayObj.date.getDate()}
                                     </div>
                                     {tasks
-                                        .filter(t => t.date.toDateString() === dayObj.date.toDateString())
+                                        .filter(t => new Date(t.date).toDateString() === dayObj.date.toDateString())
                                         .slice(0, 3)
                                         .map(task => (
                                             <div key={task.id} onClick={(e) => handleEventClick(e, task)} className="px-1.5 py-0.5 rounded text-[10px] font-bold truncate text-white" style={{ backgroundColor: task.color || '#6366f1' }}>
@@ -333,8 +345,8 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                                             </div>
                                         ))
                                     }
-                                    {tasks.filter(t => t.date.toDateString() === dayObj.date.toDateString()).length > 3 && (
-                                        <div className="text-[9px] text-muted-foreground pl-1">+ {tasks.filter(t => t.date.toDateString() === dayObj.date.toDateString()).length - 3} more</div>
+                                    {tasks.filter(t => new Date(t.date).toDateString() === dayObj.date.toDateString()).length > 3 && (
+                                        <div className="text-[9px] text-muted-foreground pl-1">+ {tasks.filter(t => new Date(t.date).toDateString() === dayObj.date.toDateString()).length - 3} more</div>
                                     )}
                                 </div>
                             ))}
@@ -365,6 +377,7 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                 initialTask={selectedTask}
                 initialDate={selectedSlotTime}
             />
+
             {/* Mobile FAB */}
             <Button
                 onClick={() => handleSlotClick(new Date(), new Date().getHours())}
@@ -386,7 +399,7 @@ export const Calendar: React.FC<CalendarProps> = ({ tasks, onUpdateTask, onDelet
                     </Button>
                     <div className="h-px bg-border my-1"></div>
                     <div className="flex gap-1 p-1">
-                        {['#6366f1', '#10b981', '#ef4444'].map(c => (
+                        {['#6366f1', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6'].map(c => (
                             <button key={c} onClick={() => { onChangeColor(contextMenu.taskId, c); setContextMenu(null); }} className="w-5 h-5 rounded-full hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
                         ))}
                     </div>

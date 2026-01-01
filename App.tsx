@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { initializeGemini, sendMessageToGemini, resetGeminiSession, sendToolResponseToGemini } from './services/geminiService';
+import { initializeGemini, resetGeminiSession, sendToolResponseToGemini } from './services/geminiService';
+import { sendMessageToGeminiProxy as sendMessageToGemini } from './services/geminiProxy';
 import { DotPattern } from "@/components/magicui/dot-pattern";
 import { cn } from "@/lib/utils";
 import { storageService, Backend, TOKEN_COSTS } from './services/storageService';
@@ -14,7 +15,6 @@ import { Apps } from './components/Apps';
 import { Calendar } from './components/Calendar';
 import { FileManager } from './components/FileManager';
 import { Settings } from './components/Settings';
-// import { ShadcnDemo } from './components/ShadcnDemo';
 import { Auth } from './components/Auth';
 import { ChatOverlay } from './components/ChatOverlay';
 import { ManagerPage } from './components/ManagerPage';
@@ -22,9 +22,20 @@ import { TeamPage } from './components/TeamPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { AnimatedBackground } from './components/common/AnimatedBackground';
 import { ToastContainer, ToastMessage, ToastType } from './components/common/Toast';
-import { Message, ViewMode, Task, FileAsset, Folder, User, ChatSession, Client, Project, Habit, CanvasItem, AppNotification } from './types';
+import { Message, ViewMode, Task, FileAsset, Folder, User, ChatSession, Client, Project, Habit, CanvasItem, AppNotification, AutopilotMode, ApprovalRequest, RiskAlert, HandledAction } from './types';
 import { RECOVERY_INSTRUCTION } from './constants';
 import { TopBar } from './components/TopBar';
+// Designers Hub Components
+import { CommandCenter } from './components/CommandCenter';
+import { ClientsPage } from './components/ClientsPage';
+import { WorkPage } from './components/WorkPage';
+import { TimePage } from './components/TimePage';
+import { MoneyPage } from './components/MoneyPage';
+import { BrainOverlay } from './components/BrainOverlay';
+import { AutomationEngine } from './services/automationEngine';
+import { analyzeIntakeSubmission } from './services/geminiService';
+import { IntakeForm } from './components/IntakeForm';
+import { IntakeSubmission } from './types';
 
 const DUMMY_USER: User = {
     id: 'admin-user',
@@ -45,7 +56,7 @@ const APP_VERSION = 'v3.2';
 
 function App() {
     const [user, setUser] = useState<User | null>(null);
-    const [currentView, setCurrentView] = useState<ViewMode>('HQ');
+    const [currentView, setCurrentView] = useState<ViewMode>('COMMAND_CENTER');
     const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
     const [isAppLoading, setIsAppLoading] = useState(true);
 
@@ -66,7 +77,107 @@ function App() {
     const [isDriveConnected, setIsDriveConnected] = useState(false);
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+    // Designers Hub State
+    const [autopilotMode, setAutopilotMode] = useState<AutopilotMode>('CONFIDENT');
+    const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
+    const [riskAlerts, setRiskAlerts] = useState<RiskAlert[]>([]);
+    const [handledToday, setHandledToday] = useState<HandledAction[]>([]);
+    const [isBrainOpen, setIsBrainOpen] = useState(false);
+    const [isIntakeFormOpen, setIsIntakeFormOpen] = useState(false);
+
+
     const activeRequestRef = useRef(false);
+
+    // Designers Hub: Automation Diagnostic
+    const runAutomation = useCallback(async () => {
+        const engine = new AutomationEngine({
+            autopilotMode,
+            pendingApprovals,
+            riskAlerts,
+            handledToday,
+            brainOpen: isBrainOpen,
+            projects,
+            clients,
+            tasks
+        }, autopilotMode);
+
+        const { handled, approvals, risks } = await engine.runDiagnostic();
+
+        if (handled.length > 0) {
+            setHandledToday(prev => {
+                // Deduplicate handled actions if needed, or just append
+                const newHandled = handled.filter(h => !prev.some(p => p.id === h.id));
+                return [...newHandled, ...prev].slice(0, 20);
+            });
+        }
+
+        if (approvals.length > 0) {
+            const newApprovals = approvals.filter(a => !pendingApprovals.some(existing => existing.id === a.id));
+            if (newApprovals.length > 0) {
+                setPendingApprovals(prev => [...newApprovals, ...prev]);
+            }
+        }
+
+        if (risks.length > 0) {
+            const newRisks = risks.filter(r => !riskAlerts.some(existing => existing.id === r.id));
+            if (newRisks.length > 0) {
+                setRiskAlerts(prev => [...newRisks, ...prev]);
+            }
+        }
+    }, [autopilotMode, pendingApprovals, riskAlerts, handledToday, isBrainOpen, projects, clients, tasks]);
+
+    useEffect(() => {
+        if (!user) return;
+        const interval = setInterval(() => {
+            runAutomation();
+        }, 1000 * 60 * 5); // Every 5 minutes
+        runAutomation();
+        return () => clearInterval(interval);
+    }, [user, runAutomation]);
+
+    const handleIntakeSubmit = async (submission: IntakeSubmission) => {
+        setIsLoading(true);
+        try {
+            const analysis = await analyzeIntakeSubmission(submission.data);
+
+            const newClient: Client = {
+                id: `client-${Date.now()}`,
+                name: submission.data.name,
+                email: submission.data.email,
+                revenue: 0,
+                status: analysis.recommendation === 'REJECT' ? 'RED_FLAG' : 'ACTIVE',
+                source: (submission.data.source.toUpperCase() as any) || 'REFERRAL',
+                scores: {
+                    paymentReliability: analysis.paymentReliability,
+                    scopeCreepRisk: analysis.scopeCreepRisk,
+                    stressCost: analysis.stressCost,
+                    lifetimeValue: 0
+                },
+                notes: analysis.summary
+            };
+
+            await handleClientAdd(newClient, []);
+            addToast('SUCCESS', `Lead processed: ${analysis.recommendation}`);
+
+            if (analysis.redFlags && analysis.redFlags.length > 0) {
+                setRiskAlerts(prev => [{
+                    id: `intake-risk-${newClient.id}`,
+                    timestamp: new Date(),
+                    type: 'CLIENT_SILENT',
+                    severity: 'WARNING',
+                    title: 'Intake Red Flags',
+                    message: analysis.redFlags.join(', '),
+                    acknowledged: false
+                }, ...prev]);
+            }
+        } catch (error) {
+            console.error("Intake analysis failed", error);
+            addToast('ERROR', "Brain failed to analyze lead.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
     // --- INITIALIZATION & AUTHENTICATION ---
     useEffect(() => {
@@ -561,8 +672,14 @@ function App() {
                 }))
             }));
 
+            // Limit to 10 most recent chat sessions
+            const sortedSessions = [...chatSessionsWithoutImages].sort((a, b) =>
+                new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
+            );
+            const limitedSessions = sortedSessions.slice(0, 10);
+
             storageService.saveUserData(user.id, {
-                tasks, files, folders, clients, projects, chatSessions: chatSessionsWithoutImages, habits: habits as any, infinityItems: infinityItems as any
+                tasks, files, folders, clients, projects, chatSessions: limitedSessions, habits: habits as any, infinityItems: infinityItems as any
             });
         }
     }, [tasks, files, folders, clients, projects, chatSessions, habits, infinityItems, user?.id]); // Only save if user ID is stable
@@ -990,6 +1107,45 @@ function App() {
         setCurrentSessionId(newSession.id);
     }, [setCurrentSessionId, setChatSessions]);
 
+    // Helper to sync chat session to Supabase
+    const syncChatSessionToSupabase = useCallback(async (session: ChatSession) => {
+        if (!user || user.isGuest) return;
+
+        try {
+            // Convert messages to Supabase format (timestamps as strings)
+            const messagesForSupabase = session.messages.map(msg => ({
+                id: msg.id,
+                role: msg.role,
+                text: msg.text,
+                timestamp: msg.timestamp.toISOString()
+            }));
+
+            // Check if session exists
+            const { data: existing } = await db.chatSessions.getAll(user.id);
+            const sessionExists = existing?.some(s => s.id === session.id);
+
+            if (sessionExists) {
+                // Update existing session
+                await db.chatSessions.update(session.id, {
+                    title: session.title,
+                    messages: messagesForSupabase,
+                    last_modified: session.lastModified.toISOString()
+                });
+            } else {
+                // Create new session
+                await db.chatSessions.create({
+                    id: session.id,
+                    user_id: user.id,
+                    title: session.title,
+                    messages: messagesForSupabase,
+                    last_modified: session.lastModified.toISOString()
+                });
+            }
+        } catch (e) {
+            console.error('[Supabase] Chat session sync failed:', e);
+        }
+    }, [user]);
+
     const deleteSession = useCallback((id: string) => {
         setChatSessions(prev => prev.filter(s => s.id !== id));
         if (currentSessionId === id) {
@@ -1212,7 +1368,16 @@ function App() {
                                 messages: [...updatedSessions[targetSessionIndex].messages, aiMsg],
                                 lastModified: new Date()
                             };
-                            return updatedSessions;
+                            // Limit to 10 most recent sessions
+                            const sorted = updatedSessions.sort((a, b) =>
+                                new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
+                            );
+                            const limited = sorted.slice(0, 10);
+
+                            // Sync to Supabase for authenticated users
+                            syncChatSessionToSupabase(updatedSessions[targetSessionIndex]);
+
+                            return limited;
                         }
                         return prev;
                     });
@@ -1302,6 +1467,59 @@ function App() {
 
     const renderView = () => {
         switch (currentView) {
+            // DESIGNERS HUB ROUTES
+            case 'COMMAND_CENTER':
+                return <CommandCenter
+                    user={user}
+                    tasks={tasks}
+                    projects={projects}
+                    clients={clients}
+                    pendingApprovals={pendingApprovals}
+                    riskAlerts={riskAlerts}
+                    handledToday={handledToday}
+                    autopilotMode={autopilotMode}
+                    onOpenBrain={() => setIsBrainOpen(true)}
+                    onApprove={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
+                    onReject={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
+                    onAcknowledgeRisk={(alert) => setRiskAlerts(prev => prev.map(r => r.id === alert.id ? { ...r, acknowledged: true } : r))}
+                    onTaskClick={(task) => { /* Open task modal */ }}
+                    onProjectClick={(project) => { /* Open project modal */ }}
+                    onOpenIntake={() => setIsIntakeFormOpen(true)}
+                />;
+            case 'CLIENTS':
+                return <ClientsPage
+                    clients={clients}
+                    projects={projects}
+                    onAddClient={handleClientAdd}
+                    onUpdateClient={handleClientUpdate}
+                    onDeleteClient={handleClientDelete}
+                />;
+            case 'WORK':
+                return <WorkPage
+                    tasks={tasks}
+                    projects={projects}
+                    clients={clients}
+                    onAddTask={handleTaskCreate}
+                    onUpdateTask={handleTaskUpdate}
+                    onDeleteTask={handleTaskDelete}
+                    onAddProject={handleProjectCreate}
+                    onUpdateProject={handleProjectUpdate}
+                    onDeleteProject={handleProjectDelete}
+                />;
+            case 'TIME':
+                return <TimePage
+                    tasks={tasks}
+                    projects={projects}
+                    onUpdateTask={handleTaskUpdate}
+                    onAddTask={handleTaskCreate}
+                    onDeleteTask={handleTaskDelete}
+                />;
+            case 'MONEY':
+                return <MoneyPage
+                    projects={projects}
+                    clients={clients}
+                />;
+            // LEGACY ROUTES (kept for transition)
             case 'HQ':
                 return <HQ
                     user={user}
@@ -1426,6 +1644,11 @@ function App() {
                 notifications={notifications}
                 onMarkRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
                 onClearAll={() => setNotifications([])}
+                autopilotMode={autopilotMode}
+                onChangeAutopilotMode={setAutopilotMode}
+                onOpenBrain={() => setIsBrainOpen(true)}
+                pendingApprovalsCount={pendingApprovals.length}
+                riskAlertsCount={riskAlerts.filter(r => !r.acknowledged).length}
             />
             <main className="flex-1 flex flex-col h-full overflow-hidden relative">
                 <TopBar
@@ -1460,6 +1683,23 @@ function App() {
                     onCreateSession={createNewSession}
                     onDeleteSession={deleteSession}
                     tasks={tasks}
+                />
+
+                {/* Designers Hub: Brain AI Sidebar */}
+                <BrainOverlay
+                    isOpen={isBrainOpen}
+                    onClose={() => setIsBrainOpen(false)}
+                    messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
+                    isLoading={isLoading}
+                    onSendMessage={handleSendMessage}
+                    autopilotMode={autopilotMode}
+                    user={user}
+                />
+
+                <IntakeForm
+                    isOpen={isIntakeFormOpen}
+                    onClose={() => setIsIntakeFormOpen(false)}
+                    onSubmit={handleIntakeSubmit}
                 />
             </main>
         </div>

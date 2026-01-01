@@ -93,13 +93,26 @@ export default {
 					'monospace'
 				]
 			},
+			fontSize: {
+				xs: ['var(--font-size-xs)', { lineHeight: 'var(--line-height-body)' }],
+				sm: ['var(--font-size-sm)', { lineHeight: 'var(--line-height-body)' }],
+				base: ['var(--font-size-base)', { lineHeight: 'var(--line-height-body)' }],
+				lg: ['var(--font-size-lg)', { lineHeight: 'var(--line-height-body)' }],
+				xl: ['var(--font-size-xl)', { lineHeight: 'var(--line-height-tight)' }],
+				'2xl': ['var(--font-size-2xl)', { lineHeight: 'var(--line-height-tight)' }],
+				'3xl': ['var(--font-size-3xl)', { lineHeight: 'var(--line-height-tight)' }],
+				'4xl': ['var(--font-size-4xl)', { lineHeight: 'var(--line-height-tight)' }],
+				'5xl': ['var(--font-size-5xl)', { lineHeight: 'var(--line-height-tight)' }],
+				'6xl': ['var(--font-size-6xl)', { lineHeight: 'var(--line-height-tight)' }],
+			},
 			borderRadius: {
+				lg: 'var(--radius-lg)',
+				md: 'var(--radius-md)',
+				sm: 'var(--radius-sm)',
+				xs: 'var(--radius-xs)',
 				xl: '0.75rem',
 				'2xl': '1rem',
 				'3xl': '1.5rem',
-				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
 			},
 			boxShadow: {
 				soft: '0 0 0 1px hsl(var(--border))',

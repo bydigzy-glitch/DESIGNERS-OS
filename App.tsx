@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { initializeGemini, resetGeminiSession, sendToolResponseToGemini } from './services/geminiService';
 import { sendMessageToGeminiProxy as sendMessageToGemini } from './services/geminiProxy';
-import { DotPattern } from "@/components/magicui/dot-pattern";
 import { cn } from "@/lib/utils";
 import { storageService, Backend, TOKEN_COSTS } from './services/storageService';
 import { db, supabase, subscribeToChanges, dbNotifications, subscribeToNotifications, dbTeamMembers } from './services/supabaseClient';
@@ -56,7 +55,7 @@ const APP_VERSION = 'v3.2';
 
 function App() {
     const [user, setUser] = useState<User | null>(null);
-    const [currentView, setCurrentView] = useState<ViewMode>('COMMAND_CENTER');
+    const [currentView, setCurrentView] = useState<ViewMode>('HQ');
     const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
     const [isAppLoading, setIsAppLoading] = useState(true);
 
@@ -1527,6 +1526,9 @@ function App() {
                     clients={clients}
                     projects={projects}
                     habits={habits}
+                    pendingApprovals={pendingApprovals}
+                    riskAlerts={riskAlerts}
+                    handledToday={handledToday}
                     setTasks={setTasks}
                     onStartRecovery={handleRecoverySession}
                     onNavigate={setCurrentView}
@@ -1539,6 +1541,9 @@ function App() {
                     onUpdateProject={handleProjectUpdate}
                     onDeleteProject={handleProjectDelete}
                     onToggleHabit={handleToggleHabit}
+                    onApprove={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
+                    onReject={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
+                    onAcknowledgeRisk={(alert) => setRiskAlerts(prev => prev.map(r => r.id === alert.id ? { ...r, acknowledged: true } : r))}
                 />;
             case 'MANAGER':
                 return <ManagerPage
@@ -1630,13 +1635,6 @@ function App() {
     return (
         <div className="flex flex-col md:flex-row h-[100dvh] bg-app-bg text-text-primary overflow-hidden animate-in fade-in duration-500 relative">
             <AnimatedBackground />
-            <DotPattern
-                className={cn(
-                    "[mask-image:radial-gradient(900px_circle_at_center,white,transparent)]",
-                    "fill-primary/20",
-                    "z-0"
-                )}
-            />
             <Navigation
                 currentView={currentView}
                 onNavigate={setCurrentView}

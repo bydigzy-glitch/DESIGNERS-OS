@@ -537,7 +537,7 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                         {/* CHAT TAB */}
                         {activeTab === 'CHAT' && (
                             <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-dots">
+                                <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                     {teamChat.length === 0 && (
                                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50">
                                             <Users size={48} className="mb-2" />

@@ -46,7 +46,7 @@ interface NavigationProps {
 }
 
 const NAV_ITEMS: { id: ViewMode; label: string; icon: React.ReactNode; description: string }[] = [
-  { id: 'COMMAND_CENTER', label: 'Command Center', icon: <LayoutGrid size={18} />, description: 'Your daily focus and system status' },
+  { id: 'HQ', label: 'Dashboard', icon: <LayoutGrid size={18} />, description: 'Your daily focus and system status' },
   { id: 'CLIENTS', label: 'Clients', icon: <Users size={18} />, description: 'Client management and scoring' },
   { id: 'WORK', label: 'Work', icon: <Briefcase size={18} />, description: 'Projects and tasks unified' },
   { id: 'TIME', label: 'Time', icon: <Clock size={18} />, description: 'Calendar and time protection' },

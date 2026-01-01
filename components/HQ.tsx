@@ -1,7 +1,13 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Task, ViewMode, Client, Project, User, Habit } from '../types';
-import { Zap, Plus, CheckCircle2, Briefcase, Sparkles, Flame, CheckSquare, Calendar, Trash2, ArrowUpRight, TrendingUp, MoreHorizontal, FileText, MessageSquare, Clock, AlertTriangle, Star, Check } from 'lucide-react';
+import { Task, ViewMode, Client, Project, User, Habit, ApprovalRequest, RiskAlert, HandledAction } from '../types';
+import {
+    Zap, Plus, CheckCircle2, Briefcase, Sparkles, Flame, CheckSquare,
+    Calendar, Trash2, ArrowUpRight, TrendingUp, MoreHorizontal,
+    FileText, MessageSquare, Clock, AlertTriangle, Star, Check,
+    AlertCircle, Shield, X, ChevronRight, Brain
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { TextAnimate } from "@/components/magicui/text-animate";
@@ -25,6 +31,9 @@ interface HQProps {
     clients: Client[];
     projects: Project[];
     habits: Habit[];
+    pendingApprovals: ApprovalRequest[];
+    riskAlerts: RiskAlert[];
+    handledToday: HandledAction[];
     setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
 
     onStartRecovery: (energy: number) => void;
@@ -41,6 +50,9 @@ interface HQProps {
     onDeleteProject: (id: string) => void;
 
     onToggleHabit: (id: string) => void;
+    onApprove: (approval: ApprovalRequest) => void;
+    onReject: (approval: ApprovalRequest) => void;
+    onAcknowledgeRisk: (alert: RiskAlert) => void;
 }
 
 const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
@@ -132,11 +144,31 @@ const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
     );
 };
 
+const URGENCY_COLORS = {
+    LOW: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    MEDIUM: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    HIGH: 'bg-red-500/10 text-red-500 border-red-500/20',
+};
+
+const SEVERITY_COLORS = {
+    INFO: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    WARNING: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    CRITICAL: 'bg-red-500/10 text-red-500 border-red-500/20',
+};
+
+const SEVERITY_ICONS = {
+    INFO: <AlertCircle size={16} />,
+    WARNING: <AlertTriangle size={16} />,
+    CRITICAL: <Flame size={16} />,
+};
+
 export const HQ: React.FC<HQProps> = ({
-    user, tasks, clients, projects, habits, onNavigate, onSendMessage, onOpenAiSidebar,
+    user, tasks, clients, projects, habits,
+    pendingApprovals, riskAlerts, handledToday,
+    onNavigate, onSendMessage, onOpenAiSidebar,
     onAddTask, onUpdateTask, onDeleteTask,
     onAddProject, onUpdateProject, onDeleteProject,
-    onToggleHabit
+    onToggleHabit, onApprove, onReject, onAcknowledgeRisk
 }) => {
     const [aiInput, setAiInput] = useState('');
     const [isLoaded, setIsLoaded] = useState(false);
@@ -185,6 +217,32 @@ export const HQ: React.FC<HQProps> = ({
             setAiInput('');
         }
     };
+
+    // Calculate Today's Focus - most urgent items
+    const todaysFocus = useMemo(() => {
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+
+        // Get overdue tasks
+        const overdueTasks = tasks.filter(t =>
+            !t.completed && new Date(t.date) < now
+        ).map(t => ({ type: 'OVERDUE' as const, task: t, priority: 100 }));
+
+        // Get pending approvals as focus items
+        const approvalFocus = pendingApprovals
+            .slice(0, 1)
+            .map(a => ({ type: 'APPROVAL' as const, approval: a, priority: 90 }));
+
+        // Get critical risks as focus items
+        const criticalRisks = riskAlerts
+            .filter(r => r.severity === 'CRITICAL' && !r.acknowledged)
+            .slice(0, 1)
+            .map(r => ({ type: 'RISK' as const, risk: r, priority: 95 }));
+
+        return [...overdueTasks, ...approvalFocus, ...criticalRisks]
+            .sort((a, b) => b.priority - a.priority)
+            .slice(0, 5);
+    }, [tasks, pendingApprovals, riskAlerts]);
 
     // Habits Logic for Card
     const today = new Date().toISOString().split('T')[0];
@@ -353,26 +411,142 @@ export const HQ: React.FC<HQProps> = ({
                             </div>
                         </FadeIn>
 
-                        {/* Focus Zone Card */}
-                        <FadeIn delay={0.3} className="col-span-2 bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col cursor-pointer hover:border-red-500/30 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="p-2 bg-red-500/10 text-red-500 rounded-lg">
-                                    <AlertTriangle size={20} />
+                        {/* Intelligence Focus Card */}
+                        <FadeIn delay={0.3} className="col-span-2 bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col hover:border-primary/30 transition-colors">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                                    <Brain size={20} />
                                 </div>
-                                <span className="text-xs font-bold text-muted-foreground">FOCUS ZONE</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Intelligence Focus</span>
                             </div>
-                            <div className="flex-1 overflow-y-auto space-y-2 mt-2 max-h-[100px] scrollbar-hide">
-                                {focusTasks.length > 0 ? focusTasks.map(t => (
-                                    <div key={t.id} onClick={() => { setSelectedTask(t); setIsTaskModalOpen(true); }} className="flex items-center gap-2 text-xs font-medium text-foreground hover:text-primary transition-colors">
-                                        <span className={`w - 2 h - 2 rounded - full ${new Date(t.date) < new Date() ? 'bg-red-500' : 'bg-primary'} `}></span>
-                                        <span className="truncate">{t.title}</span>
+                            <div className="flex-1 overflow-y-auto space-y-3 mt-2 scrollbar-hide">
+                                {todaysFocus.length > 0 ? todaysFocus.map((item, idx) => (
+                                    <div key={idx} className="flex items-center gap-3 group/focus">
+                                        {item.type === 'APPROVAL' && (
+                                            <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 flex-shrink-0">
+                                                <Star size={14} />
+                                            </div>
+                                        )}
+                                        {item.type === 'RISK' && (
+                                            <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 flex-shrink-0">
+                                                <Flame size={14} />
+                                            </div>
+                                        )}
+                                        {item.type === 'OVERDUE' && (
+                                            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 flex-shrink-0">
+                                                <Clock size={14} />
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-bold text-foreground truncate">
+                                                {item.type === 'APPROVAL' ? item.approval?.title :
+                                                    item.type === 'RISK' ? item.risk?.title :
+                                                        item.task?.title}
+                                            </p>
+                                            <p className="text-[10px] text-muted-foreground">
+                                                {item.type === 'APPROVAL' ? 'Needs Review' :
+                                                    item.type === 'RISK' ? 'Critical Risk' :
+                                                        'Past Due'}
+                                            </p>
+                                        </div>
+                                        <ChevronRight size={12} className="text-muted-foreground opacity-0 group-hover/focus:opacity-100 transition-all -translate-x-2 group-hover/focus:translate-x-0" />
                                     </div>
                                 )) : (
-                                    <div className="text-xs text-muted-foreground">Nothing urgent. Great job!</div>
+                                    <div className="h-full flex flex-col items-center justify-center text-center py-4">
+                                        <CheckCircle2 size={24} className="text-green-500 mb-2 opacity-50" />
+                                        <p className="text-[10px] text-muted-foreground font-medium">All systems clear.<br />You're ahead of the curve.</p>
+                                    </div>
                                 )}
                             </div>
                         </FadeIn>
                     </div>
+                </div>
+
+                {/* System Authority Row (Dynamic AI/Auto) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Handled Automatically */}
+                    <FadeIn delay={0.4} className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-sm self-start">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Shield size={16} className="text-primary" />
+                            <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Handled Today</h3>
+                            <Badge variant="outline" className="ml-auto text-[10px] h-4 bg-primary/5">{handledToday.length}</Badge>
+                        </div>
+                        <div className="space-y-3">
+                            {handledToday.length > 0 ? handledToday.slice(0, 3).map(action => (
+                                <div key={action.id} className="flex gap-3 items-start group/action">
+                                    <div className="w-1 h-8 rounded-full bg-primary/20 group-hover/action:bg-primary transition-colors mt-1" />
+                                    <div className="flex-1">
+                                        <p className="text-xs font-bold text-foreground leading-tight">{action.action}</p>
+                                        <p className="text-[10px] text-muted-foreground mt-0.5">{action.trigger}</p>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-muted-foreground">{new Date(action.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                            )) : (
+                                <p className="text-[10px] text-muted-foreground py-2 italic text-center">Monitoring system events...</p>
+                            )}
+                        </div>
+                    </FadeIn>
+
+                    {/* Pending Approvals */}
+                    <FadeIn delay={0.5} className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-sm self-start">
+                        <div className="flex items-center gap-2 mb-4">
+                            <CheckSquare size={16} className="text-orange-500" />
+                            <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Awaiting Approval</h3>
+                            <Badge variant="outline" className="ml-auto text-[10px] h-4 bg-orange-500/5 text-orange-500 border-orange-500/20">{pendingApprovals.length}</Badge>
+                        </div>
+                        <div className="space-y-3">
+                            {pendingApprovals.length > 0 ? pendingApprovals.slice(0, 2).map(approval => (
+                                <div key={approval.id} className="p-3 bg-secondary/30 rounded-xl border border-border/50 hover:border-orange-500/20 transition-all">
+                                    <p className="text-xs font-bold text-foreground mb-1">{approval.type}</p>
+                                    <p className="text-[10px] text-muted-foreground mb-3 leading-relaxed">{approval.title}</p>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            className="h-7 text-[10px] flex-1 bg-orange-500 hover:bg-orange-600 font-bold"
+                                            onClick={() => onApprove(approval)}
+                                        >
+                                            Confirm
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-7 text-[10px] px-2"
+                                            onClick={() => onReject(approval)}
+                                        >
+                                            Reject
+                                        </Button>
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-[10px] text-muted-foreground py-2 italic text-center">System is operating autonomously.</p>
+                            )}
+                        </div>
+                    </FadeIn>
+
+                    {/* Active Risks */}
+                    <FadeIn delay={0.6} className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-sm self-start">
+                        <div className="flex items-center gap-2 mb-4">
+                            <AlertTriangle size={16} className="text-red-500" />
+                            <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Active Risks</h3>
+                            <Badge variant="outline" className="ml-auto text-[10px] h-4 bg-red-500/5 text-red-500 border-red-500/20">{riskAlerts.filter(r => !r.acknowledged).length}</Badge>
+                        </div>
+                        <div className="space-y-3">
+                            {riskAlerts.filter(r => !r.acknowledged).length > 0 ? riskAlerts.filter(r => !r.acknowledged).slice(0, 2).map(risk => (
+                                <div key={risk.id} className="p-3 bg-red-500/5 rounded-xl border border-red-500/20">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <p className="text-xs font-bold text-red-500">{risk.severity}</p>
+                                        <button onClick={() => onAcknowledgeRisk(risk)} className="text-muted-foreground hover:text-foreground">
+                                            <X size={12} />
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-foreground font-medium mb-1">{risk.title}</p>
+                                    <p className="text-[9px] text-muted-foreground leading-tight">{risk.message}</p>
+                                </div>
+                            )) : (
+                                <p className="text-[10px] text-muted-foreground py-2 italic text-center whitespace-pre-wrap">Targeting 0% risk profile.\nCurrently nominal.</p>
+                            )}
+                        </div>
+                    </FadeIn>
                 </div>
 
                 {/* Middle Row: Active Projects, Upcoming Tasks, Recent Clients */}

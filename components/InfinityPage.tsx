@@ -6,7 +6,6 @@ import {
   AlignLeft, AlignCenter, AlignRight, Check, X, MousePointer2
 } from 'lucide-react';
 import { FadeIn } from './common/AnimatedComponents';
-import { DotPattern } from "@/components/magicui/dot-pattern";
 import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -343,7 +342,7 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
 
   return (
     <div
-      className="h-full w-full relative overflow-hidden bg-dot-grid"
+      className="h-full w-full relative overflow-hidden"
       ref={canvasRef}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -357,17 +356,7 @@ export const InfinityPage: React.FC<InfinityPageProps> = ({ items, setItems }) =
         cursor: isPanning ? 'grabbing' : (spacePressed || tool === 'HAND' ? 'grab' : (tool === 'COMMENT' ? 'text' : (tool === 'CONNECT' ? 'crosshair' : 'default'))),
       }}
     >
-      <DotPattern
-        width={20}
-        height={20}
-        cx={1}
-        cy={1}
-        cr={1}
-        className={cn(
-          "[mask-image:radial-gradient(1200px_circle_at_center,white,transparent)]",
-          "fill-primary/20 canvas-bg pointer-events-none"
-        )}
-      />
+
 
       {/* --- TOOLBAR --- */}
       <FadeIn className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-background/80 backdrop-blur-md border border-border/50 p-2 rounded-2xl shadow-xl">

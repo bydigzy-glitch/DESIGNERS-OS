@@ -134,6 +134,24 @@
   border: 1px solid hsl(var(--border));
 }
 
+/* Dynamic Color Utilities */
+.dynamic-text-color {
+  color: var(--dynamic-color, currentColor);
+}
+
+.dynamic-bg-color {
+  background-color: var(--dynamic-color, transparent);
+}
+
+.dynamic-border-color {
+  border-color: var(--dynamic-color, transparent);
+}
+
+.project-icon-base {
+  @apply w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm bg-secondary/50;
+  color: var(--project-color, currentColor);
+}
+
 /* Custom smooth scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

@@ -243,8 +243,8 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex items-center gap-3">
                                                 <div
-                                                    className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm bg-secondary/50"
-                                                    style={{ color: project.color }}
+                                                    className="project-icon-base"
+                                                    style={{ '--project-color': project.color } as React.CSSProperties}
                                                 >
                                                     {project.title.charAt(0)}
                                                 </div>

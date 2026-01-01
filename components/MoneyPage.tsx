@@ -326,8 +326,8 @@ export const MoneyPage: React.FC<MoneyPageProps> = ({
                                             <div key={project.id} className="flex items-center justify-between p-3 rounded-lg bg-red-500/5 border border-red-500/20">
                                                 <div className="flex items-center gap-3">
                                                     <div
-                                                        className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm"
-                                                        style={{ backgroundColor: `${project.color}20`, color: project.color }}
+                                                        className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm dynamic-text-color"
+                                                        style={{ '--dynamic-color': project.color, backgroundColor: `${project.color}20` } as React.CSSProperties}
                                                     >
                                                         {project.title.charAt(0)}
                                                     </div>

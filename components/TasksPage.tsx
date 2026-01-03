@@ -2,10 +2,8 @@
 import React, { useState } from 'react';
 import { Task, Project } from '../types';
 import {
-    Plus, GripVertical, Check, ChevronDown, ChevronUp,
-    LayoutGrid, List, Clock, MessageSquare, Paperclip,
-    Search, Filter, MoreHorizontal, Calendar,
-    CheckCircle2, Circle, CheckSquare
+    Plus, Clock, MessageSquare, Paperclip,
+    MoreHorizontal, LayoutGrid, List, CheckCircle2, Circle
 } from 'lucide-react';
 import { TaskModal } from './modals/TaskModal';
 import { ProjectModal } from './modals/ProjectModal';
@@ -36,17 +34,17 @@ interface TasksPageProps {
 // Sub-component: PriorityBadge
 const PriorityBadge = ({ priority }: { priority?: Task['priority'] | 'CRITICAL' }) => {
     const config: Record<string, { label: string, class: string }> = {
-        CRITICAL: { label: 'Critical', class: 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100' },
-        HIGH: { label: 'High', class: 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100' },
-        MEDIUM: { label: 'Medium', class: 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100' },
-        LOW: { label: 'Low', class: 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100' },
+        CRITICAL: { label: 'Critical', class: 'bg-red-50 text-red-600 border-red-100/50 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' },
+        HIGH: { label: 'High', class: 'bg-orange-50 text-orange-600 border-orange-100/50 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20' },
+        MEDIUM: { label: 'Medium', class: 'bg-blue-50 text-blue-600 border-blue-100/50 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20' },
+        LOW: { label: 'Low', class: 'bg-slate-50 text-slate-600 border-slate-100/50 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20' },
     };
 
     if (!priority) return null;
     const { label, class: className } = config[priority] || config.MEDIUM;
 
     return (
-        <Badge variant="outline" className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0 border", className)}>
+        <Badge variant="outline" className={cn("text-[8px] font-black uppercase tracking-widest px-1.5 py-0 border-0 shadow-none", className)}>
             {label}
         </Badge>
     );
@@ -54,22 +52,16 @@ const PriorityBadge = ({ priority }: { priority?: Task['priority'] | 'CRITICAL' 
 
 // Sub-component: Facepile
 const Facepile = ({ members = [] }: { members?: any[] }) => {
-    // If no members, show a placeholder for the "Digzy" user
     const displayMembers = members.length > 0 ? members : [{ id: 'admin', name: 'Digzy', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Digzy' }];
 
     return (
-        <div className="flex -space-x-2 overflow-hidden">
-            {displayMembers.slice(0, 3).map((m, i) => (
-                <Avatar key={m.id || i} className="inline-block h-6 w-6 rounded-full ring-2 ring-background border border-border shadow-sm">
+        <div className="flex -space-x-1.5 overflow-hidden">
+            {displayMembers.slice(0, 2).map((m, i) => (
+                <Avatar key={m.id || i} className="inline-block h-5 w-5 rounded-full ring-2 ring-card border-none">
                     <AvatarImage src={m.avatar} alt={m.name} />
-                    <AvatarFallback className="text-[10px] bg-secondary">{m.name?.charAt(0) || 'U'}</AvatarFallback>
+                    <AvatarFallback className="text-[8px] bg-secondary">{m.name?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
             ))}
-            {displayMembers.length > 3 && (
-                <div className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-background bg-secondary text-[8px] font-bold text-muted-foreground border border-border">
-                    +{displayMembers.length - 3}
-                </div>
-            )}
         </div>
     );
 };
@@ -90,10 +82,10 @@ export const TasksPage: React.FC<TasksPageProps> = ({
 
     const columnKeys: Task['statusLabel'][] = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
     const columnColors: Record<string, string> = {
-        TODO: 'bg-slate-400',
-        IN_PROGRESS: 'bg-blue-500',
-        REVIEW: 'bg-amber-500',
-        DONE: 'bg-emerald-500'
+        TODO: 'bg-[#d1d5db]', // Grey
+        IN_PROGRESS: 'bg-[#3b82f6]', // Blue
+        REVIEW: 'bg-[#f59e0b]', // Orange/Amber
+        DONE: 'bg-[#10b981]' // Green
     };
 
     const handleEditTask = (task: Task) => {
@@ -128,12 +120,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({
             const task = tasks.find(t => t.id === draggedTaskId);
             if (task) {
                 const validStatus = status as Task['statusLabel'];
-
-                onUpdateTask({
-                    ...task,
-                    statusLabel: validStatus,
-                    completed: status === 'DONE'
-                });
+                onUpdateTask({ ...task, statusLabel: validStatus, completed: status === 'DONE' });
             }
             setDraggedTaskId(null);
         }
@@ -143,78 +130,70 @@ export const TasksPage: React.FC<TasksPageProps> = ({
         const now = new Date();
         const d = new Date(date);
         const diffDays = Math.floor((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
         if (diffDays === 0) return 'Today';
         if (diffDays === 1) return 'Tomorrow';
         if (diffDays === -1) return 'Yesterday';
-        if (diffDays > 1 && diffDays < 7) return `In ${diffDays} days`;
-        if (diffDays < -1) return `${Math.abs(diffDays)} days ago`;
-
         return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     };
 
     return (
         <TooltipProvider delayDuration={300}>
-            <div className="flex flex-col h-full w-full bg-background overflow-hidden">
+            <div className="flex flex-col h-full w-full bg-[#fbfbfd] dark:bg-background overflow-hidden px-8">
 
-                {/* 1. Header & View Switcher */}
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 border-b border-border bg-card/30 backdrop-blur-md z-20 flex-shrink-0">
+                {/* Header */}
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 py-12 flex-shrink-0">
                     <div>
-                        <h1 className="text-3xl font-black text-foreground tracking-tight">Tasks</h1>
-                        <p className="text-sm text-muted-foreground font-medium">Manage your production flow and project deadlines.</p>
+                        <h1 className="text-4xl font-black text-[#1d1d1f] dark:text-foreground tracking-tight mb-2">Task Management</h1>
+                        <p className="text-sm text-[#86868b] dark:text-muted-foreground font-medium">Cross-project tasks assigned to you and your team.</p>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        {/* View Toggle Pill */}
-                        <div className="flex items-center p-1 bg-secondary/50 rounded-full border border-border shadow-inner">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center p-1 bg-[#f5f5f7] dark:bg-secondary/50 rounded-lg border border-border/50">
                             <button
                                 onClick={() => setActiveView('KANBAN')}
                                 className={cn(
-                                    "flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200",
+                                    "flex items-center gap-2 px-4 py-1.5 rounded-md text-[11px] font-bold transition-all duration-200",
                                     activeView === 'KANBAN'
-                                        ? "bg-background text-foreground shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground"
+                                        ? "bg-white dark:bg-background text-[#1d1d1f] dark:text-foreground shadow-sm"
+                                        : "text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-foreground"
                                 )}
                             >
-                                <LayoutGrid size={14} />
                                 Kanban
                             </button>
                             <button
                                 onClick={() => setActiveView('LIST')}
                                 className={cn(
-                                    "flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200",
+                                    "flex items-center gap-2 px-4 py-1.5 rounded-md text-[11px] font-bold transition-all duration-200",
                                     activeView === 'LIST'
-                                        ? "bg-background text-foreground shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground"
+                                        ? "bg-white dark:bg-background text-[#1d1d1f] dark:text-foreground shadow-sm"
+                                        : "text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-foreground"
                                 )}
                             >
-                                <List size={14} />
                                 List
                             </button>
                         </div>
 
                         <Button
                             onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }}
-                            className="rounded-full font-bold shadow-lg shadow-primary/20 transition-transform active:scale-95"
+                            className="bg-[#0071e3] hover:bg-[#0071e3]/90 text-white rounded-lg font-bold h-10 px-6 shadow-sm"
                         >
-                            <Plus size={18} className="mr-1" />
+                            <Plus size={18} className="mr-2" strokeWidth={3} />
                             New Task
                         </Button>
                     </div>
                 </header>
 
-                {/* 2. Content Area */}
                 <main className="flex-1 overflow-hidden relative">
                     <AnimatePresence mode="wait">
                         {activeView === 'KANBAN' ? (
                             <motion.div
                                 key="kanban"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="h-full overflow-x-auto overflow-y-hidden custom-scrollbar bg-slate-50/30 dark:bg-transparent"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="h-full overflow-x-auto overflow-y-hidden pb-8 custom-scrollbar"
                             >
-                                <div className="flex gap-6 p-6 h-full min-w-max">
+                                <div className="flex gap-8 h-full min-w-max">
                                     {columnKeys.map(colId => {
                                         const colTasks = tasks.filter(t =>
                                             (t.statusLabel === colId) ||
@@ -225,109 +204,81 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                                             <div
                                                 key={colId}
                                                 className={cn(
-                                                    "flex flex-col w-[320px] h-full rounded-2xl transition-colors border-2 border-transparent",
-                                                    dragOverCol === colId && "bg-primary/5 border-primary/20 border-dashed"
+                                                    "flex flex-col w-[320px] h-full transition-all duration-200",
+                                                    dragOverCol === colId && "scale-[1.02]"
                                                 )}
                                                 onDragOver={(e) => handleDragOver(e, colId || 'TODO')}
                                                 onDragLeave={handleDragLeave}
                                                 onDrop={(e) => handleDrop(e, colId || 'TODO')}
                                             >
-                                                {/* Column Header */}
-                                                <div className="flex items-center justify-between mb-4 px-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={cn("w-2 h-2 rounded-full shadow-sm", columnColors[colId || 'TODO'])} />
-                                                        <h3 className="text-sm font-bold text-foreground">
-                                                            {colId?.replace('_', ' ')}
+                                                {/* Header */}
+                                                <div className="flex items-center justify-between mb-6 px-1">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={cn("w-2 h-2 rounded-full", columnColors[colId || 'TODO'])} />
+                                                        <h3 className="text-[13px] font-black text-[#1d1d1f] dark:text-foreground flex items-center gap-1.5">
+                                                            {colId === 'TODO' ? 'To Do' : colId?.replace('_', ' ')}
+                                                            <span className="text-[#86868b] font-medium ml-1">{colTasks.length}</span>
                                                         </h3>
-                                                        <Badge variant="secondary" className="bg-secondary/70 text-[10px] font-bold px-1.5 h-5 min-w-[20px] flex items-center justify-center rounded-md">
-                                                            {colTasks.length}
-                                                        </Badge>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleAddTaskToColumn(colId)}
-                                                        className="p-1 hover:bg-secondary rounded-md text-muted-foreground transition-colors"
-                                                    >
-                                                        <Plus size={16} />
+                                                    <button className="text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-foreground transition-colors">
+                                                        <MoreHorizontal size={18} />
                                                     </button>
                                                 </div>
 
-                                                {/* Task Cards Container */}
-                                                <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar pb-20">
+                                                <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar pb-24">
                                                     {colTasks.map(task => {
                                                         const project = projects.find(p => p.id === task.projectId);
                                                         return (
                                                             <motion.div
                                                                 key={task.id}
                                                                 layout
-                                                                whileHover={{ scale: 1.01 }}
                                                                 draggable
                                                                 onDragStart={(e: any) => handleDragStart(e, task.id)}
-                                                                className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 hover:shadow-md transition-all group cursor-pointer relative"
+                                                                className="bg-white dark:bg-card p-5 rounded-2xl border border-border/40 hover:border-border transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] group"
                                                                 onClick={() => handleEditTask(task)}
                                                             >
-                                                                <div className="flex flex-col gap-3">
+                                                                <div className="flex flex-col gap-4">
                                                                     <div className="flex justify-between items-start">
+                                                                        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-[#86868b]">
+                                                                            {project?.title.split(' ')[0] || 'GENERAL'}
+                                                                        </span>
                                                                         <PriorityBadge priority={task.priority} />
-                                                                        <button className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-secondary text-muted-foreground transition-all">
-                                                                            <MoreHorizontal size={14} />
-                                                                        </button>
                                                                     </div>
 
-                                                                    <div className="space-y-1">
-                                                                        <h4 className={cn(
-                                                                            "text-sm font-bold leading-snug transition-colors group-hover:text-primary",
-                                                                            task.completed && "line-through text-muted-foreground"
-                                                                        )}>
-                                                                            {task.title}
-                                                                        </h4>
-                                                                        {project && (
-                                                                            <p className="text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground/70">
-                                                                                {project.title}
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
+                                                                    <h4 className={cn(
+                                                                        "text-[15px] font-bold text-[#1d1d1f] dark:text-foreground leading-snug",
+                                                                        task.completed && "line-through text-muted-foreground opacity-60"
+                                                                    )}>
+                                                                        {task.title}
+                                                                    </h4>
 
-                                                                    {/* Metadata & Facepile */}
-                                                                    <div className="pt-2 flex items-center justify-between border-t border-border/50">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                                                                                <Clock size={12} />
+                                                                    <div className="flex items-center justify-between pt-1">
+                                                                        <div className="flex items-center gap-4">
+                                                                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#86868b]">
+                                                                                <Paperclip size={14} className="opacity-40" />
+                                                                                <span>2</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#86868b]">
+                                                                                <MessageSquare size={14} className="opacity-40" />
+                                                                                <span>5</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-[#86868b]">
+                                                                                <Clock size={14} className="opacity-40" />
                                                                                 <span>{getRelativeTime(task.date)}</span>
                                                                             </div>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <Tooltip>
-                                                                                    <TooltipTrigger asChild>
-                                                                                        <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors cursor-help">
-                                                                                            <MessageSquare size={12} />
-                                                                                            <span>2</span>
-                                                                                        </div>
-                                                                                    </TooltipTrigger>
-                                                                                    <TooltipContent>2 comments</TooltipContent>
-                                                                                </Tooltip>
-                                                                                <Tooltip>
-                                                                                    <TooltipTrigger asChild>
-                                                                                        <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors cursor-help">
-                                                                                            <Paperclip size={12} />
-                                                                                            <span>1</span>
-                                                                                        </div>
-                                                                                    </TooltipTrigger>
-                                                                                    <TooltipContent>1 attachment</TooltipContent>
-                                                                                </Tooltip>
-                                                                            </div>
                                                                         </div>
-                                                                        <Facepile members={[]} />
+                                                                        <Facepile />
                                                                     </div>
                                                                 </div>
                                                             </motion.div>
                                                         );
                                                     })}
 
-                                                    {/* Empty State Button */}
                                                     <button
                                                         onClick={() => handleAddTaskToColumn(colId)}
-                                                        className="w-full py-4 border-2 border-dashed border-border rounded-xl text-xs font-bold text-muted-foreground hover:border-primary/30 hover:text-foreground hover:bg-secondary/30 transition-all flex items-center justify-center gap-2"
+                                                        className="w-full py-3.5 border border-dashed border-border/60 rounded-xl text-[11px] font-bold text-[#86868b] hover:border-border hover:bg-white dark:hover:bg-secondary/20 transition-all flex items-center justify-center gap-2 group"
                                                     >
-                                                        <Plus size={14} />
+                                                        <Plus size={14} className="group-hover:scale-110 transition-transform" />
                                                         Add Task
                                                     </button>
                                                 </div>
@@ -339,52 +290,48 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                         ) : (
                             <motion.div
                                 key="list"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                className="h-full overflow-y-auto p-6"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="h-full overflow-y-auto pb-8"
                             >
-                                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                                <div className="bg-white dark:bg-card rounded-2xl border border-border/40 shadow-sm overflow-hidden">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
-                                            <tr className="bg-secondary/30 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-border">
-                                                <th className="px-6 py-4 font-black">Status</th>
-                                                <th className="px-6 py-4 font-black">Task Details</th>
-                                                <th className="px-6 py-4 font-black">Priority</th>
-                                                <th className="px-6 py-4 font-black">Due Date</th>
-                                                <th className="px-6 py-4 font-black text-right">Assignee</th>
+                                            <tr className="bg-[#f5f5f7] dark:bg-secondary/30 text-[9px] font-black uppercase tracking-widest text-[#86868b] border-b border-border/40">
+                                                <th className="px-6 py-5">Status</th>
+                                                <th className="px-6 py-5">Task Details</th>
+                                                <th className="px-6 py-5">Priority</th>
+                                                <th className="px-6 py-5">Due Date</th>
+                                                <th className="px-6 py-5 text-right">Assignee</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-border">
-                                            {tasks.length > 0 ? tasks.map(task => {
+                                        <tbody className="divide-y divide-border/40">
+                                            {tasks.map(task => {
                                                 const project = projects.find(p => p.id === task.projectId);
                                                 return (
                                                     <tr
                                                         key={task.id}
-                                                        className="group hover:bg-secondary/20 transition-all cursor-pointer"
+                                                        className="group hover:bg-[#fbfbfd] dark:hover:bg-secondary/10 transition-all cursor-pointer"
                                                         onClick={() => handleEditTask(task)}
                                                     >
-                                                        <td className="px-6 py-4">
+                                                        <td className="px-6 py-5">
                                                             <div className="flex items-center gap-3">
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         onUpdateTask({ ...task, completed: !task.completed, statusLabel: !task.completed ? 'DONE' : 'TODO' });
                                                                     }}
-                                                                    className="text-muted-foreground group-hover:text-indigo-500 transition-colors"
+                                                                    className="text-[#86868b] group-hover:text-indigo-500 transition-colors"
                                                                 >
-                                                                    {task.completed ? (
-                                                                        <CheckCircle2 size={18} className="text-emerald-500" />
-                                                                    ) : (
-                                                                        <Circle size={18} />
-                                                                    )}
+                                                                    {task.completed ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
                                                                 </button>
                                                                 <Badge variant="outline" className={cn(
-                                                                    "text-[9px] font-bold px-1.5 py-0 h-4 border-none",
+                                                                    "text-[8px] font-black uppercase tracking-widest px-1.5 py-0 h-4 border-0",
                                                                     columnColors[task.statusLabel || 'TODO'],
                                                                     "bg-opacity-10 text-opacity-100",
                                                                     task.statusLabel === 'DONE' ? "text-emerald-600 bg-emerald-100" :
-                                                                        task.statusLabel === 'REVIEW' ? "text-amber-600 bg-amber-100" :
+                                                                        task.statusLabel === 'REVIEW' ? "text-orange-600 bg-orange-100" :
                                                                             task.statusLabel === 'IN_PROGRESS' ? "text-blue-600 bg-blue-100" :
                                                                                 "text-slate-600 bg-slate-100"
                                                                 )}>
@@ -392,48 +339,26 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                                                                 </Badge>
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-4">
+                                                        <td className="px-6 py-5">
                                                             <div className="space-y-0.5">
-                                                                <div className={cn(
-                                                                    "text-sm font-bold text-foreground group-hover:text-primary transition-colors",
-                                                                    task.completed && "line-through text-muted-foreground"
-                                                                )}>
+                                                                <div className={cn("text-sm font-bold text-[#1d1d1f] dark:text-foreground", task.completed && "line-through opacity-40")}>
                                                                     {task.title}
                                                                 </div>
-                                                                {project && (
-                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
-                                                                        {project.title}
-                                                                    </div>
-                                                                )}
+                                                                {project && <p className="text-[9px] font-black uppercase tracking-[0.1em] text-[#86868b]">{project.title}</p>}
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-4">
+                                                        <td className="px-6 py-5">
                                                             <PriorityBadge priority={task.priority} />
                                                         </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                                                                <Clock size={14} className="group-hover:text-indigo-500 transition-colors" />
-                                                                {getRelativeTime(task.date)}
-                                                            </div>
+                                                        <td className="px-6 py-5 font-bold text-[11px] text-[#86868b]">
+                                                            {getRelativeTime(task.date)}
                                                         </td>
-                                                        <td className="px-6 py-4 text-right">
-                                                            <div className="flex justify-end">
-                                                                <Facepile members={[]} />
-                                                            </div>
+                                                        <td className="px-6 py-5 text-right">
+                                                            <div className="flex justify-end"><Facepile /></div>
                                                         </td>
                                                     </tr>
                                                 );
-                                            }) : (
-                                                <tr>
-                                                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <CheckSquare size={32} className="opacity-20" />
-                                                            <p className="font-bold">No tasks found</p>
-                                                            <p className="text-xs">Create your first task to get started.</p>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )}
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
@@ -442,7 +367,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                     </AnimatePresence>
                 </main>
 
-                {/* Modals */}
                 <TaskModal
                     isOpen={isTaskModalOpen}
                     onClose={() => setIsTaskModalOpen(false)}

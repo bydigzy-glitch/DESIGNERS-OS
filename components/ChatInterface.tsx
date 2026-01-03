@@ -35,7 +35,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // ... existing state ...
   const [inputText, setInputText] = useState('');
   const [pendingImage, setPendingImage] = useState<string | null>(null);
-  const [isIgniteMode, setIsIgniteMode] = useState(false);
+  const [isAssistMode, setIsAssistMode] = useState(false);
 
   // @ Mention State
   const [showMentions, setShowMentions] = useState(false);
@@ -63,7 +63,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (e) e.preventDefault();
     if ((inputText.trim() || pendingImage) && !isLoading) {
       const taskIds = mentionedTasks.map(t => t.id);
-      onSendMessage(inputText, pendingImage || undefined, isIgniteMode, taskIds);
+      onSendMessage(inputText, pendingImage || undefined, isAssistMode, taskIds);
       setInputText('');
       setPendingImage(null);
       setMentionedTasks([]);
@@ -159,30 +159,30 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <div>
                   <h2 className="text-sm font-semibold text-foreground">AI Assistant</h2>
                   <p className="text-xs text-muted-foreground">
-                    {isIgniteMode ? 'Ignite Mode Active' : 'Standard Mode'}
+                    {isAssistMode ? 'Assist Mode Active' : 'Standard Mode'}
                   </p>
                 </div>
               </div>
 
-              {/* Ignite Toggle */}
+              {/* Assist Toggle */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant={isIgniteMode ? "default" : "outline"}
+                    variant={isAssistMode ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setIsIgniteMode(!isIgniteMode)}
+                    onClick={() => setIsAssistMode(!isAssistMode)}
                     className="gap-2"
                   >
-                    {isIgniteMode ? (
+                    {isAssistMode ? (
                       <GradientGlobe size={16} />
                     ) : (
                       <Sparkles size={14} className="" />
                     )}
-                    <span className="hidden sm:inline">Ignite</span>
+                    <span className="hidden sm:inline">Assist</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Toggle Ignite Mode - Enhanced AI capabilities</p>
+                  <p>Toggle Assist Mode - Enhanced AI capabilities</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -216,7 +216,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   ].map((prompt, i) => (
                     <button
                       key={i}
-                      onClick={() => onSendMessage(prompt, undefined, isIgniteMode, [])}
+                      onClick={() => onSendMessage(prompt, undefined, isAssistMode, [])}
                       className="p-4 text-left bg-card hover:bg-accent border border-border rounded-xl transition-all hover:shadow-md group"
                     >
                       <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
@@ -396,10 +396,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {/* Helper Text */}
               <div className="flex items-center justify-between mt-2 px-2">
                 <p className="text-xs text-muted-foreground">
-                  {isIgniteMode ? (
+                  {isAssistMode ? (
                     <span className="text-primary flex items-center gap-1">
                       <Sparkles size={10} className="fill-current" />
-                      Ignite Mode: Enhanced capabilities
+                      Assist Mode: Enhanced capabilities
                     </span>
                   ) : (
                     'Press @ to mention tasks'

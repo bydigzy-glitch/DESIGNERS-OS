@@ -2,7 +2,7 @@
 
 
 import React, { useState } from 'react';
-import { Search, Moon, Sun, Bell, Coins, Menu, X, Briefcase, Flame, Layers, FolderOpen, Settings, LogOut, User as UserIcon } from 'lucide-react';
+import { Search, Moon, Sun, Bell, Coins, Menu, X, Briefcase, Flame, Layers, FolderOpen, Settings, LogOut, User as UserIcon, Sparkles } from 'lucide-react';
 import { User, AppNotification, ViewMode } from '../types';
 import { CountUp } from './common/AnimatedComponents';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ interface TopBarProps {
     onTeamInviteResponse?: (teamId: string, accept: boolean, notificationId: string) => void;
     onNavigate?: (view: ViewMode) => void;
     currentView?: ViewMode;
+    onOpenAI?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -44,7 +45,8 @@ export const TopBar: React.FC<TopBarProps> = ({
     onMarkNotificationRead,
     onTeamInviteResponse,
     onNavigate,
-    currentView
+    currentView,
+    onOpenAI
 }) => {
     const unreadCount = notifications.filter(n => !n.read).length;
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -92,7 +94,26 @@ export const TopBar: React.FC<TopBarProps> = ({
                     </div>
 
                     {/* Right Actions */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+
+                        {/* Assist AI Button */}
+                        {onOpenAI && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        onClick={onOpenAI}
+                                        className="gap-2 border-primary/30 hover:border-primary/50 bg-primary/5 hover:bg-primary/10"
+                                    >
+                                        <Sparkles size={16} className="text-primary" />
+                                        <span className="hidden sm:inline text-xs font-bold text-primary">Assist</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Open AI Assistant</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
 
                         {/* User Profile Dropdown */}
                         <DropdownMenu>

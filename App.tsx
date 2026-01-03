@@ -1667,6 +1667,7 @@ function App() {
                     onTeamInviteResponse={handleTeamInviteResponse}
                     onNavigate={setCurrentView}
                     currentView={currentView}
+                    onOpenAI={() => setIsChatOverlayOpen(true)}
                 />
                 <div className="flex-1 h-full w-full max-w-[1920px] mx-auto overflow-hidden p-4 md:p-8 transition-all">
                     {renderView()}

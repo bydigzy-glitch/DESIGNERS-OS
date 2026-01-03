@@ -232,35 +232,10 @@ export const HQ: React.FC<HQProps> = ({
         <TooltipProvider delayDuration={300}>
             <div className="flex flex-col h-full w-full space-y-6 md:space-y-8 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2 relative z-[var(--z-container)]">
 
-                {/* Top Right Ignite Button */}
-                <div className="absolute top-0 right-0 z-20">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                onClick={onOpenAiSidebar}
-                                variant="outline"
-                                className="relative overflow-hidden flex items-center gap-2 shadow-glow border-primary/20 hover:border-primary/50 group bg-background/50 backdrop-blur-sm"
-                            >
-                                <Flame size={16} fill="currentColor" className="text-primary group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-bold text-primary">Ignite</span>
-                                <BorderBeam
-                                    size={40}
-                                    duration={3}
-                                    colorFrom="hsl(var(--primary))"
-                                    colorTo="hsl(var(--primary) / 0)"
-                                    className="opacity-70"
-                                />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Open AI assistant</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </div>
 
                 {/* Header & Greeting */}
                 <FadeIn>
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6 pt-10 md:pt-0">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6">
                         <div className="flex flex-col gap-4 max-w-lg w-full">
                             <div>
                                 <h1 className="text-3xl font-bold text-foreground tracking-tight h-[36px]">
@@ -289,7 +264,7 @@ export const HQ: React.FC<HQProps> = ({
                                     type="text"
                                     value={aiInput}
                                     onChange={(e) => setAiInput(e.target.value)}
-                                    placeholder="Ask Ignite to add tasks or review projects..."
+                                    placeholder="Ask Assist to add tasks or review projects..."
                                     className="w-full h-12 bg-secondary rounded-xl pl-10 pr-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background transition-all placeholder:text-muted-foreground text-sm font-medium border border-border"
                                 />
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">

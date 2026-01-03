@@ -100,42 +100,89 @@
   }
 
   .dark {
-    /* Readable Dark Mode: Deep Graphite/Charcoal */
-    --background: 240 2.9% 10%;
-    /* #161617 */
-    --foreground: 240 4.8% 95.9%;
-    /* #F5F5F7 - Soft off-white text */
+    /* =============================================
+       APPLE HIG DARK MODE - UPDATED
+       Based on: developer.apple.com/design/human-interface-guidelines/dark-mode
+       ============================================= */
 
-    --card: 240 5.1% 14.1%;
-    /* #212124 - Lifted surface */
-    --card-foreground: 240 4.8% 95.9%;
+    /* Base Background - Deep but not pure black (reduces eye strain)
+       Apple recommends: Avoid pure #000000, use dark grays instead */
+    --background: 0 0% 7%;
+    /* ~#121212 - Soft black, easier on eyes */
 
-    --popover: 240 5.1% 14.1%;
-    --popover-foreground: 240 4.8% 95.9%;
+    /* Foreground Text - Off-white, not pure white 
+       Apple HIG: Pure white text on dark bg causes eye strain */
+    --foreground: 0 0% 93%;
+    /* #EDEDED - Soft off-white for primary text */
 
-    /* Accents in dark mode: higher luminance for guidance */
-    --primary: 210 100% 50.5%;
-    /* Apple Blue Vivid */
+    /* Elevated Surface - Cards, modals, popovers
+       Apple HIG: Use elevated backgrounds for layered content */
+    --card: 0 0% 11%;
+    /* #1C1C1C - Lifted surface, distinct from base */
+    --card-foreground: 0 0% 93%;
+
+    --popover: 0 0% 13%;
+    /* #212121 - Even more elevated for menus/popovers */
+    --popover-foreground: 0 0% 93%;
+
+    /* Primary Accent - Adjusted for dark mode
+       Apple HIG: Reduce saturation slightly, increase luminance 
+       to prevent "vibrating" colors on dark backgrounds */
+    --primary: 211 100% 55%;
+    /* #2997FF - Apple's adjusted blue for dark mode */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 240 4.8% 95.9%;
+    /* Secondary Surface - Subtle elevation step */
+    --secondary: 0 0% 14%;
+    /* #242424 - Slight lift from card */
+    --secondary-foreground: 0 0% 88%;
+    /* #E0E0E0 */
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 3.1% 64.7%;
-    /* #A1A1A6 - Warm grey clarity */
+    /* Muted Elements - Lower emphasis text/backgrounds */
+    --muted: 0 0% 16%;
+    /* #292929 */
+    --muted-foreground: 0 0% 60%;
+    /* #999999 - Meets 4.5:1 contrast on dark bg */
 
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 240 4.8% 95.9%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 93%;
 
-    --success: 152 57% 50%;
-    --warning: 38 92% 55%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 240 4.8% 95.9%;
+    /* Semantic Colors - Adjusted luminance for dark mode
+       Apple HIG: Increase brightness of status colors in dark mode */
+    --success: 142 71% 45%;
+    /* Green - slightly brighter */
+    --warning: 38 92% 50%;
+    /* Amber - maintained */
+    --destructive: 0 84% 60%;
+    /* Red - increased luminance for visibility */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 3.7% 20%;
-    --input: 240 3.7% 20%;
-    --ring: 210 100% 50.5%;
+    /* Borders - Subtle but visible
+       Apple HIG: Borders should be visible but not harsh */
+    --border: 0 0% 18%;
+    /* #2E2E2E - Visible separation */
+    --input: 0 0% 18%;
+    --ring: 211 100% 55%;
+
+    /* Surface Highlight - For hover states and subtle emphasis */
+    --surface-highlight: 0 0% 20%;
+    /* #333333 - For interactive hover states */
+  }
+
+  /* Apple HIG: Support "Increase Contrast" accessibility setting
+     Provides enhanced contrast for users who enable it */
+  @media (prefers-contrast: more) {
+    .dark {
+      --background: 0 0% 0%;
+      /* Pure black for max contrast */
+      --foreground: 0 0% 100%;
+      /* Pure white */
+      --card: 0 0% 8%;
+      --border: 0 0% 30%;
+      /* Stronger border visibility */
+      --muted-foreground: 0 0% 75%;
+      /* Increased contrast for secondary text */
+    }
   }
 
   * {
@@ -163,10 +210,37 @@
 }
 
 .glass {
-  background: rgba(9, 9, 11, 0.8);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: hsl(var(--card) / 0.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(20px) saturate(1.8);
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* Apple HIG: Elevated surfaces for modals, cards, popovers */
+.elevated {
+  background: hsl(var(--popover));
   border: 1px solid hsl(var(--border));
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.dark .elevated {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Apple HIG: Vibrancy effect for overlays */
+.vibrancy {
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+  background: hsl(var(--background) / 0.85);
+}
+
+.dark .vibrancy {
+  background: hsl(var(--background) / 0.9);
 }
 
 /* Dynamic Color Utilities */

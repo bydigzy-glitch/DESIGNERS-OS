@@ -23,11 +23,11 @@ export interface ChatState {
 // Navigation structure for Designers Hub (includes legacy for backwards compatibility)
 export type ViewMode =
   // New Designers Hub routes
-  | 'COMMAND_CENTER' | 'CLIENTS' | 'WORK' | 'TIME' | 'MONEY'
+  | 'COMMAND_CENTER' | 'CLIENTS' | 'WORK' | 'CALENDAR' | 'MONEY'
   // Shared routes
   | 'FILES' | 'SETTINGS'
   // Legacy routes (kept for transition period)
-  | 'CHAT' | 'HQ' | 'HABITS' | 'APPS' | 'CALENDAR' | 'MANAGER' | 'TEAMS' | 'DEMO';
+  | 'CHAT' | 'HQ' | 'HABITS' | 'APPS' | 'MANAGER' | 'TEAMS' | 'DEMO';
 
 // Autopilot modes for Brain system
 export type AutopilotMode = 'ASSIST' | 'CONFIDENT' | 'STRICT';

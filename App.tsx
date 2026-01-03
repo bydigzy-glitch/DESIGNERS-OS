@@ -11,7 +11,6 @@ import { HQ } from './components/HQ';
 import { HabitsPage } from './components/HabitsPage';
 import { QuickActionsSidebar } from './components/QuickActionsSidebar';
 import { Apps } from './components/Apps';
-import { Calendar } from './components/Calendar';
 import { FileManager } from './components/FileManager';
 import { Settings } from './components/Settings';
 import { Auth } from './components/Auth';
@@ -24,11 +23,10 @@ import { ToastContainer, ToastMessage, ToastType } from './components/common/Toa
 import { Message, ViewMode, Task, FileAsset, Folder, User, ChatSession, Client, Project, Habit, CanvasItem, AppNotification, AutopilotMode, ApprovalRequest, RiskAlert, HandledAction } from './types';
 import { RECOVERY_INSTRUCTION } from './constants';
 import { TopBar } from './components/TopBar';
-// Designers Hub Components
 import { CommandCenter } from './components/CommandCenter';
 import { ClientsPage } from './components/ClientsPage';
 import { WorkPage } from './components/WorkPage';
-import { TimePage } from './components/TimePage';
+import { CalendarPage } from './components/CalendarPage';
 import { MoneyPage } from './components/MoneyPage';
 import { BrainOverlay } from './components/BrainOverlay';
 import { AutomationEngine } from './services/automationEngine';
@@ -1521,8 +1519,8 @@ function App() {
                     onUpdateProject={handleProjectUpdate}
                     onDeleteProject={handleProjectDelete}
                 />;
-            case 'TIME':
-                return <TimePage
+            case 'CALENDAR':
+                return <CalendarPage
                     tasks={tasks}
                     projects={projects}
                     onUpdateTask={handleTaskUpdate}
@@ -1587,18 +1585,6 @@ function App() {
                 />;
             case 'FILES':
                 return <FileManager files={files} setFiles={setFiles} folders={folders} setFolders={setFolders} clients={clients} isDriveConnected={isDriveConnected} />;
-            case 'CALENDAR':
-                return <Calendar
-                    tasks={tasks}
-                    onUpdateTask={handleTaskUpdate}
-                    onDeleteTask={handleTaskDelete}
-                    onChangeColor={(id, c) => handleTaskUpdate({ ...tasks.find(t => t.id === id)!, color: c })}
-                    onAddTask={handleTaskCreate}
-                    onAddTasks={(tl) => {
-                        tl.forEach(t => handleTaskCreate(t));
-                        addToast('SUCCESS', `${tl.length} events added`);
-                    }}
-                />;
             case 'SETTINGS':
                 return <Settings
                     user={user as User}

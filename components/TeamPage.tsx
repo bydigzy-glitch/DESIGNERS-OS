@@ -5,7 +5,7 @@ import { Users, Plus, TrendingUp, Send, MoreVertical, Trash2, Mail, Flame, Smile
 import { FadeIn, CountUp } from './common/AnimatedComponents';
 import { storageService, Backend } from '../services/storageService';
 import { dbTeams, dbTeamMembers, dbTeamMessages, dbNotifications, subscribeToTeamMessages, subscribeToTeamMembers, db, supabase } from '../services/supabaseClient';
-import { Calendar } from './Calendar';
+import { CalendarView as Calendar } from './CalendarView';
 import { TaskModal } from './modals/TaskModal';
 import { TasksTable } from './common/TasksTable';
 import { motion, AnimatePresence } from 'framer-motion';

@@ -50,7 +50,7 @@ const NAV_ITEMS: { id: ViewMode; label: string; icon: React.ReactNode; descripti
   { id: 'HQ', label: 'Dashboard', icon: <LayoutGrid size={18} />, description: 'Your daily focus and system status' },
   { id: 'CLIENTS', label: 'Clients', icon: <Users size={18} />, description: 'Client management and scoring' },
   { id: 'WORK', label: 'Projects', icon: <Briefcase size={18} />, description: 'Projects and tasks unified' },
-  { id: 'TIME', label: 'Time', icon: <Clock size={18} />, description: 'Calendar and time protection' },
+  { id: 'CALENDAR', label: 'Calendar', icon: <Clock size={18} />, description: 'Calendar and time protection' },
   { id: 'MONEY', label: 'Money', icon: <DollarSign size={18} />, description: 'Finances and forecasting' },
 ];
 
@@ -305,14 +305,14 @@ export const Navigation: React.FC<NavigationProps> = ({
           <span className="text-[9px] font-bold uppercase tracking-wider">BRAIN</span>
         </Button>
 
-        {/* Time */}
+        {/* Calendar */}
         <Button
-          variant={currentView === 'TIME' ? "default" : "ghost"}
-          onClick={() => onNavigate('TIME')}
+          variant={currentView === 'CALENDAR' ? "default" : "ghost"}
+          onClick={() => onNavigate('CALENDAR')}
           className="flex flex-col items-center justify-center gap-1 h-auto py-3"
         >
           <Clock size={20} />
-          <span className="text-[9px] font-bold uppercase tracking-wider">TIME</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider">CALENDAR</span>
         </Button>
       </nav>
     </TooltipProvider >

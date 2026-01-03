@@ -1,18 +1,26 @@
 
 import React, { useState } from 'react';
 import { Task, Project } from '../types';
-import { CheckSquare, Plus, Zap, GripVertical, Edit2, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+    Plus, GripVertical, Check, ChevronDown, ChevronUp,
+    LayoutGrid, List, Clock, MessageSquare, Paperclip,
+    Search, Filter, MoreHorizontal, Calendar,
+    CheckCircle2, Circle, CheckSquare
+} from 'lucide-react';
 import { TaskModal } from './modals/TaskModal';
 import { ProjectModal } from './modals/ProjectModal';
-import { TasksTable } from './common/TasksTable';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FadeIn } from './common/AnimatedComponents';
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
-    TooltipTrigger,
+    TooltipTrigger
 } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from "@/lib/utils";
 
 interface TasksPageProps {
     tasks: Task[];
@@ -25,46 +33,43 @@ interface TasksPageProps {
     onDeleteProject: (id: string) => void;
 }
 
-// Editable Column Header Component
-const ColumnHeader = ({ title, count, onRename, onAdd, color }: { title: string, count: number, onRename: (newTitle: string) => void, onAdd: () => void, color: string }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [tempTitle, setTempTitle] = useState(title);
-
-    const handleSave = () => {
-        if (tempTitle.trim()) {
-            onRename(tempTitle);
-        } else {
-            setTempTitle(title);
-        }
-        setIsEditing(false);
+// Sub-component: PriorityBadge
+const PriorityBadge = ({ priority }: { priority?: Task['priority'] | 'CRITICAL' }) => {
+    const config: Record<string, { label: string, class: string }> = {
+        CRITICAL: { label: 'Critical', class: 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100' },
+        HIGH: { label: 'High', class: 'bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-100' },
+        MEDIUM: { label: 'Medium', class: 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100' },
+        LOW: { label: 'Low', class: 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100' },
     };
 
+    if (!priority) return null;
+    const { label, class: className } = config[priority] || config.MEDIUM;
+
     return (
-        <div className={`p-4 border-b border-border flex justify-between items-center bg-card rounded-t-2xl border-t-4`} style={{ borderTopColor: color }}>
-            <div className="flex items-center gap-2 flex-1">
-                {isEditing ? (
-                    <div className="flex items-center gap-2 w-full">
-                        <input
-                            value={tempTitle}
-                            onChange={(e) => setTempTitle(e.target.value)}
-                            onBlur={handleSave}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                            autoFocus
-                            className="bg-secondary text-sm font-bold text-foreground px-2 py-1 rounded w-full outline-none border border-primary/50"
-                        />
-                        <button onMouseDown={handleSave} className="p-1 text-green-500 hover:bg-green-500/10 rounded"><Check size={14} /></button>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditing(true)}>
-                        <h3 className="font-bold text-sm text-foreground">{title}</h3>
-                        <Edit2 size={12} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                )}
-                {!isEditing && <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full border border-border">{count}</span>}
-            </div>
-            <button onClick={onAdd} className="p-1 hover:bg-secondary rounded text-muted-foreground hover:text-foreground">
-                <Plus size={16} />
-            </button>
+        <Badge variant="outline" className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0 border", className)}>
+            {label}
+        </Badge>
+    );
+};
+
+// Sub-component: Facepile
+const Facepile = ({ members = [] }: { members?: any[] }) => {
+    // If no members, show a placeholder for the "Digzy" user
+    const displayMembers = members.length > 0 ? members : [{ id: 'admin', name: 'Digzy', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Digzy' }];
+
+    return (
+        <div className="flex -space-x-2 overflow-hidden">
+            {displayMembers.slice(0, 3).map((m, i) => (
+                <Avatar key={m.id || i} className="inline-block h-6 w-6 rounded-full ring-2 ring-background border border-border shadow-sm">
+                    <AvatarImage src={m.avatar} alt={m.name} />
+                    <AvatarFallback className="text-[10px] bg-secondary">{m.name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+            ))}
+            {displayMembers.length > 3 && (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-background bg-secondary text-[8px] font-bold text-muted-foreground border border-border">
+                    +{displayMembers.length - 3}
+                </div>
+            )}
         </div>
     );
 };
@@ -73,288 +78,328 @@ export const TasksPage: React.FC<TasksPageProps> = ({
     tasks, projects, onUpdateTask, onDeleteTask, onAddTask,
     onUpdateProject, onAddProject, onDeleteProject
 }) => {
+    const [activeView, setActiveView] = useState<'KANBAN' | 'LIST'>('KANBAN');
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-    const [modalDefaultStatus, setModalDefaultStatus] = useState<'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE'>('TODO');
+    const [modalDefaultStatus, setModalDefaultStatus] = useState<Task['statusLabel']>('TODO');
 
-    const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-    const [dragOverCol, setDragOverCol] = useState<string | null>(null);
-    const [expandedCols, setExpandedCols] = useState<Record<string, boolean>>({});
-
-    // Column Config - strictly matches request: To-Do, In Progress, Revision, Done
-    const [columnTitles, setColumnTitles] = useState<Record<string, string>>({
-        TODO: 'To-Do',
-        IN_PROGRESS: 'In Progress',
-        REVIEW: 'Revision',
-        DONE: 'Done'
-    });
-
+    const columnKeys: Task['statusLabel'][] = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
     const columnColors: Record<string, string> = {
-        TODO: '#64748b', // Slate
-        IN_PROGRESS: '#3b82f6', // Blue
-        REVIEW: '#f59e0b', // Amber/Orange
-        DONE: '#10b981' // Emerald
+        TODO: 'bg-slate-400',
+        IN_PROGRESS: 'bg-blue-500',
+        REVIEW: 'bg-amber-500',
+        DONE: 'bg-emerald-500'
     };
 
-    const activeProjects = projects.filter(p => p.status === 'ACTIVE');
-    const pendingTasksCount = tasks.filter(t => !t.completed).length;
-
-    const columnKeys = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
-
-    const handleDragStart = (e: React.DragEvent, taskId: string) => {
-        e.dataTransfer.effectAllowed = 'move';
-        setDraggedTaskId(taskId);
-    };
-
-    const handleDragOver = (e: React.DragEvent, colId: string) => {
-        e.preventDefault();
-        if (dragOverCol !== colId) setDragOverCol(colId);
-    };
-
-    const handleDragLeave = () => {
-        setDragOverCol(null);
-    };
-
-    const handleDrop = (e: React.DragEvent, status: string) => {
-        e.preventDefault();
-        setDragOverCol(null);
-        if (draggedTaskId) {
-            const task = tasks.find(t => t.id === draggedTaskId);
-            if (task) {
-                const validStatus = status as 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
-
-                onUpdateTask({
-                    ...task,
-                    statusLabel: validStatus,
-                    completed: status === 'DONE'
-                });
-            }
-            setDraggedTaskId(null);
-        }
-    };
-
-    const handleEditTask = (e: React.MouseEvent, task: Task) => {
-        e.stopPropagation();
+    const handleEditTask = (task: Task) => {
         setSelectedTask(task);
         setIsTaskModalOpen(true);
     };
 
-    const handleAddTaskToColumn = (status: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE') => {
+    const handleAddTaskToColumn = (status: Task['statusLabel']) => {
         setSelectedTask(null);
         setModalDefaultStatus(status);
         setIsTaskModalOpen(true);
-    }
-
-    const getPriorityColor = (p?: string) => {
-        switch (p) {
-            case 'HIGH': return 'bg-teal-500/20 text-teal-500 border-teal-500/20';
-            case 'MEDIUM': return 'bg-orange-500/20 text-orange-500 border-orange-500/20';
-            case 'LOW': return 'bg-gray-500/20 text-gray-500 border-gray-500/20';
-            default: return 'bg-gray-500/20 text-gray-500 border-gray-500/20';
-        }
     };
 
-    const renameColumn = (key: string, newTitle: string) => {
-        setColumnTitles(prev => ({ ...prev, [key]: newTitle }));
-    };
+    const getRelativeTime = (date: Date) => {
+        const now = new Date();
+        const d = new Date(date);
+        const diffDays = Math.floor((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-    const toggleColumnExpanded = (colId: string) => {
-        setExpandedCols(prev => ({ ...prev, [colId]: !prev[colId] }));
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return 'Tomorrow';
+        if (diffDays === -1) return 'Yesterday';
+        if (diffDays > 1 && diffDays < 7) return `In ${diffDays} days`;
+        if (diffDays < -1) return `${Math.abs(diffDays)} days ago`;
+
+        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     };
 
     return (
         <TooltipProvider delayDuration={300}>
-            <FadeIn className="flex flex-col h-full w-full pb-24 md:pb-0 space-y-6 pr-2 overflow-y-auto scrollbar-hide">
+            <div className="flex flex-col h-full w-full bg-background overflow-hidden">
 
-                {/* Top Stats Row */}
-                <div className="flex flex-col md:flex-row gap-6 flex-shrink-0">
-                    {/* Projects Card Summary */}
-                    <div className="flex-1 bg-card border border-border rounded-2xl p-6 relative overflow-hidden group">
-                        <div className="flex justify-between items-start mb-4 relative z-10">
-                            <div>
-                                <h3 className="text-lg font-bold text-foreground">Active Projects</h3>
-                                <p className="text-xs text-muted-foreground">{activeProjects.length} projects in progress</p>
-                            </div>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button onClick={() => { setSelectedProject(null); setIsProjectModalOpen(true); }} className="p-2 bg-secondary rounded-lg hover:bg-white/10 transition-colors">
-                                        <Plus size={18} />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Add new project</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-
-                        <div className="space-y-3 relative z-10 max-h-32 overflow-y-auto pr-1">
-                            {activeProjects.slice(0, 3).map(p => (
-                                <div key={p.id} onClick={() => { setSelectedProject(p); setIsProjectModalOpen(true); }} className="flex items-center justify-between p-2 hover:bg-secondary/50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-border">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-white/5" style={{ backgroundColor: `${p.color}20`, color: p.color }}>
-                                            <Zap size={14} fill="currentColor" />
-                                        </div>
-                                        <div>
-                                            <div className="text-sm font-bold text-foreground truncate max-w-[120px]">{p.title}</div>
-                                            <div className="text-[10px] text-muted-foreground">{p.progress}% Done</div>
-                                        </div>
-                                    </div>
-                                    <div className="w-16 bg-secondary h-1 rounded-full overflow-hidden">
-                                        <div className="h-full bg-primary" style={{ width: `${p.progress}%`, backgroundColor: p.color }}></div>
-                                    </div>
-                                </div>
-                            ))}
-                            {activeProjects.length === 0 && <div className="text-sm text-muted-foreground">No active projects.</div>}
-                        </div>
-                        {/* Decorative bg */}
-                        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                {/* 1. Header & View Switcher */}
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 border-b border-border bg-card/30 backdrop-blur-md z-20 flex-shrink-0">
+                    <div>
+                        <h1 className="text-3xl font-black text-foreground tracking-tight">Tasks</h1>
+                        <p className="text-sm text-muted-foreground font-medium">Manage your production flow and project deadlines.</p>
                     </div>
 
-                    {/* Task Summary Card */}
-                    <div className="flex-1 bg-card border border-border rounded-2xl p-6 relative overflow-hidden">
-                        <div className="flex justify-between items-start mb-4 relative z-10">
-                            <div>
-                                <h3 className="text-lg font-bold text-foreground">Tasks Overview</h3>
-                                <p className="text-xs text-muted-foreground">Manage your daily flow</p>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
-                                <CheckSquare size={20} />
-                            </div>
+                    <div className="flex items-center gap-3">
+                        {/* View Toggle Pill */}
+                        <div className="flex items-center p-1 bg-secondary/50 rounded-full border border-border shadow-inner">
+                            <button
+                                onClick={() => setActiveView('KANBAN')}
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200",
+                                    activeView === 'KANBAN'
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <LayoutGrid size={14} />
+                                Kanban
+                            </button>
+                            <button
+                                onClick={() => setActiveView('LIST')}
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200",
+                                    activeView === 'LIST'
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <List size={14} />
+                                List
+                            </button>
                         </div>
-                        <div className="flex items-end gap-2 mt-4 relative z-10">
-                            <span className="text-4xl font-bold text-foreground tracking-tighter">{pendingTasksCount}</span>
-                            <span className="text-sm font-medium text-muted-foreground mb-1">pending tasks</span>
-                        </div>
-                        <div className="mt-6 flex gap-2 relative z-10">
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }} className="flex-1 bg-foreground text-background font-bold py-2 rounded-xl text-xs hover:bg-foreground/80 transition-colors">
-                                        + Add Task
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Create a new task</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </div>
-                        <div className="absolute -left-10 -top-10 w-40 h-40 bg-orange-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                        <Button
+                            onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }}
+                            className="rounded-full font-bold shadow-lg shadow-primary/20 transition-transform active:scale-95"
+                        >
+                            <Plus size={18} className="mr-1" />
+                            New Task
+                        </Button>
                     </div>
-                </div>
+                </header>
 
-                {/* KANBAN BOARD */}
-                <div className="flex-none overflow-x-auto overflow-y-hidden pb-4 min-h-[500px]">
-                    <div className="flex gap-6 h-full min-w-[1000px] px-1">
-                        {columnKeys.map(colId => {
-                            const colTasks = tasks.filter(t =>
-                                (t.statusLabel === colId) ||
-                                (colId === 'TODO' && !t.statusLabel && !t.completed)
-                            );
+                {/* 2. Content Area */}
+                <main className="flex-1 overflow-hidden relative">
+                    <AnimatePresence mode="wait">
+                        {activeView === 'KANBAN' ? (
+                            <motion.div
+                                key="kanban"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="h-full overflow-x-auto overflow-y-hidden custom-scrollbar bg-slate-50/30 dark:bg-transparent"
+                            >
+                                <div className="flex gap-6 p-6 h-full min-w-max">
+                                    {columnKeys.map(colId => {
+                                        const colTasks = tasks.filter(t =>
+                                            (t.statusLabel === colId) ||
+                                            (colId === 'TODO' && !t.statusLabel && !t.completed)
+                                        );
 
-                            const isExpanded = expandedCols[colId];
-                            const visibleTasks = isExpanded ? colTasks : colTasks.slice(0, 5);
-                            const hiddenCount = colTasks.length - 5;
-
-                            return (
-                                <div
-                                    key={colId}
-                                    className={`flex-1 flex flex-col min-w-[280px] bg-secondary/10 rounded-2xl border transition-colors h-full ${dragOverCol === colId ? 'border-primary bg-secondary/30' : 'border-border'}`}
-                                    onDragOver={(e) => handleDragOver(e, colId)}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={(e) => handleDrop(e, colId)}
-                                >
-                                    <ColumnHeader
-                                        title={columnTitles[colId]}
-                                        count={colTasks.length}
-                                        onRename={(t) => renameColumn(colId, t)}
-                                        onAdd={() => handleAddTaskToColumn(colId as any)}
-                                        color={columnColors[colId]}
-                                    />
-
-                                    {/* Tasks Area */}
-                                    <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-                                        <AnimatePresence initial={false} mode="popLayout">
-                                            {visibleTasks.map(task => (
-                                                <motion.div
-                                                    key={task.id}
-                                                    layout
-                                                    initial={{ opacity: 0, scale: 0.9 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    exit={{ opacity: 0, scale: 0.9 }}
-                                                    transition={{ duration: 0.2 }}
-                                                    draggable
-                                                    onDragStart={(e: any) => handleDragStart(e, task.id)}
-                                                    onClick={(e) => handleEditTask(e, task)}
-                                                    className="bg-card p-4 rounded-xl border border-border shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 group relative"
-                                                >
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        {task.priority && (
-                                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getPriorityColor(task.priority)}`}>{task.priority}</span>
-                                                        )}
-                                                        <div className="p-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <GripVertical size={14} />
-                                                        </div>
-                                                    </div>
-
-                                                    <h4 className={`text-sm font-bold text-foreground mb-1 leading-tight ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.title}</h4>
-
-                                                    {/* Tags / Project */}
-                                                    {task.projectId && (
-                                                        <div className="flex items-center gap-1.5 mt-2">
-                                                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: projects.find(p => p.id === task.projectId)?.color || '#ccc' }}></div>
-                                                            <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
-                                                                {projects.find(p => p.id === task.projectId)?.title || 'Project'}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {/* Time Preview */}
-                                                    <div className="text-[9px] text-muted-foreground mt-1">
-                                                        {new Date(task.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                    </div>
-                                                </motion.div>
-                                            ))}
-                                        </AnimatePresence>
-
-                                        {/* Add Task Button */}
-                                        <button
-                                            onClick={() => handleAddTaskToColumn(colId as any)}
-                                            className="w-full py-2 border border-dashed border-border rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-secondary/20 transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <Plus size={14} /> Add Task
-                                        </button>
-
-                                        {/* View More / Less Toggle */}
-                                        {colTasks.length > 5 && (
-                                            <button
-                                                onClick={() => toggleColumnExpanded(colId)}
-                                                className="w-full py-2 text-xs font-bold text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-1"
+                                        return (
+                                            <div
+                                                key={colId}
+                                                className="flex flex-col w-[320px] h-full"
                                             >
-                                                {isExpanded ? (
-                                                    <>View Less <ChevronUp size={12} /></>
-                                                ) : (
-                                                    <>View {hiddenCount} More <ChevronDown size={12} /></>
-                                                )}
-                                            </button>
-                                        )}
-                                    </div>
+                                                {/* Column Header */}
+                                                <div className="flex items-center justify-between mb-4 px-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={cn("w-2 h-2 rounded-full shadow-sm", columnColors[colId || 'TODO'])} />
+                                                        <h3 className="text-sm font-bold text-foreground">
+                                                            {colId?.replace('_', ' ')}
+                                                        </h3>
+                                                        <Badge variant="secondary" className="bg-secondary/70 text-[10px] font-bold px-1.5 h-5 min-w-[20px] flex items-center justify-center rounded-md">
+                                                            {colTasks.length}
+                                                        </Badge>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleAddTaskToColumn(colId)}
+                                                        className="p-1 hover:bg-secondary rounded-md text-muted-foreground transition-colors"
+                                                    >
+                                                        <Plus size={16} />
+                                                    </button>
+                                                </div>
+
+                                                {/* Task Cards Container */}
+                                                <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar pb-20">
+                                                    {colTasks.map(task => {
+                                                        const project = projects.find(p => p.id === task.projectId);
+                                                        return (
+                                                            <motion.div
+                                                                key={task.id}
+                                                                layout
+                                                                whileHover={{ scale: 1.01 }}
+                                                                className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 hover:shadow-md transition-all group cursor-pointer relative"
+                                                                onClick={() => handleEditTask(task)}
+                                                            >
+                                                                <div className="flex flex-col gap-3">
+                                                                    <div className="flex justify-between items-start">
+                                                                        <PriorityBadge priority={task.priority} />
+                                                                        <button className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-secondary text-muted-foreground transition-all">
+                                                                            <MoreHorizontal size={14} />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div className="space-y-1">
+                                                                        <h4 className={cn(
+                                                                            "text-sm font-bold leading-snug transition-colors group-hover:text-primary",
+                                                                            task.completed && "line-through text-muted-foreground"
+                                                                        )}>
+                                                                            {task.title}
+                                                                        </h4>
+                                                                        {project && (
+                                                                            <p className="text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground/70">
+                                                                                {project.title}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Metadata & Facepile */}
+                                                                    <div className="pt-2 flex items-center justify-between border-t border-border/50">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                                                                                <Clock size={12} />
+                                                                                <span>{getRelativeTime(task.date)}</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                        <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors cursor-help">
+                                                                                            <MessageSquare size={12} />
+                                                                                            <span>2</span>
+                                                                                        </div>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>2 comments</TooltipContent>
+                                                                                </Tooltip>
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                        <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors cursor-help">
+                                                                                            <Paperclip size={12} />
+                                                                                            <span>1</span>
+                                                                                        </div>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>1 attachment</TooltipContent>
+                                                                                </Tooltip>
+                                                                            </div>
+                                                                        </div>
+                                                                        <Facepile members={[]} />
+                                                                    </div>
+                                                                </div>
+                                                            </motion.div>
+                                                        );
+                                                    })}
+
+                                                    {/* Empty State Button */}
+                                                    <button
+                                                        onClick={() => handleAddTaskToColumn(colId)}
+                                                        className="w-full py-4 border-2 border-dashed border-border rounded-xl text-xs font-bold text-muted-foreground hover:border-primary/30 hover:text-foreground hover:bg-secondary/30 transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <Plus size={14} />
+                                                        Add Task
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="list"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="h-full overflow-y-auto p-6"
+                            >
+                                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-secondary/30 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-border">
+                                                <th className="px-6 py-4 font-black">Status</th>
+                                                <th className="px-6 py-4 font-black">Task Details</th>
+                                                <th className="px-6 py-4 font-black">Priority</th>
+                                                <th className="px-6 py-4 font-black">Due Date</th>
+                                                <th className="px-6 py-4 font-black text-right">Assignee</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {tasks.length > 0 ? tasks.map(task => {
+                                                const project = projects.find(p => p.id === task.projectId);
+                                                return (
+                                                    <tr
+                                                        key={task.id}
+                                                        className="group hover:bg-secondary/20 transition-all cursor-pointer"
+                                                        onClick={() => handleEditTask(task)}
+                                                    >
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        onUpdateTask({ ...task, completed: !task.completed, statusLabel: !task.completed ? 'DONE' : 'TODO' });
+                                                                    }}
+                                                                    className="text-muted-foreground group-hover:text-indigo-500 transition-colors"
+                                                                >
+                                                                    {task.completed ? (
+                                                                        <CheckCircle2 size={18} className="text-emerald-500" />
+                                                                    ) : (
+                                                                        <Circle size={18} />
+                                                                    )}
+                                                                </button>
+                                                                <Badge variant="outline" className={cn(
+                                                                    "text-[9px] font-bold px-1.5 py-0 h-4 border-none",
+                                                                    columnColors[task.statusLabel || 'TODO'],
+                                                                    "bg-opacity-10 text-opacity-100",
+                                                                    task.statusLabel === 'DONE' ? "text-emerald-600 bg-emerald-100" :
+                                                                        task.statusLabel === 'REVIEW' ? "text-amber-600 bg-amber-100" :
+                                                                            task.statusLabel === 'IN_PROGRESS' ? "text-blue-600 bg-blue-100" :
+                                                                                "text-slate-600 bg-slate-100"
+                                                                )}>
+                                                                    {task.statusLabel?.replace('_', ' ') || 'TODO'}
+                                                                </Badge>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="space-y-0.5">
+                                                                <div className={cn(
+                                                                    "text-sm font-bold text-foreground group-hover:text-primary transition-colors",
+                                                                    task.completed && "line-through text-muted-foreground"
+                                                                )}>
+                                                                    {task.title}
+                                                                </div>
+                                                                {project && (
+                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
+                                                                        {project.title}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <PriorityBadge priority={task.priority} />
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                                                                <Clock size={14} className="group-hover:text-indigo-500 transition-colors" />
+                                                                {getRelativeTime(task.date)}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <div className="flex justify-end">
+                                                                <Facepile members={[]} />
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }) : (
+                                                <tr>
+                                                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <CheckSquare size={32} className="opacity-20" />
+                                                            <p className="font-bold">No tasks found</p>
+                                                            <p className="text-xs">Create your first task to get started.</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </main>
 
-                {/* Detailed Tasks Table (Reused Component) */}
-                <TasksTable
-                    tasks={tasks}
-                    projects={projects}
-                    onUpdateTask={onUpdateTask}
-                    onDeleteTask={onDeleteTask}
-                    onAddTask={() => { setSelectedTask(null); setIsTaskModalOpen(true); }}
-                    onSelectTask={(task) => { setSelectedTask(task); setIsTaskModalOpen(true); }}
-                    title="All Tasks"
-                />
-
+                {/* Modals */}
                 <TaskModal
                     isOpen={isTaskModalOpen}
                     onClose={() => setIsTaskModalOpen(false)}
@@ -385,7 +430,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                         });
                     }}
                 />
-            </FadeIn>
+            </div>
         </TooltipProvider>
     );
 };

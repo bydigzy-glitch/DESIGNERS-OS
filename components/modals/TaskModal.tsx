@@ -140,22 +140,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-            className="bg-[#141416] border border-gray-800 rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.23, ease: [0, 0, 0.2, 1] }}
+            className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-10"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-white/5 flex justify-between items-center shrink-0">
-              <h2 className="text-xl font-bold text-white">{initialTask ? 'Edit Task' : 'New Task'}</h2>
+            <div className="p-6 border-b border-border/50 flex justify-between items-center shrink-0">
+              <h2 className="text-xl font-bold text-foreground">{initialTask ? 'Edit Task' : 'New Task'}</h2>
               <div className="flex items-center gap-2">
                 {initialTask && onDelete && (
                   <button onClick={() => { onDelete(initialTask.id); onClose(); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
                     <Trash2 size={18} />
                   </button>
                 )}
-                <button onClick={onClose} className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-colors">
                   <X size={20} />
                 </button>
               </div>
@@ -167,7 +167,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary"
+                  className="w-full bg-secondary border border-border rounded-xl p-3 text-foreground focus:outline-none focus:border-primary transition-colors"
                   placeholder="What needs to be done?"
                   autoFocus
                 />
@@ -181,7 +181,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                       type="date"
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary pl-10 text-sm"
+                      className="w-full bg-secondary border border-border rounded-xl p-3 text-foreground focus:outline-none focus:border-primary pl-10 text-sm transition-colors"
                     />
                     <CalendarIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                   </div>
@@ -192,7 +192,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     <select
                       value={priority}
                       onChange={(e) => setPriority(e.target.value as any)}
-                      className={`w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-accent-primary appearance-none font-bold ${priority === 'HIGH' ? 'text-red-400' : priority === 'MEDIUM' ? 'text-orange-400' : 'text-blue-400'
+                      className={`w-full bg-secondary border border-border rounded-xl p-3 text-sm focus:outline-none focus:border-primary appearance-none font-bold transition-colors ${priority === 'HIGH' ? 'text-red-400' : priority === 'MEDIUM' ? 'text-orange-400' : 'text-blue-400'
                         }`}
                     >
                       <option value="HIGH">High</option>
@@ -215,7 +215,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     <select
                       value={assignedTo}
                       onChange={(e) => setAssignedTo(e.target.value)}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary appearance-none pl-10 text-sm"
+                      className="w-full bg-secondary border border-border rounded-xl p-3 text-foreground focus:outline-none focus:border-primary appearance-none pl-10 text-sm transition-colors"
                     >
                       <option value="">Unassigned</option>
                       {teamMembers.map(m => (
@@ -236,7 +236,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                   <select
                     value={projectId}
                     onChange={(e) => setProjectId(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary appearance-none text-sm"
+                    className="w-full bg-secondary border border-border rounded-xl p-3 text-foreground focus:outline-none focus:border-primary appearance-none text-sm transition-colors"
                   >
                     <option value="">No Project</option>
                     {projects.map(p => (
@@ -262,7 +262,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     <input
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
-                      className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-accent-primary"
+                      className="flex-1 bg-secondary border border-border rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
                       placeholder="Category Name"
                       autoFocus
                     />
@@ -303,7 +303,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-accent-primary pl-10 min-h-[100px] resize-none text-sm"
+                    className="w-full bg-secondary border border-border rounded-xl p-3 text-foreground focus:outline-none focus:border-primary pl-10 min-h-[100px] resize-none text-sm transition-colors"
                     placeholder="Additional details..."
                   />
                   <FileText size={16} className="absolute left-3 top-4 text-gray-500" />
@@ -311,9 +311,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
               </div>
             </div>
 
-            <div className="p-6 border-t border-white/5 flex justify-end gap-3 shrink-0">
-              <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-colors text-sm">Cancel</button>
-              <button onClick={handleSave} className="px-6 py-2.5 rounded-xl font-bold bg-accent-primary text-white hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20 text-sm">
+            <div className="p-6 border-t border-border/50 flex justify-between items-center shrink-0">
+              <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-sm">Cancel</button>
+              <button onClick={handleSave} className="px-6 py-2.5 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm text-sm">
                 {initialTask ? 'Save Changes' : 'Create Task'}
               </button>
             </div>

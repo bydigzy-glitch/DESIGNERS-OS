@@ -87,7 +87,7 @@ export const MoneyPage: React.FC<MoneyPageProps> = ({
             .map(c => ({
                 name: c.name,
                 amount: projects.filter(p => p.clientId === c.id).reduce((s, p) => s + (p.price || 0), 0),
-                color: `hsl(${Math.random() * 360}, 70%, 50%)`
+                color: `hsl(210, 70%, 50%)` // Standardized to a blue hue for consistency
             }))
             .filter(c => c.amount > 0)
             .sort((a, b) => b.amount - a.amount)
@@ -325,10 +325,7 @@ export const MoneyPage: React.FC<MoneyPageProps> = ({
                                         return (
                                             <div key={project.id} className="flex items-center justify-between p-3 rounded-lg bg-red-500/5 border border-red-500/20">
                                                 <div className="flex items-center gap-3">
-                                                    <div
-                                                        className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm dynamic-text-color"
-                                                        style={{ '--dynamic-color': project.color, backgroundColor: `${project.color}20` } as React.CSSProperties}
-                                                    >
+                                                    <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center font-bold text-sm text-red-500">
                                                         {project.title.charAt(0)}
                                                     </div>
                                                     <div>

@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Task, Project, TeamMember, TeamMessage, Habit } from '../types';
-import { Users, Plus, TrendingUp, Send, MoreVertical, Trash2, Mail, Flame, Smile, Layout, Calendar as CalendarIcon, CheckSquare, MessageSquare } from 'lucide-react';
+import { Users, Plus, TrendingUp, Send, MoreVertical, Trash2, Mail, Flame, Smile, Layout, Calendar as CalendarIcon, CheckSquare, MessageSquare, X } from 'lucide-react';
 import { FadeIn, CountUp } from './common/AnimatedComponents';
 import { storageService, Backend } from '../services/storageService';
 import { dbTeams, dbTeamMembers, dbTeamMessages, dbNotifications, subscribeToTeamMessages, subscribeToTeamMembers, db, supabase } from '../services/supabaseClient';
 import { Calendar } from './Calendar';
 import { TaskModal } from './modals/TaskModal';
 import { TasksTable } from './common/TasksTable';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Tooltip,
     TooltipContent,
@@ -567,7 +568,7 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                                         <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder={`Message #${"General"}`} className="flex-1 bg-transparent text-foreground focus:outline-none py-1" />
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <button type="submit" disabled={!chatInput.trim()} className="bg-primary text-primary-foreground p-1.5 rounded-lg disabled:opacity-50">
+                                                <button type="submit" disabled={!chatInput.trim()} className="bg-primary text-primary-foreground p-1.5 rounded-lg disabled:opacity-50" title="Send message">
                                                     <Send size={16} />
                                                 </button>
                                             </TooltipTrigger>
@@ -636,20 +637,54 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                     teamMembers={teamMembers}
                 />
 
-                {isInviting && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setIsInviting(false)}>
-                        <div className="bg-card border border-border p-6 rounded-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                            <h3 className="font-bold text-lg mb-4 text-foreground">Invite to Squad</h3>
-                            <form onSubmit={handleInvite}>
-                                <div className="relative mb-4">
-                                    <input type="email" value={newMemberEmail} onChange={e => setNewMemberEmail(e.target.value)} className="w-full bg-secondary border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:outline-none focus:border-primary" placeholder="colleague@brand.com" autoFocus required />
-                                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <AnimatePresence>
+                    {isInviting && (
+                        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsInviting(false)}
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                transition={{ duration: 0.23, ease: [0, 0, 0.2, 1] }}
+                                className="bg-card border border-border p-6 rounded-2xl w-full max-w-sm shadow-2xl relative z-10"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-bold text-lg text-foreground">Invite to Squad</h3>
+                                    <button onClick={() => setIsInviting(false)} className="p-2 -mr-2 hover:bg-secondary rounded-lg transition-colors" title="Close">
+                                        <X size={20} className="text-muted-foreground" />
+                                    </button>
                                 </div>
-                                <button type="submit" className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-xl text-sm hover:bg-primary/90 transition-colors shadow-glow">Send Invite</button>
-                            </form>
+                                <form onSubmit={handleInvite} className="space-y-4">
+                                    <div className="relative">
+                                        <input
+                                            type="email"
+                                            value={newMemberEmail}
+                                            onChange={e => setNewMemberEmail(e.target.value)}
+                                            className="w-full bg-secondary border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
+                                            placeholder="colleague@brand.com"
+                                            autoFocus
+                                            required
+                                        />
+                                        <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl text-sm hover:bg-primary/90 transition-all shadow-glow active:scale-95"
+                                    >
+                                        Send Invite
+                                    </button>
+                                </form>
+                            </motion.div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </AnimatePresence>
             </div>
         </TooltipProvider>
     );

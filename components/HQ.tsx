@@ -5,13 +5,15 @@ import {
     Zap, Plus, CheckCircle2, Briefcase, Sparkles, Flame, CheckSquare,
     Calendar, Trash2, ArrowUpRight, TrendingUp, MoreHorizontal,
     FileText, MessageSquare, Clock, AlertTriangle, Star, Check,
-    AlertCircle, Shield, X, ChevronRight, Brain
+    AlertCircle, Shield, X, ChevronRight, Brain, LayoutGrid, Box
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from "@/components/ui/skeleton";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { TextAnimate } from "@/components/magicui/text-animate";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
 import { EmptyState } from './common/EmptyState';
 import { ProjectModal } from './modals/ProjectModal';
@@ -56,89 +58,62 @@ interface HQProps {
 }
 
 const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
-    // Generate last 7 days
-    const days = useMemo(() => {
-        const result = [];
-        for (let i = 6; i >= 0; i--) {
+    const data = useMemo(() => {
+        const last7Days = Array.from({ length: 7 }).map((_, i) => {
             const d = new Date();
-            d.setDate(d.getDate() - i);
-            result.push(d);
-        }
-        return result;
-    }, []);
-
-    // Calculate completed tasks per day
-    const dataPoints = useMemo(() => {
-        return days.map(day => {
-            const dayStr = day.toISOString().split('T')[0];
-            return tasks.filter(t =>
-                t.completed &&
-                new Date(t.date).toISOString().split('T')[0] === dayStr
-            ).length;
+            d.setDate(d.getDate() - (6 - i));
+            return d.toISOString().split('T')[0];
         });
-    }, [tasks, days]);
 
-    const width = 100;
-    const height = 50;
+        return last7Days.map(date => ({
+            date,
+            count: tasks.filter(t => t.completed && t.date.toString().split('T')[0] === date).length
+        }));
+    }, [tasks]);
 
-    // Create SVG Path
-    const createPath = (data: number[]) => {
-        if (data.length === 0) return "";
-        const stepX = width / (data.length - 1);
-        const maxVal = Math.max(...data, 5); // Minimum scale of 5
-        const minVal = 0;
-
-        const getY = (val: number) => height - ((val - minVal) / (maxVal - minVal)) * height;
-
-        let d = `M 0 ${getY(data[0])} `;
-        for (let i = 1; i < data.length; i++) {
-            const x = i * stepX;
-            const y = getY(data[i]);
-            const prevX = (i - 1) * stepX;
-            const prevY = getY(data[i - 1]);
-            const cp1x = prevX + (stepX / 2);
-            const cp1y = prevY;
-            const cp2x = x - (stepX / 2);
-            const cp2y = y;
-            d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y} `;
-        }
-        return d;
-    };
-
-    const totalThisWeek = dataPoints.reduce((a, b) => a + b, 0);
+    const maxCount = Math.max(...data.map(d => d.count), 1);
+    const totalCompleted = useMemo(() => tasks.filter(t => t.completed).length, [tasks]);
 
     return (
         <div className="w-full h-full flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-6">
                 <div>
-                    <h3 className="text-base font-bold text-foreground">Work Progress</h3>
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-primary">
-                            <CountUp value={totalThisWeek} duration={1} />
+                    <h3 className="text-lg font-bold text-foreground">Work Progress</h3>
+                    <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-3xl font-bold text-primary tracking-tighter">
+                            <CountUp value={totalCompleted} />
                         </span>
-                        <span className="text-xs text-muted-foreground">tasks done this week</span>
+                        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">total completions</span>
                     </div>
                 </div>
-                <div className="bg-primary/10 text-primary p-2 rounded-lg">
-                    <TrendingUp size={18} />
+                <div className="p-2.5 bg-primary/10 text-primary rounded-xl border border-primary/20 shadow-[0_0_15px_hsl(var(--primary)/0.1)]">
+                    <TrendingUp size={22} />
                 </div>
             </div>
 
-            <div className="flex-1 w-full relative">
-                <svg viewBox={`0 0 ${width} ${height} `} className="w-full h-full overflow-visible" preserveAspectRatio="none">
-                    <defs>
-                        <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-                            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
-                        </linearGradient>
-                    </defs>
-                    <path d={`${createPath(dataPoints)} L ${width} ${height} L 0 ${height} Z`} fill="url(#gradient)" className="animate-pulse" />
-                    <path d={createPath(dataPoints)} fill="none" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                </svg>
-            </div>
-
-            <div className="flex justify-between text-[10px] text-muted-foreground font-bold uppercase mt-4">
-                {days.map(d => <div key={d.toString()}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</div>)}
+            <div className="flex-1 flex items-end gap-3 px-1 min-h-[140px]">
+                {data.map((d, i) => (
+                    <div key={d.date} className="flex-1 flex flex-col items-center gap-3 group relative">
+                        <div className="w-full relative flex items-end justify-center h-full max-h-[120px]">
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: `${(d.count / maxCount) * 100}%`, opacity: 1 }}
+                                transition={{ duration: 0.8, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                                className={`w-full max-w-[32px] rounded-t-lg transition-all relative ${d.count > 0
+                                    ? 'bg-gradient-to-t from-primary/40 to-primary shadow-[0_0_10px_hsl(var(--primary)/0.2)]'
+                                    : 'bg-secondary/30'}`}
+                            />
+                            {d.count > 0 && (
+                                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-popover border border-border px-2 py-0.5 rounded text-[10px] font-bold text-foreground opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-10">
+                                    {d.count}
+                                </div>
+                            )}
+                        </div>
+                        <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest group-hover:text-primary transition-colors">
+                            {new Date(d.date).toLocaleDateString('en-US', { weekday: 'narrow' })}
+                        </span>
+                    </div>
+                ))}
             </div>
         </div>
     );
@@ -255,7 +230,7 @@ export const HQ: React.FC<HQProps> = ({
 
     return (
         <TooltipProvider delayDuration={300}>
-            <div className="flex flex-col h-full w-full space-y-6 md:space-y-8 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2 relative">
+            <div className="flex flex-col h-full w-full space-y-6 md:space-y-8 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2 relative z-[var(--z-container)]">
 
                 {/* Top Right Ignite Button */}
                 <div className="absolute top-0 right-0 z-20">
@@ -288,7 +263,7 @@ export const HQ: React.FC<HQProps> = ({
                     <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6 pt-10 md:pt-0">
                         <div className="flex flex-col gap-4 max-w-lg w-full">
                             <div>
-                                <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                                <h1 className="text-3xl font-bold text-foreground tracking-tight h-[36px]">
                                     {isLoaded ? (
                                         <TextAnimate
                                             key={greetingText}
@@ -299,10 +274,12 @@ export const HQ: React.FC<HQProps> = ({
                                             text={greetingText}
                                         />
                                     ) : (
-                                        <span className="opacity-0">{greetingText}</span>
+                                        <Skeleton className="h-8 w-48 bg-secondary/80" />
                                     )}
                                 </h1>
-                                <p className="text-muted-foreground">Ready to conquer the day?</p>
+                                <p className="text-muted-foreground">
+                                    {isLoaded ? "Ready to conquer the day?" : <Skeleton className="h-4 w-32 mt-2" />}
+                                </p>
                             </div>
                             <form onSubmit={handleAiSubmit} className="relative w-full group">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
@@ -316,7 +293,7 @@ export const HQ: React.FC<HQProps> = ({
                                     className="w-full h-12 bg-secondary rounded-xl pl-10 pr-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background transition-all placeholder:text-muted-foreground text-sm font-medium border border-border"
                                 />
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                    <button type="submit" className="p-1.5 bg-primary rounded-lg text-white hover:bg-primary/90 transition-colors">
+                                    <button type="submit" className="p-1.5 bg-primary rounded-lg text-white hover:bg-primary/90 transition-colors" title="Send Prompt">
                                         <ArrowUpRight size={14} />
                                     </button>
                                 </div>
@@ -328,9 +305,15 @@ export const HQ: React.FC<HQProps> = ({
                 {/* Top Row Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
 
-                    {/* Work Progress Graph (Span 6) */}
-                    <FadeIn delay={0.1} className="md:col-span-6 lg:col-span-7 bg-card border border-border rounded-2xl p-6 shadow-sm min-h-[200px]">
-                        <WorkProgressGraph tasks={tasks} />
+                    <FadeIn delay={0.1} className="md:col-span-6 lg:col-span-7 bg-card border border-border rounded-2xl p-6 shadow-sm min-h-[220px]">
+                        {!isLoaded ? (
+                            <div className="w-full h-full flex flex-col gap-4">
+                                <Skeleton className="h-8 w-32" />
+                                <Skeleton className="flex-1 w-full" />
+                            </div>
+                        ) : (
+                            <WorkProgressGraph tasks={tasks} />
+                        )}
                     </FadeIn>
 
                     {/* Right Column Stack (Span 6) */}
@@ -378,7 +361,7 @@ export const HQ: React.FC<HQProps> = ({
 
                                     return (
                                         <div key={date} className="flex flex-col items-center gap-1 flex-1">
-                                            <div className={`w - full aspect - square rounded - md transition - all ${bgClass} ${isToday ? 'ring-2 ring-primary/20' : ''} `} title={`${completedCount} habits on ${date} `} />
+                                            <div className={`w-full aspect-square rounded-md transition-all ${bgClass} ${isToday ? 'ring-2 ring-primary/20' : ''}`} title={`${completedCount} habits on ${date}`} />
                                             <span className="text-[8px] font-bold text-muted-foreground uppercase">{new Date(date).toLocaleDateString('en-US', { weekday: 'narrow' })}</span>
                                         </div>
                                     )
@@ -449,7 +432,7 @@ export const HQ: React.FC<HQProps> = ({
                                                         'Past Due'}
                                             </p>
                                         </div>
-                                        <ChevronRight size={12} className="text-muted-foreground opacity-0 group-hover/focus:opacity-100 transition-all -translate-x-2 group-hover/focus:translate-x-0" />
+                                        <ChevronRight size={12} className="text-muted-foreground opacity-0 group-hover/focus:opacity-100 transition-opacity" />
                                     </div>
                                 )) : (
                                     <div className="h-full flex flex-col items-center justify-center text-center py-4">
@@ -462,92 +445,7 @@ export const HQ: React.FC<HQProps> = ({
                     </div>
                 </div>
 
-                {/* System Authority Row (Dynamic AI/Auto) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Handled Automatically */}
-                    <FadeIn delay={0.4} className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-sm self-start">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Shield size={16} className="text-primary" />
-                            <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Handled Today</h3>
-                            <Badge variant="outline" className="ml-auto text-[10px] h-4 bg-primary/5">{handledToday.length}</Badge>
-                        </div>
-                        <div className="space-y-3">
-                            {handledToday.length > 0 ? handledToday.slice(0, 3).map(action => (
-                                <div key={action.id} className="flex gap-3 items-start group/action">
-                                    <div className="w-1 h-8 rounded-full bg-primary/20 group-hover/action:bg-primary transition-colors mt-1" />
-                                    <div className="flex-1">
-                                        <p className="text-xs font-bold text-foreground leading-tight">{action.action}</p>
-                                        <p className="text-[10px] text-muted-foreground mt-0.5">{action.trigger}</p>
-                                    </div>
-                                    <span className="text-[10px] font-mono text-muted-foreground">{new Date(action.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                </div>
-                            )) : (
-                                <p className="text-[10px] text-muted-foreground py-2 italic text-center">Monitoring system events...</p>
-                            )}
-                        </div>
-                    </FadeIn>
 
-                    {/* Pending Approvals */}
-                    <FadeIn delay={0.5} className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-sm self-start">
-                        <div className="flex items-center gap-2 mb-4">
-                            <CheckSquare size={16} className="text-orange-500" />
-                            <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Awaiting Approval</h3>
-                            <Badge variant="outline" className="ml-auto text-[10px] h-4 bg-orange-500/5 text-orange-500 border-orange-500/20">{pendingApprovals.length}</Badge>
-                        </div>
-                        <div className="space-y-3">
-                            {pendingApprovals.length > 0 ? pendingApprovals.slice(0, 2).map(approval => (
-                                <div key={approval.id} className="p-3 bg-secondary/30 rounded-xl border border-border/50 hover:border-orange-500/20 transition-all">
-                                    <p className="text-xs font-bold text-foreground mb-1">{approval.type}</p>
-                                    <p className="text-[10px] text-muted-foreground mb-3 leading-relaxed">{approval.title}</p>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            size="sm"
-                                            className="h-7 text-[10px] flex-1 bg-orange-500 hover:bg-orange-600 font-bold"
-                                            onClick={() => onApprove(approval)}
-                                        >
-                                            Confirm
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-7 text-[10px] px-2"
-                                            onClick={() => onReject(approval)}
-                                        >
-                                            Reject
-                                        </Button>
-                                    </div>
-                                </div>
-                            )) : (
-                                <p className="text-[10px] text-muted-foreground py-2 italic text-center">System is operating autonomously.</p>
-                            )}
-                        </div>
-                    </FadeIn>
-
-                    {/* Active Risks */}
-                    <FadeIn delay={0.6} className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-sm self-start">
-                        <div className="flex items-center gap-2 mb-4">
-                            <AlertTriangle size={16} className="text-red-500" />
-                            <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Active Risks</h3>
-                            <Badge variant="outline" className="ml-auto text-[10px] h-4 bg-red-500/5 text-red-500 border-red-500/20">{riskAlerts.filter(r => !r.acknowledged).length}</Badge>
-                        </div>
-                        <div className="space-y-3">
-                            {riskAlerts.filter(r => !r.acknowledged).length > 0 ? riskAlerts.filter(r => !r.acknowledged).slice(0, 2).map(risk => (
-                                <div key={risk.id} className="p-3 bg-red-500/5 rounded-xl border border-red-500/20">
-                                    <div className="flex justify-between items-start mb-1">
-                                        <p className="text-xs font-bold text-red-500">{risk.severity}</p>
-                                        <button onClick={() => onAcknowledgeRisk(risk)} className="text-muted-foreground hover:text-foreground">
-                                            <X size={12} />
-                                        </button>
-                                    </div>
-                                    <p className="text-[10px] text-foreground font-medium mb-1">{risk.title}</p>
-                                    <p className="text-[9px] text-muted-foreground leading-tight">{risk.message}</p>
-                                </div>
-                            )) : (
-                                <p className="text-[10px] text-muted-foreground py-2 italic text-center whitespace-pre-wrap">Targeting 0% risk profile.\nCurrently nominal.</p>
-                            )}
-                        </div>
-                    </FadeIn>
-                </div>
 
                 {/* Middle Row: Active Projects, Upcoming Tasks, Recent Clients */}
                 <FadeIn delay={0.4} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -571,7 +469,7 @@ export const HQ: React.FC<HQProps> = ({
                         <div className="space-y-4 flex-1">
                             {activeProjects.length > 0 ? activeProjects.map(p => (
                                 <div key={p.id} onClick={(e) => { e.stopPropagation(); setSelectedProject(p); setIsProjectModalOpen(true); }} className="group flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 cursor-pointer transition-colors border border-transparent hover:border-border">
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm" style={{ backgroundColor: `${p.color} 20`, color: p.color }}>
+                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm bg-secondary text-foreground">
                                         {p.title.charAt(0)}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -580,7 +478,7 @@ export const HQ: React.FC<HQProps> = ({
                                             <div className="text-xs font-medium text-muted-foreground">{p.progress}%</div>
                                         </div>
                                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${p.progress}% `, backgroundColor: p.color }}></div>
+                                            <div className="h-full rounded-full transition-all duration-500 bg-primary" style={{ width: `${p.progress}%` }}></div>
                                         </div>
                                     </div>
                                     <ArrowUpRight size={16} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

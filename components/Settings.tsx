@@ -20,14 +20,13 @@ interface SettingsProps {
 
 const DEFAULT_ORDER: ViewMode[] = ['HQ', 'MANAGER', 'TASKS', 'HABITS', 'APPS', 'CALENDAR', 'CHAT', 'FILES'];
 const NAV_LABELS: Record<string, string> = {
-    'HQ': 'Workspace',
-    'MANAGER': 'Manager',
-    'TASKS': 'Tasks',
-    'HABITS': 'Habits',
-    'APPS': 'Apps',
-    'CALENDAR': 'Schedule',
-    'CHAT': 'Ignite',
-    'FILES': 'Assets'
+    'COMMAND_CENTER': 'Workshop',
+    'CLIENTS': 'Clients',
+    'WORK': 'Pipeline',
+    'TIME': 'Timeline',
+    'MONEY': 'Revenue',
+    'FILES': 'Assets',
+    'SETTINGS': 'Settings'
 };
 
 export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onUpdateUser }) => {

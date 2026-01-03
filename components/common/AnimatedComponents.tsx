@@ -42,7 +42,7 @@ export const FadeIn: React.FC<{ children: React.ReactNode, delay?: number, class
         transition={{
             duration: 0.23, // 230ms 
             delay,
-            ease: [0.4, 0, 0.2, 1] // Standard ease-out
+            ease: [0, 0, 0.2, 1] // Strict ease-out
         }}
         className={className}
         onClick={onClick}

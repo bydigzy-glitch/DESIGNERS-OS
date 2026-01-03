@@ -245,10 +245,7 @@ export const TimePage: React.FC<TimePageProps> = ({
                                                 </span>
                                                 <span className="text-[10px] text-muted-foreground">{task.duration}m</span>
                                             </div>
-                                            <div
-                                                className="w-1 h-10 rounded-full dynamic-bg-color"
-                                                style={{ '--dynamic-color': task.color || 'hsl(var(--primary))' } as React.CSSProperties}
-                                            />
+                                            <div className="w-1.5 h-10 rounded-full bg-primary/20 flex-shrink-0" />
                                             <div className="flex-1">
                                                 <div className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                                                     {task.title}

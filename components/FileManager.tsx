@@ -346,7 +346,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                 <h3 className="text-lg font-bold text-foreground mb-4">Storage Breakdown</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                                     {Object.entries(stats).filter(([k]) => ['image', 'video', 'doc', 'other'].includes(k)).map(([key, stat]: any) => (
-                                        <div key={key} className="bg-secondary/30 border border-border rounded-2xl p-5 hover:border-primary/30 transition-colors group">
+                                        <div key={key} className="bg-secondary/30 border border-border rounded-2xl p-5 hover:border-primary/30 transition-all duration-200 group">
                                             <div className="flex items-start justify-between mb-4 md:mb-6">
                                                 <div className={`p-3 rounded-xl bg-background border border-border shadow-sm`}>
                                                     {stat.icon}
@@ -374,7 +374,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                 <h3 className="text-lg font-bold text-foreground mb-4">Suggested</h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                                     {displayFiles.slice(0, 4).map(file => (
-                                        <div key={file.id} className="bg-secondary/30 border border-border rounded-2xl p-4 hover:bg-secondary/50 transition-colors group cursor-pointer">
+                                        <div key={file.id} className="bg-secondary/30 border border-border rounded-2xl p-4 hover:border-primary/30 transition-all duration-200 group cursor-pointer">
                                             <div className="flex justify-between items-start mb-3">
                                                 {getFileIcon(file)}
                                                 <button className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"><MoreHorizontal size={16} /></button>
@@ -510,7 +510,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                             ) : (
                                 <div className="p-4 md:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                     {displayFiles.map(file => (
-                                        <div key={file.id} className="bg-secondary/30 border border-border rounded-xl p-4 hover:bg-secondary/50 transition-colors group relative">
+                                        <div key={file.id} className="bg-secondary/30 border border-border rounded-xl p-4 hover:border-primary/30 transition-all duration-200 group relative">
                                             <div className="aspect-square bg-background rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
                                                 {file.type === 'IMAGE' && file.url ? (
                                                     <img src={file.url} className="w-full h-full object-cover" />

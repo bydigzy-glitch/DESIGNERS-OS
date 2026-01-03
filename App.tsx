@@ -35,6 +35,8 @@ import { AutomationEngine } from './services/automationEngine';
 import { analyzeIntakeSubmission } from './services/geminiService';
 import { IntakeForm } from './components/IntakeForm';
 import { IntakeSubmission } from './types';
+import { AICommandPalette } from './components/ai/AICommandPalette';
+import { AIContext } from './services/ai/types';
 
 const DUMMY_USER: User = {
     id: 'admin-user',
@@ -83,6 +85,7 @@ function App() {
     const [handledToday, setHandledToday] = useState<HandledAction[]>([]);
     const [isBrainOpen, setIsBrainOpen] = useState(false);
     const [isIntakeFormOpen, setIsIntakeFormOpen] = useState(false);
+    const [isAICommandOpen, setIsAICommandOpen] = useState(false);
 
 
     const activeRequestRef = useRef(false);
@@ -180,7 +183,6 @@ function App() {
 
     // --- INITIALIZATION & AUTHENTICATION ---
     useEffect(() => {
-        setTimeout(() => setIsAppLoading(false), 2500);
         storageService.checkVersion();
 
         const validateSession = async () => {
@@ -216,6 +218,7 @@ function App() {
                     setNotifications(safeUser.notifications.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
                 }
             }
+            setIsAppLoading(false);
         };
 
         validateSession();
@@ -232,6 +235,19 @@ function App() {
             });
             localStorage.setItem('app_last_version', APP_VERSION);
         }
+    }, []);
+
+    // AI Command Palette keyboard shortcut (⌘K / Ctrl+K)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsAICommandOpen(true);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     const handleLogin = useCallback((loggedInUser: User) => {
@@ -1628,7 +1644,9 @@ function App() {
         }
     };
 
-    if (isAppLoading) return <LoadingScreen />;
+    // We've removed the full-screen LoadingScreen to prioritize an immediate shell render.
+    // Components like HQ will handle data-fetch states gracefully.
+    // if (isAppLoading) return <LoadingScreen />;
 
     if (!user) return <Auth onLogin={handleLogin} />;
 
@@ -1645,6 +1663,7 @@ function App() {
                 autopilotMode={autopilotMode}
                 onChangeAutopilotMode={setAutopilotMode}
                 onOpenBrain={() => setIsBrainOpen(true)}
+                onOpenAI={() => setIsAICommandOpen(true)}
                 pendingApprovalsCount={pendingApprovals.length}
                 riskAlertsCount={riskAlerts.filter(r => !r.acknowledged).length}
             />
@@ -1698,6 +1717,38 @@ function App() {
                     isOpen={isIntakeFormOpen}
                     onClose={() => setIsIntakeFormOpen(false)}
                     onSubmit={handleIntakeSubmit}
+                />
+
+                {/* AI Command Palette (⌘K) */}
+                <AICommandPalette
+                    open={isAICommandOpen}
+                    onOpenChange={setIsAICommandOpen}
+                    context={{
+                        userId: user.id,
+                        permissions: { canRead: true, canWrite: true, canDelete: false }
+                    }}
+                    tasks={tasks}
+                    projects={projects}
+                    clients={clients}
+                    onApplyResult={(toolName, result) => {
+                        // Handle AI results - create tasks, update items, etc.
+                        if (toolName === 'generate_items' && result?.items) {
+                            result.items.forEach((item: any) => {
+                                if (item.title) {
+                                    handleTaskCreate({
+                                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                                        title: item.title,
+                                        completed: false,
+                                        category: item.category || 'ADMIN',
+                                        date: new Date(),
+                                        duration: item.estimatedMinutes || 30,
+                                        priority: item.priority || 'MEDIUM'
+                                    });
+                                }
+                            });
+                            addToast('SUCCESS', `Created ${result.items.length} tasks from AI`);
+                        }
+                    }}
                 />
             </main>
         </div>

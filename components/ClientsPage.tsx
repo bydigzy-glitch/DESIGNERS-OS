@@ -143,7 +143,7 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({
             {/* Stats Row */}
             <FadeIn delay={0.1}>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <Card className="p-4 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setFilterStatus(null)}>
+                    <Card className="p-4 border border-border hover:border-primary/30 transition-all duration-200" onClick={() => setFilterStatus(null)}>
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
                                 <Users size={18} />
@@ -155,7 +155,7 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({
                         </div>
                     </Card>
 
-                    <Card className={`p-4 cursor-pointer hover:border-primary/30 transition-colors ${filterStatus === 'ACTIVE' ? 'border-green-500/50' : ''}`} onClick={() => setFilterStatus('ACTIVE')}>
+                    <Card className={`p-4 border border-border hover:border-primary/30 transition-all duration-200 ${filterStatus === 'ACTIVE' ? 'border-green-500/50' : ''}`} onClick={() => setFilterStatus('ACTIVE')}>
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
                                 <TrendingUp size={18} />
@@ -167,7 +167,7 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({
                         </div>
                     </Card>
 
-                    <Card className={`p-4 cursor-pointer hover:border-primary/30 transition-colors ${filterStatus === 'RED_FLAG' ? 'border-red-500/50' : ''}`} onClick={() => setFilterStatus('RED_FLAG')}>
+                    <Card className={`p-4 border border-border hover:border-primary/30 transition-all duration-200 ${filterStatus === 'RED_FLAG' ? 'border-red-500/50' : ''}`} onClick={() => setFilterStatus('RED_FLAG')}>
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
                                 <AlertTriangle size={18} />
@@ -229,7 +229,7 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({
                         return (
                             <Card
                                 key={client.id}
-                                className={`overflow-hidden hover:border-primary/30 transition-all group ${client.status === 'RED_FLAG' ? 'border-red-500/30' : ''
+                                className={`overflow-hidden border border-border hover:border-primary/30 transition-all duration-200 group ${client.status === 'RED_FLAG' ? 'border-red-500/30' : ''
                                     }`}
                             >
                                 <CardContent className="p-5">

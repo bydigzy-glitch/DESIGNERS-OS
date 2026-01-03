@@ -66,7 +66,7 @@ export const SocialPage: React.FC<SocialPageProps> = ({ user, onUpdateUser }) =>
                 <div className="p-4 border-b border-border">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-foreground">Social</h2>
-                        <button onClick={() => setShowAddFriend(!showAddFriend)} className="p-2 hover:bg-secondary rounded-lg transition-colors">
+                        <button onClick={() => setShowAddFriend(!showAddFriend)} className="p-2 hover:bg-secondary rounded-lg transition-colors" title="Add Friend">
                             <Plus size={20} />
                         </button>
                     </div>
@@ -99,7 +99,7 @@ export const SocialPage: React.FC<SocialPageProps> = ({ user, onUpdateUser }) =>
                             className={`flex items-center gap-3 p-4 hover:bg-secondary/50 cursor-pointer border-l-4 transition-all ${activeFriendId === friend.id ? 'border-primary bg-secondary/30' : 'border-transparent'}`}
                         >
                             <div className="relative">
-                                <img src={friend.avatar} className="w-10 h-10 rounded-full bg-secondary" />
+                                <img src={friend.avatar} className="w-10 h-10 rounded-full bg-secondary" alt={`${friend.name}'s avatar`} />
                                 <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-card rounded-full ${friend.status === 'ONLINE' ? 'bg-green-500' : 'bg-gray-500'}`}></span>
                             </div>
                             <div className="flex-1 min-w-0">
@@ -130,9 +130,9 @@ export const SocialPage: React.FC<SocialPageProps> = ({ user, onUpdateUser }) =>
                         {/* Header */}
                         <div className="p-4 border-b border-border flex justify-between items-center bg-secondary/10">
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setActiveFriendId(null)} className="md:hidden p-2 -ml-2 text-muted-foreground">←</button>
+                                <button onClick={() => setActiveFriendId(null)} className="md:hidden p-2 -ml-2 text-muted-foreground" title="Back to list">←</button>
                                 <div className="relative">
-                                    <img src={activeFriend.avatar} className="w-10 h-10 rounded-full" />
+                                    <img src={activeFriend.avatar} className="w-10 h-10 rounded-full" alt={`${activeFriend.name}'s avatar`} />
                                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-card rounded-full"></span>
                                 </div>
                                 <div>
@@ -140,7 +140,7 @@ export const SocialPage: React.FC<SocialPageProps> = ({ user, onUpdateUser }) =>
                                     <span className="text-xs text-green-500 font-medium">Online</span>
                                 </div>
                             </div>
-                            <button className="p-2 hover:bg-secondary rounded-lg text-muted-foreground"><MoreVertical size={20} /></button>
+                            <button className="p-2 hover:bg-secondary rounded-lg text-muted-foreground" title="More options"><MoreVertical size={20} /></button>
                         </div>
 
                         {/* Messages */}
@@ -152,7 +152,7 @@ export const SocialPage: React.FC<SocialPageProps> = ({ user, onUpdateUser }) =>
                                         <div className={`max-w-[70%] relative group`}>
                                             <div className={`p-3 rounded-2xl text-sm ${isMe ? 'bg-primary text-white rounded-tr-sm' : 'bg-secondary text-foreground rounded-tl-sm'}`}>
                                                 {msg.text}
-                                                {msg.image && <img src={msg.image} className="mt-2 rounded-lg max-w-full" />}
+                                                {msg.image && <img src={msg.image} className="mt-2 rounded-lg max-w-full" alt="Shared in chat" />}
                                             </div>
 
                                             {/* Reactions */}
@@ -181,7 +181,7 @@ export const SocialPage: React.FC<SocialPageProps> = ({ user, onUpdateUser }) =>
                         {/* Input */}
                         <div className="p-4 bg-card border-t border-border">
                             <div className="flex items-center gap-2 bg-secondary rounded-xl p-2 px-4 border border-transparent focus-within:border-primary transition-colors">
-                                <button className="text-muted-foreground hover:text-foreground"><Plus size={20} /></button>
+                                <button className="text-muted-foreground hover:text-foreground" title="Add attachment"><Plus size={20} /></button>
                                 <input
                                     value={messageInput}
                                     onChange={(e) => setMessageInput(e.target.value)}
@@ -189,8 +189,8 @@ export const SocialPage: React.FC<SocialPageProps> = ({ user, onUpdateUser }) =>
                                     placeholder="Type a message..."
                                     className="flex-1 bg-transparent outline-none text-sm text-foreground"
                                 />
-                                <button className="text-muted-foreground hover:text-foreground"><ImageIcon size={20} /></button>
-                                <button onClick={handleSendMessage} className={`p-2 rounded-lg transition-all ${messageInput.trim() ? 'bg-primary text-white shadow-glow' : 'bg-transparent text-muted-foreground'}`}>
+                                <button className="text-muted-foreground hover:text-foreground" title="Send image"><ImageIcon size={20} /></button>
+                                <button onClick={handleSendMessage} className={`p-2 rounded-lg transition-all ${messageInput.trim() ? 'bg-primary text-white shadow-glow' : 'bg-transparent text-muted-foreground'}`} title="Send message">
                                     <Send size={18} />
                                 </button>
                             </div>

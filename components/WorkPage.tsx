@@ -17,7 +17,8 @@ import {
     Play,
     Pause,
     CheckCircle2,
-    Calendar
+    Calendar,
+    Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +33,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
     DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import {
     Tabs,
@@ -238,13 +242,12 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                         {/* Projects Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredProjects.map(project => (
-                                <Card key={project.id} className="overflow-hidden hover:border-primary/30 transition-all group">
+                                <Card key={project.id} className="overflow-hidden border border-border hover:border-primary/30 transition-all duration-200 group">
                                     <CardContent className="p-5">
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex items-center gap-3">
                                                 <div
-                                                    className="project-icon-base"
-                                                    style={{ '--project-color': project.color } as React.CSSProperties}
+                                                    className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center font-bold text-foreground border border-border"
                                                 >
                                                     {project.title.charAt(0)}
                                                 </div>
@@ -278,6 +281,39 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                                                     <DropdownMenuItem onClick={() => onDeleteProject(project.id)} className="text-red-500">
                                                         <Trash2 size={14} className="mr-2" /> Delete
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuSub>
+                                                        <DropdownMenuSubTrigger>
+                                                            <Sparkles size={14} className="mr-2 text-primary" /> AI Actions
+                                                        </DropdownMenuSubTrigger>
+                                                        <DropdownMenuSubContent>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                // Trigger AI summarize for project
+                                                                const event = new CustomEvent('ai-action', {
+                                                                    detail: { tool: 'summarize', content: `Project: ${project.title}. Client: ${project.client}. Status: ${project.status}. Progress: ${project.progress}%. Notes: ${project.notes || 'None'}` }
+                                                                });
+                                                                window.dispatchEvent(event);
+                                                            }}>
+                                                                Summarize Project
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                const event = new CustomEvent('ai-action', {
+                                                                    detail: { tool: 'generate_items', prompt: `Generate 5 subtasks for project: ${project.title}`, itemType: 'subtasks' }
+                                                                });
+                                                                window.dispatchEvent(event);
+                                                            }}>
+                                                                Generate Subtasks
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                const event = new CustomEvent('ai-action', {
+                                                                    detail: { tool: 'classify_tags', content: `${project.title} - ${project.notes || ''}` }
+                                                                });
+                                                                window.dispatchEvent(event);
+                                                            }}>
+                                                                Suggest Tags
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuSubContent>
+                                                    </DropdownMenuSub>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>

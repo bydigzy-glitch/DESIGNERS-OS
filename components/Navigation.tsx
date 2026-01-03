@@ -13,8 +13,8 @@ import {
   Brain,
   Zap,
   Shield,
-  HelpCircle
 } from 'lucide-react';
+import { Sparkles, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -41,6 +41,7 @@ interface NavigationProps {
   autopilotMode: AutopilotMode;
   onChangeAutopilotMode: (mode: AutopilotMode) => void;
   onOpenBrain: () => void;
+  onOpenAI?: () => void;
   pendingApprovalsCount: number;
   riskAlertsCount: number;
 }
@@ -88,6 +89,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   autopilotMode,
   onChangeAutopilotMode,
   onOpenBrain,
+  onOpenAI,
   pendingApprovalsCount,
   riskAlertsCount
 }) => {
@@ -97,7 +99,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <TooltipProvider delayDuration={300}>
       {/* DESKTOP SIDEBAR */}
-      <nav className="hidden md:flex flex-col w-64 h-full bg-background border-r border-border p-4 justify-between flex-shrink-0 z-50">
+      <nav className="hidden md:flex flex-col w-64 h-full bg-background border-r border-border p-4 justify-between flex-shrink-0 z-[var(--z-overlay)]">
         <div>
           {/* Logo & Mode */}
           <div className="flex items-center justify-between mb-8 px-2 py-2">
@@ -150,7 +152,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           </div>
 
           {/* Primary Nav Items */}
-          <div className="space-y-1">
+          <div className="space-y-2">
             {NAV_ITEMS.map(item => (
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
@@ -194,8 +196,28 @@ export const Navigation: React.FC<NavigationProps> = ({
             </TooltipContent>
           </Tooltip>
 
+          {/* AI Command Button */}
+          {onOpenAI && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  onClick={onOpenAI}
+                  className="w-full justify-start gap-4 text-muted-foreground hover:text-foreground h-10 px-3 group"
+                >
+                  <Sparkles size={18} className="group-hover:text-primary transition-colors" />
+                  <span className="text-sm font-medium">AI Actions</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">⌘K</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Summarize, generate, rewrite, and more</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Secondary Nav Items */}
-          <div className="mt-4 space-y-1">
+          <div className="mt-4 space-y-2">
             {SECONDARY_ITEMS.map(item => (
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
@@ -249,7 +271,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       </nav>
 
       {/* MOBILE BOTTOM DOCK */}
-      <nav className="md:hidden fixed bottom-4 left-4 right-4 h-[68px] bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-50 flex items-center justify-around px-4">
+      <nav className="md:hidden fixed bottom-4 left-4 right-4 h-[68px] bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-[var(--z-overlay)] flex items-center justify-around px-4">
         {/* Command Center */}
         <Button
           variant={currentView === 'COMMAND_CENTER' ? "default" : "ghost"}

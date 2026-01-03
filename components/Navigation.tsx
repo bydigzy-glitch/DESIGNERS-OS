@@ -5,6 +5,7 @@ import {
   LayoutGrid,
   Users,
   Briefcase,
+  CheckSquare,
   Clock,
   DollarSign,
   FolderOpen,
@@ -50,6 +51,7 @@ const NAV_ITEMS: { id: ViewMode; label: string; icon: React.ReactNode; descripti
   { id: 'HQ', label: 'Dashboard', icon: <LayoutGrid size={18} />, description: 'Your daily focus and system status' },
   { id: 'CLIENTS', label: 'Clients', icon: <Users size={18} />, description: 'Client management and scoring' },
   { id: 'WORK', label: 'Work', icon: <Briefcase size={18} />, description: 'Projects and tasks unified' },
+  { id: 'TASKS', label: 'Tasks', icon: <CheckSquare size={18} />, description: 'Production flow and Kanban' },
   { id: 'TIME', label: 'Time', icon: <Clock size={18} />, description: 'Calendar and time protection' },
   { id: 'MONEY', label: 'Money', icon: <DollarSign size={18} />, description: 'Finances and forecasting' },
 ];
@@ -293,6 +295,16 @@ export const Navigation: React.FC<NavigationProps> = ({
         >
           <Briefcase size={20} />
           <span className="text-[9px] font-bold uppercase tracking-wider">WORK</span>
+        </Button>
+
+        {/* Tasks */}
+        <Button
+          variant={currentView === 'TASKS' ? "default" : "ghost"}
+          onClick={() => onNavigate('TASKS')}
+          className="flex flex-col items-center justify-center gap-1 h-auto py-3"
+        >
+          <CheckSquare size={20} />
+          <span className="text-[9px] font-bold uppercase tracking-wider">TASKS</span>
         </Button>
 
         {/* Brain */}

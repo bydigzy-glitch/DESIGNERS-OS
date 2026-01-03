@@ -5,7 +5,6 @@ import {
   LayoutGrid,
   Users,
   Briefcase,
-  CheckSquare,
   Clock,
   DollarSign,
   FolderOpen,

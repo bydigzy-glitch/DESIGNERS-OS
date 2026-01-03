@@ -41,7 +41,11 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
         setName(user.name);
         setEmail(user.email);
         setNotificationsEnabled(user.preferences.notifications);
-        setNavOrder(user.preferences.navOrder || DEFAULT_ORDER);
+        // Filter out deprecated views like 'TASKS' from user preferences
+        const deprecatedViews = ['TASKS'];
+        const userOrder = user.preferences.navOrder || DEFAULT_ORDER;
+        const filteredOrder = userOrder.filter(v => !deprecatedViews.includes(v as any));
+        setNavOrder(filteredOrder);
     }, [user]);
 
     const handleSave = () => {

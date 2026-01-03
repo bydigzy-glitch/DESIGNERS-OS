@@ -85,6 +85,9 @@ export const TasksPage: React.FC<TasksPageProps> = ({
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [modalDefaultStatus, setModalDefaultStatus] = useState<Task['statusLabel']>('TODO');
 
+    const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+    const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+
     const columnKeys: Task['statusLabel'][] = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
     const columnColors: Record<string, string> = {
         TODO: 'bg-slate-400',
@@ -102,6 +105,38 @@ export const TasksPage: React.FC<TasksPageProps> = ({
         setSelectedTask(null);
         setModalDefaultStatus(status);
         setIsTaskModalOpen(true);
+    };
+
+    const handleDragStart = (e: React.DragEvent, taskId: string) => {
+        e.dataTransfer.effectAllowed = 'move';
+        setDraggedTaskId(taskId);
+    };
+
+    const handleDragOver = (e: React.DragEvent, colId: string) => {
+        e.preventDefault();
+        if (dragOverCol !== colId) setDragOverCol(colId);
+    };
+
+    const handleDragLeave = () => {
+        setDragOverCol(null);
+    };
+
+    const handleDrop = (e: React.DragEvent, status: string) => {
+        e.preventDefault();
+        setDragOverCol(null);
+        if (draggedTaskId) {
+            const task = tasks.find(t => t.id === draggedTaskId);
+            if (task) {
+                const validStatus = status as Task['statusLabel'];
+
+                onUpdateTask({
+                    ...task,
+                    statusLabel: validStatus,
+                    completed: status === 'DONE'
+                });
+            }
+            setDraggedTaskId(null);
+        }
     };
 
     const getRelativeTime = (date: Date) => {
@@ -189,7 +224,13 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                                         return (
                                             <div
                                                 key={colId}
-                                                className="flex flex-col w-[320px] h-full"
+                                                className={cn(
+                                                    "flex flex-col w-[320px] h-full rounded-2xl transition-colors border-2 border-transparent",
+                                                    dragOverCol === colId && "bg-primary/5 border-primary/20 border-dashed"
+                                                )}
+                                                onDragOver={(e) => handleDragOver(e, colId || 'TODO')}
+                                                onDragLeave={handleDragLeave}
+                                                onDrop={(e) => handleDrop(e, colId || 'TODO')}
                                             >
                                                 {/* Column Header */}
                                                 <div className="flex items-center justify-between mb-4 px-1">
@@ -219,6 +260,8 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                                                                 key={task.id}
                                                                 layout
                                                                 whileHover={{ scale: 1.01 }}
+                                                                draggable
+                                                                onDragStart={(e: any) => handleDragStart(e, task.id)}
                                                                 className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 hover:shadow-md transition-all group cursor-pointer relative"
                                                                 onClick={() => handleEditTask(task)}
                                                             >

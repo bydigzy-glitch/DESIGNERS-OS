@@ -8,7 +8,6 @@ import { db, supabase, subscribeToChanges, dbNotifications, subscribeToNotificat
 import { ChatInterface } from './components/ChatInterface';
 import { Navigation } from './components/Navigation';
 import { HQ } from './components/HQ';
-import { TasksPage } from './components/TasksPage';
 import { HabitsPage } from './components/HabitsPage';
 import { Apps } from './components/Apps';
 import { Calendar } from './components/Calendar';
@@ -1571,17 +1570,6 @@ function App() {
                     onDeleteClient={handleClientDelete}
                     onAddProject={handleProjectCreate}
                     onUpdateProject={handleProjectUpdate}
-                    onDeleteProject={handleProjectDelete}
-                />;
-            case 'TASKS':
-                return <TasksPage
-                    tasks={tasks}
-                    projects={projects}
-                    onUpdateTask={handleTaskUpdate}
-                    onDeleteTask={handleTaskDelete}
-                    onAddTask={handleTaskCreate}
-                    onUpdateProject={handleProjectUpdate}
-                    onAddProject={handleProjectCreate}
                     onDeleteProject={handleProjectDelete}
                 />;
             case 'HABITS':

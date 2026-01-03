@@ -27,7 +27,7 @@ export type ViewMode =
   // Shared routes
   | 'FILES' | 'SETTINGS'
   // Legacy routes (kept for transition period)
-  | 'CHAT' | 'HQ' | 'TASKS' | 'HABITS' | 'APPS' | 'CALENDAR' | 'MANAGER' | 'TEAMS' | 'DEMO';
+  | 'CHAT' | 'HQ' | 'HABITS' | 'APPS' | 'CALENDAR' | 'MANAGER' | 'TEAMS' | 'DEMO';
 
 // Autopilot modes for Brain system
 export type AutopilotMode = 'ASSIST' | 'CONFIDENT' | 'STRICT';

@@ -18,11 +18,11 @@ interface SettingsProps {
     onUpdateUser?: (user: User) => void;
 }
 
-const DEFAULT_ORDER: ViewMode[] = ['HQ', 'MANAGER', 'TASKS', 'HABITS', 'APPS', 'CALENDAR', 'CHAT', 'FILES'];
+const DEFAULT_ORDER: ViewMode[] = ['HQ', 'MANAGER', 'HABITS', 'APPS', 'CALENDAR', 'CHAT', 'FILES'];
 const NAV_LABELS: Record<string, string> = {
     'COMMAND_CENTER': 'Workshop',
     'CLIENTS': 'Clients',
-    'WORK': 'Pipeline',
+    'WORK': 'Projects',
     'TIME': 'Timeline',
     'MONEY': 'Revenue',
     'FILES': 'Assets',

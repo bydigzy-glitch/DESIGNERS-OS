@@ -142,8 +142,8 @@ export const WorkPage: React.FC<WorkPageProps> = ({
             <FadeIn>
                 <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Work</h1>
-                        <p className="text-sm text-muted-foreground mt-1">Projects and tasks in one unified view</p>
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Projects</h1>
+                        <p className="text-sm text-muted-foreground mt-1">Manage your active projects and associated tasks</p>
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }} className="gap-2">

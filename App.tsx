@@ -9,6 +9,7 @@ import { ChatInterface } from './components/ChatInterface';
 import { Navigation } from './components/Navigation';
 import { HQ } from './components/HQ';
 import { HabitsPage } from './components/HabitsPage';
+import { QuickActionsSidebar } from './components/QuickActionsSidebar';
 import { Apps } from './components/Apps';
 import { Calendar } from './components/Calendar';
 import { FileManager } from './components/FileManager';
@@ -1740,6 +1741,11 @@ function App() {
                     }}
                 />
             </main>
+
+            {/* Quick Actions Sidebar */}
+            <div className="hidden xl:block h-full">
+                <QuickActionsSidebar />
+            </div>
         </div>
     );
 }

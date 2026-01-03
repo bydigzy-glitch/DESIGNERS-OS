@@ -11,11 +11,13 @@ import {
     CheckCircle2,
     Circle,
     MoreVertical,
-    GripVertical
+    GripVertical,
+    FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { InvoiceMaker } from './InvoiceMaker';
 
 interface Note {
     id: string;
@@ -31,12 +33,58 @@ interface Reminder {
     dueDate?: string;
 }
 
-export const QuickActionsSidebar: React.FC = () => {
-    const [isHovered, setIsHovered] = useState(false);
-    const [isTyping, setIsTyping] = useState(false);
+const QuickTool: React.FC<{
+    icon: React.ElementType;
+    title: string;
+    children: React.ReactNode;
+    isOpen: boolean;
+    onHover: (hovered: boolean) => void;
+    isTyping: boolean;
+}> = ({ icon: Icon, title, children, isOpen, onHover, isTyping }) => {
+    return (
+        <motion.div
+            initial={false}
+            animate={{
+                width: (isOpen || isTyping) ? 400 : 48,
+                height: (isOpen || isTyping) ? 600 : 48,
+                borderRadius: (isOpen || isTyping) ? 24 : 12,
+            }}
+            transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+            onMouseEnter={() => onHover(true)}
+            onMouseLeave={() => onHover(false)}
+            className={`flex flex-col bg-card/40 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden pointer-events-auto transition-colors ${(isOpen || isTyping) ? 'bg-card/90 z-50' : 'hover:bg-primary/10'}`}
+        >
+            <div className="flex items-center h-12 min-h-[48px] px-4 cursor-pointer">
+                <div className="flex-shrink-0">
+                    <Icon size={18} className={(isOpen || isTyping) ? 'text-primary' : 'text-muted-foreground'} />
+                </div>
+                {(isOpen || isTyping) && (
+                    <motion.span
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="ml-3 font-bold text-sm tracking-tight"
+                    >
+                        {title}
+                    </motion.span>
+                )}
+            </div>
 
-    // Effective open state: open if hovered OR if user is typing
-    const isOpen = isHovered || isTyping;
+            {(isOpen || isTyping) && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex-1 overflow-hidden flex flex-col p-6 pt-0"
+                >
+                    {children}
+                </motion.div>
+            )}
+        </motion.div>
+    );
+};
+
+export const QuickActionsSidebar: React.FC = () => {
+    const [hoveredTool, setHoveredTool] = useState<string | null>(null);
+    const [isTyping, setIsTyping] = useState(false);
 
     const [notes, setNotes] = useState<Note[]>(() => {
         const saved = localStorage.getItem('designers-os-notes');
@@ -61,8 +109,6 @@ export const QuickActionsSidebar: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('designers-os-reminders', JSON.stringify(reminders));
     }, [reminders]);
-
-    const [activeTab, setActiveTab] = useState<'notes' | 'reminders'>('notes');
 
     const addNote = () => {
         const newNote: Note = {
@@ -104,159 +150,111 @@ export const QuickActionsSidebar: React.FC = () => {
     };
 
     return (
-        <motion.div
-            initial={false}
-            animate={{ width: isOpen ? 320 : 64 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30, duration: 0.15 }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            className="relative h-full flex flex-col bg-card/30 backdrop-blur-xl border-l border-border z-50 overflow-hidden"
-        >
-            {/* Hover Hint Indicator */}
-            <div className="absolute top-4 left-4 p-2 rounded-full text-muted-foreground/30 transition-colors z-10">
-                {isOpen ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-            </div>
-
-            {/* Tabs / Icons only when collapsed */}
-            <div className={`flex flex-col items-center gap-6 pt-16 ${isOpen ? 'px-6' : 'px-0'}`}>
-                {!isOpen && (
-                    <div className="flex flex-col gap-6">
-                        <button
-                            onClick={() => { setIsHovered(true); setActiveTab('notes') }}
-                            className="p-3 rounded-xl hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-all"
-                            aria-label="View Notes"
-                        >
-                            <StickyNote size={19} />
-                        </button>
-                        <button
-                            onClick={() => { setIsHovered(true); setActiveTab('reminders') }}
-                            className="p-3 rounded-xl hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-all"
-                            aria-label="View Reminders"
-                        >
-                            <Bell size={19} />
-                        </button>
+        <div className="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col items-end gap-3 z-[100] pointer-events-none">
+            {/* Notes Tool */}
+            <QuickTool
+                icon={StickyNote}
+                title="Notes"
+                isOpen={hoveredTool === 'notes'}
+                onHover={(h) => setHoveredTool(h ? 'notes' : null)}
+                isTyping={isTyping && hoveredTool === 'notes'}
+            >
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Recent Notes</span>
+                        <Button variant="ghost" size="icon" onClick={addNote} className="h-6 w-6 rounded-full hover:bg-secondary/50">
+                            <Plus size={11} />
+                        </Button>
                     </div>
-                )}
-
-                {isOpen && (
-                    <div className="w-full flex flex-col h-[calc(100vh-100px)]">
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-xl font-bold tracking-tight text-foreground/80">Quick Actions</h2>
+                    <ScrollArea className="flex-1 -mx-2 px-2">
+                        <div className="space-y-4">
+                            {notes.map(note => (
+                                <div key={note.id} className={`p-4 rounded-2xl border border-white/5 ${note.color} group relative hover:shadow-lg transition-all`}>
+                                    <textarea
+                                        value={note.content}
+                                        onChange={(e) => updateNote(note.id, e.target.value)}
+                                        placeholder="Type something..."
+                                        onFocus={() => { setIsTyping(true); setHoveredTool('notes'); }}
+                                        onBlur={() => setIsTyping(false)}
+                                        className="w-full bg-transparent border-none focus:ring-0 text-sm resize-none h-20 placeholder:text-muted-foreground/50"
+                                    />
+                                    <div className="flex justify-between items-center mt-2">
+                                        <span className="text-[10px] text-muted-foreground/60">{note.createdAt}</span>
+                                        <button
+                                            onClick={() => deleteNote(note.id)}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive"
+                                            aria-label="Delete Note"
+                                        >
+                                            <X size={10} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-
-                        <div className="flex gap-2 p-1 bg-secondary/30 rounded-xl mb-6">
-                            <button
-                                onClick={() => setActiveTab('notes')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'notes' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                            >
-                                <StickyNote size={11} />
-                                Notes
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('reminders')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'reminders' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                            >
-                                <Bell size={11} />
-                                Reminders
-                            </button>
-                        </div>
-
-                        <ScrollArea className="flex-1 -mx-2 px-2">
-                            <AnimatePresence mode="wait" initial={false}>
-                                {activeTab === 'notes' ? (
-                                    <motion.div
-                                        key="notes"
-                                        initial={{ opacity: 0, x: 10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -10 }}
-                                        transition={{ duration: 0.1 }}
-                                        className="space-y-4"
-                                    >
-                                        <div className="flex justify-between items-center px-1">
-                                            <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Recent Notes</span>
-                                            <Button variant="ghost" size="icon" onClick={addNote} className="h-6 w-6 rounded-full hover:bg-secondary/50" aria-label="Add Note">
-                                                <Plus size={11} />
-                                            </Button>
-                                        </div>
-                                        {notes.map(note => (
-                                            <div key={note.id} className={`p-4 rounded-2xl border border-white/5 ${note.color} group relative hover:shadow-lg transition-all`}>
-                                                <textarea
-                                                    value={note.content}
-                                                    onChange={(e) => updateNote(note.id, e.target.value)}
-                                                    placeholder="Type something..."
-                                                    onFocus={() => setIsTyping(true)}
-                                                    onBlur={() => setIsTyping(false)}
-                                                    className="w-full bg-transparent border-none focus:ring-0 text-sm resize-none h-20 placeholder:text-muted-foreground/50"
-                                                />
-                                                <div className="flex justify-between items-center mt-2">
-                                                    <span className="text-[10px] text-muted-foreground/60">{note.createdAt}</span>
-                                                    <button
-                                                        onClick={() => deleteNote(note.id)}
-                                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive"
-                                                        aria-label="Delete Note"
-                                                    >
-                                                        <X size={10} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        key="reminders"
-                                        initial={{ opacity: 0, x: 10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -10 }}
-                                        transition={{ duration: 0.1 }}
-                                        className="space-y-4"
-                                    >
-                                        <div className="flex justify-between items-center px-1">
-                                            <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">To-Do</span>
-                                            <Button variant="ghost" size="icon" onClick={addReminder} className="h-6 w-6 rounded-full hover:bg-secondary/50" aria-label="Add Reminder">
-                                                <Plus size={11} />
-                                            </Button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {reminders.map(reminder => (
-                                                <div key={reminder.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/20 hover:bg-secondary/40 transition-all border border-transparent hover:border-white/5 group">
-                                                    <button onClick={() => toggleReminder(reminder.id)} className="text-primary hover:scale-110 transition-transform">
-                                                        {reminder.completed ? <CheckCircle2 size={14} fill="currentColor" strokeWidth={1} /> : <Circle size={14} className="text-muted-foreground" />}
-                                                    </button>
-                                                    <input
-                                                        value={reminder.text}
-                                                        onChange={(e) => updateReminder(reminder.id, e.target.value)}
-                                                        placeholder="Add reminder..."
-                                                        onFocus={() => setIsTyping(true)}
-                                                        onBlur={() => setIsTyping(false)}
-                                                        className={`flex-1 bg-transparent border-none focus:ring-0 text-sm p-0 placeholder:text-muted-foreground/50 ${reminder.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-                                                    />
-                                                    <button
-                                                        onClick={() => deleteReminder(reminder.id)}
-                                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-foreground"
-                                                        aria-label="Delete Reminder"
-                                                    >
-                                                        <X size={11} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </ScrollArea>
-                    </div>
-                )}
-            </div>
-
-            {/* Footer / User Info */}
-            {isOpen && (
-                <div className="p-6 border-t border-border mt-auto">
-                    <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20">
-                        <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Focus Mode</p>
-                        <p className="text-xs text-muted-foreground">Keep your workspace clean and tools handy.</p>
-                    </div>
+                    </ScrollArea>
                 </div>
-            )}
-        </motion.div>
+            </QuickTool>
+
+            {/* Reminders Tool */}
+            <QuickTool
+                icon={Bell}
+                title="Reminders"
+                isOpen={hoveredTool === 'reminders'}
+                onHover={(h) => setHoveredTool(h ? 'reminders' : null)}
+                isTyping={isTyping && hoveredTool === 'reminders'}
+            >
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">To-Do</span>
+                        <Button variant="ghost" size="icon" onClick={addReminder} className="h-6 w-6 rounded-full hover:bg-secondary/50">
+                            <Plus size={11} />
+                        </Button>
+                    </div>
+                    <ScrollArea className="flex-1 -mx-2 px-2">
+                        <div className="space-y-2">
+                            {reminders.map(reminder => (
+                                <div key={reminder.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/20 hover:bg-secondary/40 transition-all border border-transparent hover:border-white/5 group">
+                                    <button onClick={() => toggleReminder(reminder.id)} className="text-primary hover:scale-110 transition-transform">
+                                        {reminder.completed ? <CheckCircle2 size={14} fill="currentColor" strokeWidth={1} /> : <Circle size={14} className="text-muted-foreground" />}
+                                    </button>
+                                    <input
+                                        value={reminder.text}
+                                        onChange={(e) => updateReminder(reminder.id, e.target.value)}
+                                        placeholder="Add reminder..."
+                                        onFocus={() => { setIsTyping(true); setHoveredTool('reminders'); }}
+                                        onBlur={() => setIsTyping(false)}
+                                        className={`flex-1 bg-transparent border-none focus:ring-0 text-sm p-0 placeholder:text-muted-foreground/50 ${reminder.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                                    />
+                                    <button
+                                        onClick={() => deleteReminder(reminder.id)}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-foreground"
+                                        aria-label="Delete Reminder"
+                                    >
+                                        <X size={11} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </div>
+            </QuickTool>
+
+            {/* Invoice Maker Tool */}
+            <QuickTool
+                icon={FileText}
+                title="Invoice Maker"
+                isOpen={hoveredTool === 'invoice'}
+                onHover={(h) => setHoveredTool(h ? 'invoice' : null)}
+                isTyping={isTyping && hoveredTool === 'invoice'}
+            >
+                <div className="flex-1 overflow-hidden"
+                    onFocus={() => { setIsTyping(true); setHoveredTool('invoice'); }}
+                    onBlur={() => setIsTyping(false)}>
+                    <ScrollArea className="h-full -mx-6 px-6">
+                        <InvoiceMaker />
+                    </ScrollArea>
+                </div>
+            </QuickTool>
+        </div>
     );
 };

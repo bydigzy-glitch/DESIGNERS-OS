@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ChevronRight,
@@ -38,14 +38,30 @@ export const QuickActionsSidebar: React.FC = () => {
     // Effective open state: open if hovered OR if user is typing
     const isOpen = isHovered || isTyping;
 
-    const [notes, setNotes] = useState<Note[]>([
-        { id: '1', content: 'Apple HIG dark mode update complete. Check contrast ratios.', color: 'bg-yellow-200/20', createdAt: '2h ago' },
-        { id: '2', content: 'Meeting with Client X at 3PM tomorrow.', color: 'bg-blue-200/20', createdAt: '5h ago' }
-    ]);
-    const [reminders, setReminders] = useState<Reminder[]>([
-        { id: '1', text: 'Update project status', completed: false },
-        { id: '2', text: 'Review team feedback', completed: true }
-    ]);
+    const [notes, setNotes] = useState<Note[]>(() => {
+        const saved = localStorage.getItem('designers-os-notes');
+        return saved ? JSON.parse(saved) : [
+            { id: '1', content: 'Apple HIG dark mode update complete. Check contrast ratios.', color: 'bg-yellow-200/20', createdAt: '2h ago' },
+            { id: '2', content: 'Meeting with Client X at 3PM tomorrow.', color: 'bg-blue-200/20', createdAt: '5h ago' }
+        ];
+    });
+
+    const [reminders, setReminders] = useState<Reminder[]>(() => {
+        const saved = localStorage.getItem('designers-os-reminders');
+        return saved ? JSON.parse(saved) : [
+            { id: '1', text: 'Update project status', completed: false },
+            { id: '2', text: 'Review team feedback', completed: true }
+        ];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('designers-os-notes', JSON.stringify(notes));
+    }, [notes]);
+
+    useEffect(() => {
+        localStorage.setItem('designers-os-reminders', JSON.stringify(reminders));
+    }, [reminders]);
+
     const [activeTab, setActiveTab] = useState<'notes' | 'reminders'>('notes');
 
     const addNote = () => {
@@ -69,6 +85,22 @@ export const QuickActionsSidebar: React.FC = () => {
 
     const toggleReminder = (id: string) => {
         setReminders(prev => prev.map(r => r.id === id ? { ...r, completed: !r.completed } : r));
+    };
+
+    const deleteReminder = (id: string) => {
+        setReminders(prev => prev.filter(r => r.id !== id));
+    };
+
+    const updateReminder = (id: string, text: string) => {
+        setReminders(prev => prev.map(r => r.id === id ? { ...r, text } : r));
+    };
+
+    const updateNote = (id: string, content: string) => {
+        setNotes(prev => prev.map(n => n.id === id ? { ...n, content } : n));
+    };
+
+    const deleteNote = (id: string) => {
+        setNotes(prev => prev.filter(n => n.id !== id));
     };
 
     return (
@@ -149,7 +181,8 @@ export const QuickActionsSidebar: React.FC = () => {
                                         {notes.map(note => (
                                             <div key={note.id} className={`p-4 rounded-2xl border border-white/5 ${note.color} group relative hover:shadow-lg transition-all`}>
                                                 <textarea
-                                                    defaultValue={note.content}
+                                                    value={note.content}
+                                                    onChange={(e) => updateNote(note.id, e.target.value)}
                                                     placeholder="Type something..."
                                                     onFocus={() => setIsTyping(true)}
                                                     onBlur={() => setIsTyping(false)}
@@ -157,7 +190,11 @@ export const QuickActionsSidebar: React.FC = () => {
                                                 />
                                                 <div className="flex justify-between items-center mt-2">
                                                     <span className="text-[10px] text-muted-foreground/60">{note.createdAt}</span>
-                                                    <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive" aria-label="Delete Note">
+                                                    <button
+                                                        onClick={() => deleteNote(note.id)}
+                                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive"
+                                                        aria-label="Delete Note"
+                                                    >
                                                         <X size={10} />
                                                     </button>
                                                 </div>
@@ -186,14 +223,19 @@ export const QuickActionsSidebar: React.FC = () => {
                                                         {reminder.completed ? <CheckCircle2 size={14} fill="currentColor" strokeWidth={1} /> : <Circle size={14} className="text-muted-foreground" />}
                                                     </button>
                                                     <input
-                                                        defaultValue={reminder.text}
+                                                        value={reminder.text}
+                                                        onChange={(e) => updateReminder(reminder.id, e.target.value)}
                                                         placeholder="Add reminder..."
                                                         onFocus={() => setIsTyping(true)}
                                                         onBlur={() => setIsTyping(false)}
                                                         className={`flex-1 bg-transparent border-none focus:ring-0 text-sm p-0 placeholder:text-muted-foreground/50 ${reminder.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}
                                                     />
-                                                    <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-foreground" aria-label="More options">
-                                                        <MoreVertical size={11} />
+                                                    <button
+                                                        onClick={() => deleteReminder(reminder.id)}
+                                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-foreground"
+                                                        aria-label="Delete Reminder"
+                                                    >
+                                                        <X size={11} />
                                                     </button>
                                                 </div>
                                             ))}

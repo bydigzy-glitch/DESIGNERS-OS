@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Send, Sparkles, Bot, AtSign, X, Paperclip, Loader2 } from 'lucide-react';
 import { Message, ChatSession, User, Task } from '../types';
 import { ChatMessage } from './ChatMessage';
+import { ThinkingIndicator } from './ThinkingIndicator';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -236,15 +237,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   />
                 ))}
 
-                {/* Loading Indicator */}
-                {isLoading && (
-                  <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl border border-border/50 animate-in fade-in slide-in-from-bottom-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">
-                      {loadingStep || "Thinking..."}
-                    </span>
-                  </div>
-                )}
+                {/* Thinking Indicator */}
+                {isLoading && <ThinkingIndicator />}
                 <div ref={messagesEndRef} />
               </>
             )}

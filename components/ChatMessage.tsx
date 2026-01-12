@@ -1,43 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Message } from '../types';
 import { User, Copy, ThumbsUp, ThumbsDown, CheckSquare } from 'lucide-react';
 import { GradientGlobe } from '@/components/ui/GradientGlobe';
+import { StreamingText } from './StreamingText';
 
 interface ChatMessageProps {
   message: Message;
   isLatest?: boolean;
 }
-
-// Typewriter effect component - only animates once when first rendered
-const TypewriterText: React.FC<{ text: string; speed?: number; shouldAnimate?: boolean }> = ({ text, speed = 20, shouldAnimate = true }) => {
-  const [displayedText, setDisplayedText] = useState(shouldAnimate ? '' : text);
-  const [currentIndex, setCurrentIndex] = useState(shouldAnimate ? 0 : text.length);
-  const [isComplete, setIsComplete] = useState(!shouldAnimate);
-  const [hasAnimated, setHasAnimated] = useState(!shouldAnimate);
-
-  useEffect(() => {
-    // Only animate if we haven't animated yet and shouldAnimate is true
-    if (!hasAnimated && shouldAnimate && currentIndex < text.length) {
-      const timeout = setTimeout(() => {
-        setDisplayedText(prev => prev + text[currentIndex]);
-        setCurrentIndex(prev => prev + 1);
-      }, speed);
-      return () => clearTimeout(timeout);
-    } else if (currentIndex >= text.length && !isComplete) {
-      setIsComplete(true);
-      setHasAnimated(true);
-    }
-  }, [currentIndex, text, speed, shouldAnimate, hasAnimated, isComplete]);
-
-  return (
-    <span className="inline">
-      {displayedText}
-      {!isComplete && (
-        <span className="inline-block w-[2px] h-4 bg-primary ml-0.5 animate-cursor-blink align-middle"></span>
-      )}
-    </span>
-  );
-};
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLatest = false }) => {
   const isUser = message.role === 'user';
@@ -167,7 +137,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLatest = fa
                 <p className="text-sm leading-7 whitespace-pre-wrap">{parseInline(message.text)}</p>
               ) : isLatest ? (
                 <div className="text-sm leading-7">
-                  <TypewriterText text={message.text} speed={15} />
+                  <StreamingText text={message.text} />
                 </div>
               ) : (
                 renderContent(message.text)

@@ -1,9 +1,11 @@
-
-
-
-import React, { useState } from 'react';
-import { Search, Moon, Sun, Bell, Coins, Menu, X, Briefcase, Flame, Layers, FolderOpen, Settings, LogOut, User as UserIcon, Sparkles } from 'lucide-react';
-import { User, AppNotification, ViewMode } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    Search, Moon, Sun, Bell, Coins, Menu, X,
+    Briefcase, Flame, Layers, FolderOpen, Settings,
+    LogOut, User as UserIcon, Sparkles,
+    CheckSquare, Users, FileText, Zap, ChevronRight, CornerDownLeft
+} from 'lucide-react';
+import { User, AppNotification, ViewMode, Task, Project, Client, FileAsset } from '../types';
 import { CountUp } from './common/AnimatedComponents';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +35,21 @@ interface TopBarProps {
     onNavigate?: (view: ViewMode) => void;
     currentView?: ViewMode;
     onOpenAI?: () => void;
+    tasks?: Task[];
+    projects?: Project[];
+    clients?: Client[];
+    files?: FileAsset[];
 }
+
+type SearchResult = {
+    id: string;
+    type: 'TASK' | 'PROJECT' | 'CLIENT' | 'FILE' | 'ACTION';
+    title: string;
+    subtitle: string;
+    icon: React.ReactNode;
+    view?: ViewMode;
+    action?: () => void;
+};
 
 export const TopBar: React.FC<TopBarProps> = ({
     user,
@@ -46,10 +62,31 @@ export const TopBar: React.FC<TopBarProps> = ({
     onTeamInviteResponse,
     onNavigate,
     currentView,
-    onOpenAI
+    onOpenAI,
+    tasks,
+    projects,
+    clients,
+    files
 }) => {
-    const unreadCount = notifications.filter(n => !n.read).length;
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Command + K listener
+    useEffect(() => {
+        const handleDown = (e: KeyboardEvent) => {
+            if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
+
+        document.addEventListener("keydown", handleDown);
+        return () => document.removeEventListener("keydown", handleDown);
+    }, []);
 
     const mobileMenuItems = [
         { id: 'MANAGER' as ViewMode, label: 'Manager', icon: <Briefcase size={20} /> },
@@ -58,6 +95,119 @@ export const TopBar: React.FC<TopBarProps> = ({
         { id: 'FILES' as ViewMode, label: 'Files', icon: <FolderOpen size={20} /> },
         { id: 'SETTINGS' as ViewMode, label: 'Settings', icon: <Settings size={20} /> },
     ];
+
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        if (query.length < 2) {
+            setSearchResults([]);
+            setSelectedIndex(-1);
+            return;
+        }
+
+        const q = query.toLowerCase();
+        const results: SearchResult[] = [];
+
+        // Search Tasks
+        tasks?.filter(t => t.title.toLowerCase().includes(q)).slice(0, 3).forEach(t => {
+            results.push({
+                id: `task-${t.id}`,
+                type: 'TASK',
+                title: t.title,
+                subtitle: t.category || 'Task',
+                icon: <CheckSquare size={14} className="text-blue-500" />,
+                view: 'WORK'
+            });
+        });
+
+        // Search Projects
+        projects?.filter(p => p.title.toLowerCase().includes(q)).slice(0, 3).forEach(p => {
+            results.push({
+                id: `project-${p.id}`,
+                type: 'PROJECT',
+                title: p.title,
+                subtitle: `Project: ${p.status}`,
+                icon: <Briefcase size={14} className="text-purple-500" />,
+                view: 'WORK'
+            });
+        });
+
+        // Search Clients
+        clients?.filter(c => c.name.toLowerCase().includes(q)).slice(0, 3).forEach(c => {
+            results.push({
+                id: `client-${c.id}`,
+                type: 'CLIENT',
+                title: c.name,
+                subtitle: `Client: ${c.status}`,
+                icon: <Users size={14} className="text-orange-500" />,
+                view: 'CLIENTS'
+            });
+        });
+
+        // Search Files
+        files?.filter(f => f.name.toLowerCase().includes(q)).slice(0, 3).forEach(f => {
+            results.push({
+                id: `file-${f.id}`,
+                type: 'FILE',
+                title: f.name,
+                subtitle: `File: ${f.type}`,
+                icon: <FileText size={14} className="text-emerald-500" />,
+                view: 'FILES'
+            });
+        });
+
+        // Smart Actions
+        if ('settings'.includes(q)) {
+            results.push({
+                id: 'action-settings',
+                type: 'ACTION',
+                title: 'Open Settings',
+                subtitle: 'Customize preferences',
+                icon: <Settings size={14} className="text-muted-foreground" />,
+                view: 'SETTINGS'
+            });
+        }
+        if ('dark mode'.includes(q) || 'light mode'.includes(q) || 'theme'.includes(q)) {
+            results.push({
+                id: 'action-theme',
+                type: 'ACTION',
+                title: 'Toggle Theme',
+                subtitle: 'Switch light/dark/uber',
+                icon: <Sparkles size={14} className="text-primary" />,
+                action: onToggleTheme
+            });
+        }
+
+        setSearchResults(results);
+        setSelectedIndex(results.length > 0 ? 0 : -1);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!isSearchFocused || searchResults.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSelectedIndex(prev => (prev < searchResults.length - 1 ? prev + 1 : prev));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+            e.preventDefault();
+            handleSelectResult(searchResults[selectedIndex]);
+        } else if (e.key === 'Escape') {
+            setIsSearchFocused(false);
+        }
+    };
+
+    const handleSelectResult = (result: SearchResult) => {
+        if (result.action) {
+            result.action();
+        } else if (result.view && onNavigate) {
+            onNavigate(result.view);
+        }
+        setSearchQuery('');
+        setSearchResults([]);
+        setIsSearchFocused(false);
+    };
 
     return (
         <TooltipProvider delayDuration={300}>
@@ -81,16 +231,125 @@ export const TopBar: React.FC<TopBarProps> = ({
                         </TooltipContent>
                     </Tooltip>
 
-                    {/* Search Bar */}
-                    <div className="flex-1 max-w-xl">
+                    <div className="flex-1 max-w-xl relative">
                         <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={16} />
+                            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${isSearchFocused ? 'text-primary' : 'text-muted-foreground'}`} size={16} />
                             <input
+                                ref={searchInputRef}
                                 type="text"
-                                placeholder="Search tasks, projects, or assets..."
-                                className="w-full h-10 bg-secondary/50 rounded-xl pl-10 pr-4 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background transition-all placeholder:text-muted-foreground border border-transparent focus:border-border"
+                                value={searchQuery}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                onFocus={() => setIsSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Search tasks, projects, or use '⌘K'..."
+                                className="w-full h-10 bg-secondary/50 rounded-xl pl-10 pr-12 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background transition-all placeholder:text-muted-foreground border border-transparent focus:border-border"
                             />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                {searchQuery ? (
+                                    <button
+                                        onClick={() => handleSearch('')}
+                                        className="text-muted-foreground hover:text-foreground"
+                                        title="Clear search"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                ) : (
+                                    <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded border border-border bg-muted/50 text-[10px] font-bold text-muted-foreground opacity-50">
+                                        <span>⌘</span>
+                                        <span>K</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
+
+                        {/* Search Results Dropdown */}
+                        {isSearchFocused && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="p-2 max-h-[400px] overflow-y-auto scrollbar-hide">
+                                    {searchQuery.length < 2 ? (
+                                        <div className="py-2">
+                                            <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-secondary/30 rounded-lg mb-1 mx-1">
+                                                Quick Navigation
+                                            </div>
+                                            {[
+                                                { id: 'nav-hq', type: 'ACTION', title: 'Dashboard', subtitle: 'View system oversight', icon: <Layers size={14} />, view: 'HQ' as ViewMode },
+                                                { id: 'nav-work', type: 'ACTION', title: 'Projects & Tasks', subtitle: 'Manage your workload', icon: <Briefcase size={14} />, view: 'WORK' as ViewMode },
+                                                { id: 'nav-money', type: 'ACTION', title: 'Financials', subtitle: 'Track revenue and costs', icon: <Coins size={14} />, view: 'MONEY' as ViewMode },
+                                                { id: 'nav-files', type: 'ACTION', title: 'Asset Manager', subtitle: 'Access files and folders', icon: <FolderOpen size={14} />, view: 'FILES' as ViewMode },
+                                            ].map((action, idx) => (
+                                                <div
+                                                    key={action.id}
+                                                    onClick={() => handleSelectResult(action as SearchResult)}
+                                                    onMouseEnter={() => setSelectedIndex(idx)}
+                                                    className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${idx === selectedIndex ? 'bg-primary/10 border-primary/20' : 'hover:bg-secondary/50 border-transparent'} border mx-1`}
+                                                >
+                                                    <div className={`p-2 rounded-lg ${idx === selectedIndex ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                                                        {action.icon}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className={`text-sm font-bold ${idx === selectedIndex ? 'text-primary' : 'text-foreground'}`}>{action.title}</p>
+                                                        <p className="text-[10px] text-muted-foreground">{action.subtitle}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : searchResults.length > 0 ? (
+                                        searchResults.map((result, index) => (
+                                            <div
+                                                key={result.id}
+                                                onClick={() => handleSelectResult(result)}
+                                                onMouseEnter={() => setSelectedIndex(index)}
+                                                className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${index === selectedIndex ? 'bg-primary/10 border-primary/20 shadow-sm' : 'hover:bg-secondary/50 border-transparent'} border mb-1 mx-1`}
+                                            >
+                                                <div className={`p-2 rounded-lg ${index === selectedIndex ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                                                    {result.icon}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={`text-sm font-bold truncate ${index === selectedIndex ? 'text-primary' : 'text-foreground'}`}>
+                                                        {result.title}
+                                                    </p>
+                                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                                                        {result.subtitle}
+                                                    </p>
+                                                </div>
+                                                {index === selectedIndex && (
+                                                    <div className="flex items-center gap-1.5 opacity-60">
+                                                        <CornerDownLeft size={10} strokeWidth={3} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="py-12 flex flex-col items-center justify-center text-center px-4">
+                                            <div className="w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center text-muted-foreground mb-4">
+                                                <Search size={24} />
+                                            </div>
+                                            <p className="text-sm font-bold text-foreground mb-1">No matches found</p>
+                                            <p className="text-xs text-muted-foreground">Try searching for tasks, projects, or settings.</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-2.5 bg-secondary/30 border-t border-border flex items-center justify-between">
+                                    <div className="flex gap-4">
+                                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                                            <div className="flex bg-background rounded border border-border shadow-sm divide-x divide-border">
+                                                <div className="p-0.5"><ChevronRight size={10} className="rotate-90" /></div>
+                                                <div className="p-0.5"><ChevronRight size={10} className="-rotate-90" /></div>
+                                            </div>
+                                            Select
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                                            <div className="px-1 py-0.5 bg-background rounded border border-border shadow-sm">Esc</div>
+                                            Close
+                                        </div>
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground/60 font-medium italic">
+                                        {searchQuery.length < 2 ? 'Quick navigation menu' : `Found ${searchResults.length} smart matches`}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Actions */}
@@ -226,6 +485,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                                                                     e.stopPropagation();
                                                                     onTeamInviteResponse(n.actionData!.teamId, true, n.id);
                                                                 }}
+                                                                title="Accept invitation"
                                                                 className="flex-1 px-3 py-1.5 text-[10px] font-bold bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
                                                             >
                                                                 Accept
@@ -235,6 +495,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                                                                     e.stopPropagation();
                                                                     onTeamInviteResponse(n.actionData!.teamId, false, n.id);
                                                                 }}
+                                                                title="Decline invitation"
                                                                 className="flex-1 px-3 py-1.5 text-[10px] font-bold bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors border border-border"
                                                             >
                                                                 Decline

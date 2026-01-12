@@ -14,7 +14,12 @@ export default async function handler(req: any, res: any) {
         const apiKey = process.env.VITE_GEMINI_API_KEY;
 
         if (!apiKey) {
-            return res.status(500).json({ error: 'API key not configured' });
+            console.error('VITE_GEMINI_API_KEY environment variable is not set');
+            return res.status(500).json({
+                error: 'API key not configured',
+                details: 'VITE_GEMINI_API_KEY environment variable is missing. Please configure it in Vercel dashboard under Settings → Environment Variables.',
+                diagnostic: 'MISSING_API_KEY'
+            });
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
@@ -62,9 +67,17 @@ export default async function handler(req: any, res: any) {
 
     } catch (error: any) {
         console.error('Gemini API Error:', error);
+
+        // Determine if it's an API key issue
+        const isApiKeyError = error.message?.includes('API_KEY') || error.message?.includes('API key');
+
         return res.status(500).json({
             error: 'Failed to generate response',
-            details: error.message
+            details: error.message || 'Unknown error occurred',
+            diagnostic: isApiKeyError ? 'INVALID_API_KEY' : 'GENERATION_ERROR',
+            suggestion: isApiKeyError
+                ? 'Verify that your Gemini API key is valid and has the correct permissions.'
+                : 'The AI model encountered an error. Please try again or contact support.'
         });
     }
 }

@@ -54,14 +54,39 @@ export const sendMessageToGeminiProxy = async (
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to get AI response');
+            const errorMessage = error.details || error.error || 'Failed to get AI response';
+            const diagnostic = error.diagnostic || 'UNKNOWN_ERROR';
+
+            // Log detailed error for debugging
+            console.error('Gemini API Error:', {
+                status: response.status,
+                diagnostic,
+                message: errorMessage,
+                suggestion: error.suggestion
+            });
+
+            // Provide user-friendly error message
+            let userMessage = errorMessage;
+            if (diagnostic === 'MISSING_API_KEY') {
+                userMessage = '🔑 AI service not configured. The API key is missing from the server. Please contact support.';
+            } else if (diagnostic === 'INVALID_API_KEY') {
+                userMessage = '⚠️ AI service authentication failed. The API key may be invalid or expired.';
+            }
+
+            throw new Error(userMessage);
         }
 
         const data = await response.json();
         return data;
     } catch (error: any) {
+        // If it's our formatted error, re-throw it
+        if (error.message?.includes('🔑') || error.message?.includes('⚠️')) {
+            throw error;
+        }
+
+        // Generic network or parsing error
         console.error('Gemini Proxy Error:', error);
-        throw new Error(error.message || 'Failed to communicate with AI service');
+        throw new Error(`❌ Unable to reach AI service: ${error.message || 'Network error'}`);
     }
 };
 
@@ -86,14 +111,16 @@ export const analyzeVideoConceptProxy = async (concept: string): Promise<string>
         });
 
         if (!response.ok) {
-            throw new Error('Failed to analyze video concept');
+            const error = await response.json();
+            console.error('Video Analysis Error:', error);
+            throw new Error(error.details || error.error || 'Failed to analyze video concept');
         }
 
         const data = await response.json();
         return data.text;
     } catch (error: any) {
         console.error('Video Analysis Error:', error);
-        throw error;
+        throw new Error(`Failed to analyze video: ${error.message || 'Unknown error'}`);
     }
 };
 

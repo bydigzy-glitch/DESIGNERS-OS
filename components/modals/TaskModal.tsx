@@ -151,11 +151,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
               <h2 className="text-xl font-bold text-foreground">{initialTask ? 'Edit Task' : 'New Task'}</h2>
               <div className="flex items-center gap-2">
                 {initialTask && onDelete && (
-                  <button onClick={() => { onDelete(initialTask.id); onClose(); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
+                  <button
+                    onClick={() => { onDelete(initialTask.id); onClose(); }}
+                    className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
+                    title="Delete task"
+                    aria-label="Delete task"
+                  >
                     <Trash2 size={18} />
                   </button>
                 )}
-                <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-colors">
+                <button
+                  onClick={onClose}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-colors"
+                  title="Close"
+                  aria-label="Close modal"
+                >
                   <X size={20} />
                 </button>
               </div>
@@ -182,6 +192,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
                       className="w-full bg-secondary border border-border rounded-xl p-3 text-foreground focus:outline-none focus:border-primary pl-10 text-sm transition-colors"
+                      title="Due Date"
+                      aria-label="Due Date"
                     />
                     <CalendarIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                   </div>
@@ -192,12 +204,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     <select
                       value={priority}
                       onChange={(e) => setPriority(e.target.value as any)}
+                      title="Select Priority"
+                      aria-label="Select Priority"
                       className={`w-full bg-secondary border border-border rounded-xl p-3 text-sm focus:outline-none focus:border-primary appearance-none font-bold transition-colors ${priority === 'HIGH' ? 'text-red-400' : priority === 'MEDIUM' ? 'text-orange-400' : 'text-blue-400'
                         }`}
                     >
-                      <option value="HIGH">High</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="LOW">Low</option>
+                      <option value="HIGH">High Priority</option>
+                      <option value="MEDIUM">Medium Priority</option>
+                      <option value="LOW">Low Priority</option>
                     </select>
                     {/* Custom Arrow */}
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
@@ -215,6 +229,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     <select
                       value={assignedTo}
                       onChange={(e) => setAssignedTo(e.target.value)}
+                      title="Assign Task to member"
+                      aria-label="Assign Task to member"
                       className="w-full bg-secondary border border-border rounded-xl p-3 text-foreground focus:outline-none focus:border-primary appearance-none pl-10 text-sm transition-colors"
                     >
                       <option value="">Unassigned</option>
@@ -236,6 +252,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                   <select
                     value={projectId}
                     onChange={(e) => setProjectId(e.target.value)}
+                    title="Select Project"
+                    aria-label="Select Project"
                     className="w-full bg-secondary border border-border rounded-xl p-3 text-foreground focus:outline-none focus:border-primary appearance-none text-sm transition-colors"
                   >
                     <option value="">No Project</option>
@@ -289,9 +307,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                   {['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'].map(c => (
                     <button
                       key={c}
+                      type="button"
                       onClick={() => setColor(c)}
                       className={`w-8 h-8 rounded-full border-2 transition-transform ${color === c ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
                       style={{ backgroundColor: c }}
+                      title={`Select ${c} color`}
+                      aria-label={`Select ${c} color`}
                     />
                   ))}
                 </div>

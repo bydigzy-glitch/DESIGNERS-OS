@@ -142,8 +142,8 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
             <FadeIn>
                 <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">Calendar</h1>
-                        <p className="text-sm text-muted-foreground mt-1">Plan your speed, visualize your work</p>
+                        <h1 className="text-h1 tracking-tight">Calendar</h1>
+                        <p className="text-caption text-muted-foreground mt-1">Plan your speed, visualize your work</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="flex p-1 bg-secondary rounded-xl border border-border">
@@ -151,7 +151,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 variant={view === 'CALENDAR' ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setView('CALENDAR')}
-                                className="gap-2 text-xs font-bold"
+                                className="gap-2 text-overline"
                             >
                                 <CalendarIcon size={14} /> Calendar
                             </Button>
@@ -159,7 +159,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 variant={view === 'KANBAN' ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setView('KANBAN')}
-                                className="gap-2 text-xs font-bold"
+                                className="gap-2 text-overline"
                             >
                                 <Trello size={14} /> Kanban
                             </Button>
@@ -181,7 +181,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                     <Button variant="ghost" size="icon" onClick={() => navigateWeek('prev')} className="h-8 w-8">
                                         <ChevronLeft size={16} />
                                     </Button>
-                                    <span className="text-xs font-black uppercase tracking-widest min-w-[120px] text-center">
+                                    <span className="text-overline min-w-[120px] text-center">
                                         Week of {currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                     </span>
                                     <Button variant="ghost" size="icon" onClick={() => navigateWeek('next')} className="h-8 w-8">
@@ -190,7 +190,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 </div>
 
                                 <div className="hidden sm:block w-48">
-                                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter mb-1">
+                                    <div className="flex justify-between text-overline mb-1">
                                         <span className="text-muted-foreground">Load</span>
                                         <span className={weeklyStats.totalHours > MAX_HEALTHY_HOURS ? 'text-red-500' : 'text-primary'}>
                                             {weeklyStats.totalHours}h / {MAX_HEALTHY_HOURS}h
@@ -207,7 +207,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 </div>
                                 <div className={`flex items-center gap-2 px-4 py-1.5 rounded-lg ${getBurnoutColor(weeklyStats.burnoutRisk)} border border-current/10`}>
                                     {weeklyStats.burnoutRisk === 'HIGH' ? <Flame size={14} /> : weeklyStats.burnoutRisk === 'MEDIUM' ? <AlertTriangle size={14} /> : <Shield size={14} />}
-                                    <span className="text-xs font-bold uppercase tracking-tight">
+                                    <span className="text-overline">
                                         {weeklyStats.burnoutRisk === 'HIGH' ? 'Burnout Risk' : weeklyStats.burnoutRisk === 'MEDIUM' ? 'Heavy Load' : 'Healthy Load'}
                                     </span>
                                 </div>
@@ -229,7 +229,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                         {/* Interactive Calendar */}
                         <Card className="lg:col-span-1 border border-border shadow-soft overflow-hidden">
                             <CardHeader className="bg-secondary/20 pb-4 border-b border-border">
-                                <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">Select Date</CardTitle>
+                                <CardTitle className="text-overline text-muted-foreground">Select Date</CardTitle>
                             </CardHeader>
                             <CardContent className="p-4">
                                 <ShadcnCalendar
@@ -250,10 +250,10 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                         {/* Day Schedule with Colour-Coded Cards */}
                         <Card className="lg:col-span-2 border border-border shadow-soft flex flex-col min-h-[500px]">
                             <CardHeader className="bg-secondary/20 pb-4 border-b border-border flex flex-row items-center justify-between">
-                                <CardTitle className="text-lg font-bold">
+                                <CardTitle className="text-h3">
                                     {selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                                 </CardTitle>
-                                <Badge variant="secondary" className="font-bold">{selectedDateTasks.length} Blocks</Badge>
+                                <Badge variant="secondary" className="text-overline">{selectedDateTasks.length} Blocks</Badge>
                             </CardHeader>
                             <CardContent className="flex-1 overflow-y-auto p-4">
                                 {selectedDateTasks.length === 0 ? (
@@ -275,10 +275,10 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                                     style={{ backgroundColor: task.color || 'var(--primary)' }}
                                                 />
                                                 <div className="flex flex-col items-center min-w-[60px] pt-1">
-                                                    <span className="text-sm font-black text-foreground">
+                                                    <span className="text-body-emphasis">
                                                         {new Date(task.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                                                     </span>
-                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground">{task.duration}m</span>
+                                                    <span className="text-overline text-muted-foreground">{task.duration}m</span>
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
@@ -317,9 +317,9 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 <div className="p-4 border-b border-border bg-card/50 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className={`w-2 h-2 rounded-full ${column.color.replace('text', 'bg')}`} />
-                                        <span className="text-xs font-black uppercase tracking-widest">{column.label}</span>
+                                        <span className="text-overline">{column.label}</span>
                                     </div>
-                                    <Badge variant="secondary" className="text-[10px]">{kanbanTasks[column.id]?.length || 0}</Badge>
+                                    <Badge variant="secondary" className="text-overline px-1.5">{kanbanTasks[column.id]?.length || 0}</Badge>
                                 </div>
                                 <ScrollArea className="flex-1 p-3">
                                     <div className="space-y-3">

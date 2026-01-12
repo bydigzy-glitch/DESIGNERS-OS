@@ -114,7 +114,12 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
         <FadeIn className="flex flex-col h-full w-full overflow-y-auto scrollbar-hide pb-20">
 
             <div className="flex items-center gap-4 mb-8 shrink-0">
-                <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-text-secondary hover:text-white transition-colors">
+                <button
+                    onClick={onClose}
+                    className="p-2 hover:bg-white/5 rounded-full text-text-secondary hover:text-white transition-colors"
+                    title="Go back"
+                    aria-label="Go back"
+                >
                     <ArrowLeft size={24} />
                 </button>
                 <h1 className="text-4xl font-bold text-white">Settings</h1>
@@ -124,12 +129,20 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                 <div className="flex items-center gap-6 mb-10">
                     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                         <div className="w-24 h-24 rounded-3xl bg-surface-highlight overflow-hidden border border-white/10 shadow-glow">
-                            <img src={user.avatar} className="w-full h-full object-cover" />
+                            <img src={user.avatar} alt={user.name || "User profile"} title={user.name || "User profile"} className="w-full h-full object-cover" />
                         </div>
                         <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <Upload size={24} className="text-white" />
                         </div>
-                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleAvatarUpload}
+                            title="Upload Avatar"
+                            aria-label="Upload Avatar"
+                        />
                     </div>
 
                     <div className="flex-1">
@@ -188,6 +201,8 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                         <button
                             onClick={handleToggleNotifications}
                             className={`w-12 h-6 rounded-full p-1 transition-colors ${notificationsEnabled ? 'bg-primary' : 'bg-muted'}`}
+                            title={notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
+                            aria-label={notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
                         >
                             <div className={`w-4 h-4 bg-white rounded-full transition-transform ${notificationsEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
                         </button>
@@ -251,6 +266,8 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                                             onClick={() => moveItem(index, 'up')}
                                             disabled={index === 0}
                                             className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"
+                                            title="Move item up"
+                                            aria-label="Move item up"
                                         >
                                             <ChevronUp size={16} />
                                         </button>
@@ -258,6 +275,8 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                                             onClick={() => moveItem(index, 'down')}
                                             disabled={index === navOrder.length - 1}
                                             className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"
+                                            title="Move item down"
+                                            aria-label="Move item down"
                                         >
                                             <ChevronDown size={16} />
                                         </button>

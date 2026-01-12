@@ -148,10 +148,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                 <FadeIn>
                     <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                            <h1 className="text-h1 tracking-tight">
                                 Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {firstName}
                             </h1>
-                            <p className="text-muted-foreground mt-1">
+                            <p className="text-caption text-muted-foreground mt-1">
                                 {todaysFocus.length === 0
                                     ? "You're all caught up. The system is handling things."
                                     : `${todaysFocus.length} item${todaysFocus.length > 1 ? 's' : ''} need${todaysFocus.length === 1 ? 's' : ''} your attention.`
@@ -168,9 +168,9 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                                 <Zap size={16} />
                                 <span className="hidden md:inline">New Intake</span>
                             </Button>
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border text-xs font-medium ${modeConfig.color}`}>
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border text-overline ${modeConfig.color}`}>
                                 {modeConfig.icon}
-                                <span>Mode: {modeConfig.label}</span>
+                                <span>{modeConfig.label} Mode</span>
                             </div>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -195,10 +195,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                 <FadeIn delay={0.1}>
                     <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-lg flex items-center gap-2">
+                            <CardTitle className="text-h3 flex items-center gap-2">
                                 <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                                 Today's Focus
-                                <span className="text-xs text-muted-foreground font-normal ml-2">(max 3 auto-selected)</span>
+                                <span className="text-overline text-muted-foreground ml-2">(max 3 auto-selected)</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -224,10 +224,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                                                             {idx + 1}
                                                         </div>
                                                         <div>
-                                                            <div className="font-medium text-foreground group-hover:text-primary transition-colors">
+                                                            <div className="text-body-emphasis">
                                                                 {task.title}
                                                             </div>
-                                                            <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                                                            <div className="text-overline text-muted-foreground flex items-center gap-2 mt-0.5">
                                                                 <Clock size={10} />
                                                                 {item.type === 'OVERDUE' ? (
                                                                     <span className="text-red-500">Overdue</span>
@@ -235,7 +235,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                                                                     new Date(task.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                                                 )}
                                                                 {task.priority && (
-                                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                                                    <Badge variant="outline" className="text-overline px-1.5 py-0">
                                                                         {task.priority}
                                                                     </Badge>
                                                                 )}
@@ -258,8 +258,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                                                             <AlertCircle size={20} />
                                                         </div>
                                                         <div>
-                                                            <div className="font-medium text-foreground">{approval.title}</div>
-                                                            <div className="text-xs text-muted-foreground mt-0.5">Needs your decision</div>
+                                                            <div className="text-body-emphasis">{approval.title}</div>
+                                                            <div className="text-overline text-muted-foreground mt-0.5">Needs your decision</div>
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-2">
@@ -286,8 +286,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                                                             {SEVERITY_ICONS[risk.severity]}
                                                         </div>
                                                         <div>
-                                                            <div className="font-medium text-foreground">{risk.title}</div>
-                                                            <div className="text-xs text-muted-foreground mt-0.5">{risk.message}</div>
+                                                            <div className="text-body-emphasis">{risk.title}</div>
+                                                            <div className="text-overline text-muted-foreground mt-0.5">{risk.message}</div>
                                                         </div>
                                                     </div>
                                                     <Button size="sm" variant="ghost" onClick={() => onAcknowledgeRisk(risk)}>
@@ -315,10 +315,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                                     <Calendar size={18} />
                                 </div>
                                 <div>
-                                    <div className="text-2xl font-bold text-foreground">
+                                    <div className="text-h2">
                                         {tasks.filter(t => !t.completed && new Date(t.date).toDateString() === new Date().toDateString()).length}
                                     </div>
-                                    <div className="text-xs text-muted-foreground">Tasks Today</div>
+                                    <div className="text-overline text-muted-foreground">Tasks Today</div>
                                 </div>
                             </div>
                         </Card>

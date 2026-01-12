@@ -199,7 +199,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                     <span className="text-xs font-medium text-muted-foreground">{stats.usagePercent.toFixed(0)}%</span>
                 </div>
                 <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden mb-4">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${stats.usagePercent}%` }}></div>
+                    <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${stats.usagePercent}%` }}></div>
                 </div>
                 <button className="w-full py-3 bg-primary text-primary-foreground font-bold text-sm rounded-xl shadow-glow hover:bg-primary/90 transition-colors">
                     Upgrade Plan
@@ -236,7 +236,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                             >
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-lg font-bold">Menu</h2>
-                                    <button onClick={() => setIsMobileMenuOpen(false)}><X size={20} /></button>
+                                    <button onClick={() => setIsMobileMenuOpen(false)} title="Close menu" aria-label="Close menu">
+                                        <X size={20} />
+                                    </button>
                                 </div>
                                 <SidebarContent />
                             </motion.div>
@@ -251,7 +253,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                     <div className="h-auto min-h-[80px] border-b border-border flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:px-8 bg-card/50 backdrop-blur-xl sticky top-0 z-20 gap-4">
                         <div className="flex items-center gap-3 w-full md:w-auto justify-between">
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 hover:bg-secondary rounded-lg xl:hidden">
+                                <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 hover:bg-secondary rounded-lg xl:hidden" title="Open menu" aria-label="Open menu">
                                     <Menu size={20} />
                                 </button>
                                 <h2 className="text-xl font-bold text-foreground truncate">
@@ -260,9 +262,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                             activeSection === 'FAVORITES' ? 'Favorites' : 'Trash'}
                                 </h2>
                             </div>
-                            <label className="flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold shadow-glow md:hidden">
+                            <label className="flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold shadow-glow md:hidden cursor-pointer" title="Upload files" aria-label="Upload files">
                                 <UploadCloud size={14} />
-                                <input type="file" multiple className="hidden" onChange={handleFileUpload} />
+                                <input type="file" multiple className="hidden" onChange={handleFileUpload} title="File upload" aria-label="File upload" />
                             </label>
                         </div>
 
@@ -300,7 +302,12 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <button className="p-2 hover:bg-secondary rounded-lg text-muted-foreground transition-colors hidden sm:block" onClick={() => setViewMode(viewMode === 'LIST' ? 'GRID' : 'LIST')}>
+                                        <button
+                                            className="p-2 hover:bg-secondary rounded-lg text-muted-foreground transition-colors hidden sm:block"
+                                            onClick={() => setViewMode(viewMode === 'LIST' ? 'GRID' : 'LIST')}
+                                            title={`Switch to ${viewMode === 'LIST' ? 'grid' : 'list'} view`}
+                                            aria-label={`Switch to ${viewMode === 'LIST' ? 'grid' : 'list'} view`}
+                                        >
                                             {viewMode === 'LIST' ? <LayoutGrid size={18} /> : <List size={18} />}
                                         </button>
                                     </TooltipTrigger>
@@ -312,9 +319,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
 
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <label className="hidden md:flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-bold shadow-glow hover:bg-primary/90 transition-colors cursor-pointer active:scale-95">
+                                    <label className="hidden md:flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-bold shadow-glow hover:bg-primary/90 transition-colors cursor-pointer active:scale-95" title="Upload files" aria-label="Upload files">
                                         <UploadCloud size={16} /> <span>Upload</span>
-                                        <input type="file" multiple className="hidden" onChange={handleFileUpload} />
+                                        <input type="file" multiple className="hidden" onChange={handleFileUpload} title="File upload" aria-label="File upload" />
                                     </label>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -351,13 +358,13 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                                 <div className={`p-3 rounded-xl bg-background border border-border shadow-sm`}>
                                                     {stat.icon}
                                                 </div>
-                                                <button className="text-muted-foreground hover:text-foreground"><MoreVertical size={16} /></button>
+                                                <button className="text-muted-foreground hover:text-foreground" title="More options" aria-label="More options"><MoreVertical size={16} /></button>
                                             </div>
                                             <h4 className="text-lg font-bold text-foreground capitalize mb-1">{key}</h4>
                                             <p className="text-xs text-muted-foreground font-medium mb-4">{stat.count} items</p>
 
                                             <div className="w-full h-1.5 bg-background rounded-full overflow-hidden mb-2">
-                                                <div className={`h-full rounded-full ${stat.color} w-[30%]`}></div>
+                                                <div className={`h-full rounded-full ${stat.color} transition-all duration-500 w-[30%]`}></div>
                                             </div>
                                             <div className="text-xs font-bold text-muted-foreground">
                                                 <span className="text-foreground">{stat.size}</span> used
@@ -377,14 +384,14 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                         <div key={file.id} className="bg-secondary/30 border border-border rounded-2xl p-4 hover:border-primary/30 transition-all duration-200 group cursor-pointer">
                                             <div className="flex justify-between items-start mb-3">
                                                 {getFileIcon(file)}
-                                                <button className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"><MoreHorizontal size={16} /></button>
+                                                <button className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity" title="More options" aria-label="More options"><MoreHorizontal size={16} /></button>
                                             </div>
                                             <h4 className="text-sm font-bold text-foreground truncate mb-1" title={file.name}>{file.name}</h4>
 
                                             {/* Preview if image */}
                                             {file.type === 'IMAGE' && file.url ? (
                                                 <div className="h-24 w-full rounded-lg overflow-hidden mt-2 bg-black/20">
-                                                    <img src={file.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                    <img src={file.url} alt={file.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                                 </div>
                                             ) : (
                                                 <div className="h-24 w-full rounded-lg overflow-hidden mt-2 bg-background border border-border flex items-center justify-center p-4">
@@ -415,7 +422,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                     <table className="w-full text-left text-sm min-w-[600px]">
                                         <thead className="bg-secondary/30 text-muted-foreground font-bold text-xs uppercase tracking-wider">
                                             <tr>
-                                                <th className="px-4 md:px-6 py-4 w-10"><input type="checkbox" className="rounded bg-background border-border" /></th>
+                                                <th className="px-4 md:px-6 py-4 w-10"><input type="checkbox" className="rounded bg-background border-border" title="Select all files" aria-label="Select all files" /></th>
                                                 <th className="px-4 md:px-6 py-4">Name</th>
                                                 <th className="px-4 md:px-6 py-4 hidden sm:table-cell">Size</th>
                                                 <th className="px-4 md:px-6 py-4 hidden md:table-cell">Shared</th>
@@ -426,7 +433,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                         <tbody className="divide-y divide-border">
                                             {displayFiles.map(file => (
                                                 <tr key={file.id} className="group hover:bg-secondary/30 transition-colors">
-                                                    <td className="px-4 md:px-6 py-4"><input type="checkbox" className="rounded bg-background border-border" /></td>
+                                                    <td className="px-4 md:px-6 py-4"><input type="checkbox" className="rounded bg-background border-border" title={`Select ${file.name}`} aria-label={`Select ${file.name}`} /></td>
                                                     <td className="px-4 md:px-6 py-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className="p-2 rounded bg-background border border-border flex-shrink-0">{getFileIcon(file)}</div>
@@ -513,7 +520,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                         <div key={file.id} className="bg-secondary/30 border border-border rounded-xl p-4 hover:border-primary/30 transition-all duration-200 group relative">
                                             <div className="aspect-square bg-background rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
                                                 {file.type === 'IMAGE' && file.url ? (
-                                                    <img src={file.url} className="w-full h-full object-cover" />
+                                                    <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
                                                 ) : (
                                                     getFileIcon(file)
                                                 )}
@@ -521,9 +528,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                                 {/* Hover Actions Overlay */}
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                     {activeSection === 'TRASH' ? (
-                                                        <button onClick={(e) => restoreFromTrash(file.id, e)} className="p-2 bg-white/20 hover:bg-white/40 rounded-full text-white"><RotateCcw size={16} /></button>
+                                                        <button onClick={(e) => restoreFromTrash(file.id, e)} className="p-2 bg-white/20 hover:bg-white/40 rounded-full text-white" title="Restore" aria-label="Restore file"><RotateCcw size={16} /></button>
                                                     ) : (
-                                                        <button onClick={(e) => moveToTrash(file.id, e)} className="p-2 bg-white/20 hover:bg-red-500/80 rounded-full text-white"><Trash2 size={16} /></button>
+                                                        <button onClick={(e) => moveToTrash(file.id, e)} className="p-2 bg-white/20 hover:bg-red-500/80 rounded-full text-white" title="Move to trash" aria-label="Move to trash"><Trash2 size={16} /></button>
                                                     )}
                                                 </div>
                                             </div>

@@ -108,8 +108,8 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <Hexagon size={20} className="text-white" strokeWidth={3} />
               </div>
               <div>
-                <span className="block text-sm font-bold text-foreground tracking-tight leading-none mb-1">Designers Hub</span>
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest leading-none">V2.0.0</span>
+                <span className="block text-body-emphasis leading-none mb-1">Designers Hub</span>
+                <span className="text-overline opacity-40 leading-none">V2.0.0</span>
               </div>
             </div>
           </div>
@@ -120,11 +120,11 @@ export const Navigation: React.FC<NavigationProps> = ({
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-between text-xs h-9 border-dashed"
+                  className="w-full justify-between text-overline h-9 border-dashed"
                 >
                   <span className="flex items-center gap-2">
                     <span className={modeConfig.color}>{modeConfig.icon}</span>
-                    <span>Mode: {modeConfig.label}</span>
+                    <span>{modeConfig.label} Mode</span>
                   </span>
                 </Button>
               </DropdownMenuTrigger>
@@ -140,8 +140,8 @@ export const Navigation: React.FC<NavigationProps> = ({
                     <div className="flex items-center gap-2 w-full">
                       <span className={config.color}>{config.icon}</span>
                       <div className="flex-1">
-                        <div className="text-sm font-medium">{config.label}</div>
-                        <div className="text-[10px] text-muted-foreground">{config.description}</div>
+                        <div className="text-body-emphasis">{config.label}</div>
+                        <div className="text-overline text-muted-foreground">{config.description}</div>
                       </div>
                       {autopilotMode === mode && <span className="text-primary">✓</span>}
                     </div>
@@ -162,10 +162,10 @@ export const Navigation: React.FC<NavigationProps> = ({
                     className="w-full justify-start gap-4 relative h-10 px-3"
                   >
                     {item.icon}
-                    <span className="text-sm font-medium">{item.label}</span>
+                    <span className="text-body-emphasis">{item.label}</span>
                     {/* Alert badge for Command Center */}
                     {item.id === 'COMMAND_CENTER' && hasAlerts && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-none animate-pulse" />
                     )}
                   </Button>
                 </TooltipTrigger>
@@ -188,7 +188,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 className="w-full justify-start gap-4 border-primary/20 hover:border-primary/40 hover:bg-primary/5 group h-10 px-3"
               >
                 <Brain size={18} className="text-primary animate-calm-pulse" />
-                <span className="text-primary font-bold text-sm tracking-wide">Ask Brain</span>
+                <span className="text-primary text-body-emphasis tracking-wide">Ask Brain</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">
@@ -206,8 +206,8 @@ export const Navigation: React.FC<NavigationProps> = ({
                   className="w-full justify-start gap-4 text-muted-foreground hover:text-foreground h-10 px-3 group"
                 >
                   <Sparkles size={18} className="group-hover:text-primary transition-colors" />
-                  <span className="text-sm font-medium">AI Actions</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">⌘K</span>
+                  <span className="text-body font-medium">AI Actions</span>
+                  <span className="ml-auto text-overline opacity-40 bg-secondary px-1.5 py-0.5 rounded">⌘K</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">
@@ -258,12 +258,12 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           <div className="pt-4 mt-2 border-t border-border">
             <div className="flex items-center gap-4 p-3 rounded-xl bg-secondary/20 border border-transparent hover:border-border transition-colors cursor-pointer group">
-              <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden ring-1 ring-border shadow-sm">
+              <div className="w-10 h-10 rounded-none bg-secondary overflow-hidden ring-1 ring-border shadow-sm">
                 <img src={user?.avatar} alt="User" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-foreground truncate">{user?.name}</div>
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest truncate">{user?.isGuest ? 'Guest Access' : 'Profile'}</div>
+                <div className="text-body-emphasis truncate">{user?.name}</div>
+                <div className="text-overline opacity-40 truncate">{user?.isGuest ? 'Guest Access' : 'Profile'}</div>
               </div>
             </div>
           </div>
@@ -279,9 +279,9 @@ export const Navigation: React.FC<NavigationProps> = ({
           className="flex flex-col items-center justify-center gap-1 h-auto py-3 relative"
         >
           <LayoutGrid size={20} />
-          <span className="text-[9px] font-bold uppercase tracking-wider">HQ</span>
+          <span className="text-overline">HQ</span>
           {hasAlerts && (
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-none animate-pulse" />
           )}
         </Button>
 
@@ -302,7 +302,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           className="flex flex-col items-center justify-center gap-1 h-auto py-3 text-primary"
         >
           <Brain size={20} />
-          <span className="text-[9px] font-bold uppercase tracking-wider">BRAIN</span>
+          <span className="text-overline">BRAIN</span>
         </Button>
 
         {/* Calendar */}
@@ -312,7 +312,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           className="flex flex-col items-center justify-center gap-1 h-auto py-3"
         >
           <Clock size={20} />
-          <span className="text-[9px] font-bold uppercase tracking-wider">CALENDAR</span>
+          <span className="text-overline">CALENDAR</span>
         </Button>
       </nav>
     </TooltipProvider >

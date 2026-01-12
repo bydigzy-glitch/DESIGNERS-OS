@@ -75,6 +75,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onUpdateTask,
                                 key={hour}
                                 className="h-[60px] border-b border-border hover:bg-secondary/30 transition-colors cursor-pointer"
                                 onClick={() => handleSlotClick(day, hour)}
+                                title={`Add task at ${hour}:00`}
+                                aria-label={`Add task at ${hour}:00 on ${day.toLocaleDateString()}`}
                             ></div>
                         ))}
 
@@ -90,6 +92,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onUpdateTask,
                                         key={task.id}
                                         onClick={(e) => handleEventClick(e, task)}
                                         className="absolute w-[90%] left-[5%] rounded-xl p-2 text-xs font-bold text-white shadow-lg cursor-pointer hover:brightness-110 hover:scale-[1.02] transition-all z-10 overflow-hidden"
+                                        title={`${task.title} (${task.duration}m)`}
+                                        aria-label={`${task.title} starting at ${new Date(task.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                                         style={{
                                             top: `${topPos}px`,
                                             height: `${Math.max(durationHeight, 30)}px`,
@@ -110,15 +114,25 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onUpdateTask,
         <div className="flex flex-col h-full w-full overflow-hidden">
             <div className="flex justify-between items-center mb-4 gap-4 p-4 border-b">
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => navigateDate('prev')}><ChevronLeft size={18} /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => navigateDate('prev')} title="Previous" aria-label="Previous date"><ChevronLeft size={18} /></Button>
                     <span className="text-sm font-bold w-32 text-center">
                         {currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
-                    <Button variant="ghost" size="icon" onClick={() => navigateDate('next')}><ChevronRight size={18} /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => navigateDate('next')} title="Next" aria-label="Next date"><ChevronRight size={18} /></Button>
                 </div>
                 <div className="flex items-center gap-1 bg-secondary p-1 rounded-xl">
                     {['DAY', 'WEEK', 'MONTH'].map((v) => (
-                        <Button key={v} variant={view === v ? "default" : "ghost"} size="sm" onClick={() => setView(v as any)} className="text-[10px] h-7">{v}</Button>
+                        <Button
+                            key={v}
+                            variant={view === v ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => setView(v as any)}
+                            className="text-[10px] h-7"
+                            title={`Switch to ${v.toLowerCase()} view`}
+                            aria-label={`Switch to ${v.toLowerCase()} view`}
+                        >
+                            {v}
+                        </Button>
                     ))}
                 </div>
             </div>

@@ -57,7 +57,7 @@ interface HQProps {
     onAcknowledgeRisk: (alert: RiskAlert) => void;
 }
 
-const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
+const WorkProgressGraph: React.FC<{ tasks: Task[], projects: Project[] }> = ({ tasks, projects }) => {
     const data = useMemo(() => {
         const last7Days = Array.from({ length: 7 }).map((_, i) => {
             const d = new Date();
@@ -65,25 +65,49 @@ const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
             return d.toISOString().split('T')[0];
         });
 
+        const activeProjectsCount = projects.filter(p => p.status === 'ACTIVE').length;
+
         return last7Days.map(date => ({
             date,
-            count: tasks.filter(t => t.completed && t.date.toString().split('T')[0] === date).length
+            workDone: tasks.filter(t => {
+                if (!t.completed || !t.date) return false;
+                try {
+                    return new Date(t.date).toISOString().split('T')[0] === date;
+                } catch (e) {
+                    return false;
+                }
+            }).length,
+            projectLoad: activeProjectsCount
         }));
-    }, [tasks]);
+    }, [tasks, projects]);
 
-    const maxCount = Math.max(...data.map(d => d.count), 1);
+    const maxWork = Math.max(...data.map(d => d.workDone), 1);
+    const maxProject = Math.max(...data.map(d => d.projectLoad), 1);
+    const globalMax = Math.max(maxWork, maxProject, 5); // Minimum scale of 5
+
     const totalCompleted = useMemo(() => tasks.filter(t => t.completed).length, [tasks]);
+    const totalActiveProjects = projects.filter(p => p.status === 'ACTIVE').length;
 
     return (
         <div className="w-full h-full flex flex-col justify-between">
             <div className="flex justify-between items-start mb-6">
-                <div>
-                    <h3 className="text-lg font-bold text-foreground">Work Progress</h3>
-                    <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-3xl font-bold text-primary tracking-tighter">
-                            <CountUp value={totalCompleted} />
-                        </span>
-                        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">total completions</span>
+                <div className="flex gap-8">
+                    <div>
+                        <h3 className="text-h3">Work Progress</h3>
+                        <div className="flex items-baseline gap-2 mt-1">
+                            <span className="text-h1 text-primary tracking-tighter">
+                                <CountUp value={totalCompleted} />
+                            </span>
+                            <span className="text-overline text-muted-foreground">tasks completed</span>
+                        </div>
+                    </div>
+                    <div className="hidden sm:block border-l border-border pl-8">
+                        <h3 className="text-overline text-muted-foreground mb-1">Active Projects</h3>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-h2 text-purple-500 tracking-tighter">
+                                <CountUp value={totalActiveProjects} />
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div className="p-2.5 bg-primary/10 text-primary rounded-xl border border-primary/20 shadow-[0_0_15px_hsl(var(--primary)/0.1)]">
@@ -94,26 +118,55 @@ const WorkProgressGraph: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
             <div className="flex-1 flex items-end gap-3 px-1 min-h-[140px]">
                 {data.map((d, i) => (
                     <div key={d.date} className="flex-1 flex flex-col items-center gap-3 group relative">
-                        <div className="w-full relative flex items-end justify-center h-full max-h-[120px]">
+                        <div className="w-full relative flex items-end justify-center gap-1 h-full max-h-[120px]">
+                            {/* Project Load - Background or side bar */}
                             <motion.div
                                 initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: `${(d.count / maxCount) * 100}%`, opacity: 1 }}
-                                transition={{ duration: 0.8, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                                className={`w-full max-w-[32px] rounded-t-lg transition-all relative ${d.count > 0
-                                    ? 'bg-gradient-to-t from-primary/40 to-primary shadow-[0_0_10px_hsl(var(--primary)/0.2)]'
-                                    : 'bg-secondary/30'}`}
+                                animate={{ height: `${(d.projectLoad / globalMax) * 100}%`, opacity: 0.15 }}
+                                transition={{ duration: 0.8, delay: i * 0.05 }}
+                                className="w-full max-w-[12px] rounded-none bg-purple-500"
                             />
-                            {d.count > 0 && (
-                                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-popover border border-border px-2 py-0.5 rounded text-[10px] font-bold text-foreground opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-10">
-                                    {d.count}
+
+                            {/* Work Done - Main bar */}
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: `${Math.max((d.workDone / globalMax) * 100, 2)}%`, opacity: 1 }}
+                                transition={{ duration: 0.8, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                                className={`w-full max-w-[20px] rounded-none transition-all relative ${d.workDone > 0
+                                    ? 'bg-gradient-to-t from-primary/40 to-primary shadow-[0_0_10px_hsl(var(--primary)/0.2)]'
+                                    : 'bg-secondary/20'}`}
+                            />
+
+                            {/* Tooltip */}
+                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-popover border border-border p-2 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-10 min-w-[100px]">
+                                <p className="text-[10px] text-muted-foreground mb-1">{new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                                <div className="flex justify-between items-center gap-4">
+                                    <span className="text-[10px] font-bold text-primary">Work Done:</span>
+                                    <span className="text-[10px] font-bold">{d.workDone}</span>
                                 </div>
-                            )}
+                                <div className="flex justify-between items-center gap-4">
+                                    <span className="text-[10px] font-bold text-purple-500">Projects:</span>
+                                    <span className="text-[10px] font-bold">{d.projectLoad}</span>
+                                </div>
+                            </div>
                         </div>
                         <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest group-hover:text-primary transition-colors">
                             {new Date(d.date).toLocaleDateString('en-US', { weekday: 'narrow' })}
                         </span>
                     </div>
                 ))}
+            </div>
+
+            {/* Legend */}
+            <div className="flex gap-4 mt-6 pt-4 border-t border-border/50">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-none bg-primary" />
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Work Done</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-none bg-purple-500/40" />
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Project Load</span>
+                </div>
             </div>
         </div>
     );
@@ -287,7 +340,7 @@ export const HQ: React.FC<HQProps> = ({
                                 <Skeleton className="flex-1 w-full" />
                             </div>
                         ) : (
-                            <WorkProgressGraph tasks={tasks} />
+                            <WorkProgressGraph tasks={tasks} projects={projects} />
                         )}
                     </FadeIn>
 
@@ -381,17 +434,17 @@ export const HQ: React.FC<HQProps> = ({
                                 {todaysFocus.length > 0 ? todaysFocus.map((item, idx) => (
                                     <div key={idx} className="flex items-center gap-3 group/focus">
                                         {item.type === 'APPROVAL' && (
-                                            <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 flex-shrink-0">
+                                            <div className="w-8 h-8 rounded-none bg-orange-500/10 flex items-center justify-center text-orange-500 flex-shrink-0">
                                                 <Star size={14} />
                                             </div>
                                         )}
                                         {item.type === 'RISK' && (
-                                            <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 flex-shrink-0">
+                                            <div className="w-8 h-8 rounded-none bg-red-500/10 flex items-center justify-center text-red-500 flex-shrink-0">
                                                 <Flame size={14} />
                                             </div>
                                         )}
                                         {item.type === 'OVERDUE' && (
-                                            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 flex-shrink-0">
+                                            <div className="w-8 h-8 rounded-none bg-blue-500/10 flex items-center justify-center text-blue-500 flex-shrink-0">
                                                 <Clock size={14} />
                                             </div>
                                         )}
@@ -452,8 +505,8 @@ export const HQ: React.FC<HQProps> = ({
                                             <div className="text-sm font-bold text-foreground truncate">{p.title}</div>
                                             <div className="text-xs font-medium text-muted-foreground">{p.progress}%</div>
                                         </div>
-                                        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                                            <div className="h-full rounded-full transition-all duration-500 bg-primary" style={{ width: `${p.progress}%` }}></div>
+                                        <div className="w-full h-1.5 bg-secondary rounded-none overflow-hidden">
+                                            <div className="h-full rounded-none transition-all duration-500 bg-primary" style={{ width: `${p.progress}%` }}></div>
                                         </div>
                                     </div>
                                     <ArrowUpRight size={16} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -512,7 +565,7 @@ export const HQ: React.FC<HQProps> = ({
                             {clients.slice(0, 4).map(c => (
                                 <div key={c.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 cursor-pointer transition-colors border border-transparent hover:border-border">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm text-foreground border border-border">
+                                        <div className="w-10 h-10 rounded-none bg-secondary flex items-center justify-center font-bold text-sm text-foreground border border-border">
                                             {c.name.charAt(0)}
                                         </div>
                                         <div>

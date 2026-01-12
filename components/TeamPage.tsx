@@ -58,6 +58,7 @@ const TeamHabits: React.FC<{ habits: Habit[] }> = ({ habits }) => {
                             <div
                                 className="h-full bg-gradient-to-r from-orange-400 to-red-500 transition-all duration-500"
                                 style={{ width: `${Math.min((h.streak / 66) * 100, 100)}%` }}
+                                title={`${h.streak} day streak`}
                             />
                         </div>
                     </div>
@@ -85,7 +86,12 @@ const TeamWorkload: React.FC<{ members: TeamMember[], tasks: Task[] }> = ({ memb
                     return (
                         <div key={m.id} className="flex items-center gap-3">
                             <div className="relative">
-                                <img src={m.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.email}`} className="w-8 h-8 rounded-full bg-secondary object-cover" />
+                                <img
+                                    src={m.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.email}`}
+                                    alt={m.name || "Team member"}
+                                    title={m.name || "Team member"}
+                                    className="w-8 h-8 rounded-full bg-secondary object-cover"
+                                />
                                 {count > 5 && <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-card" />}
                             </div>
                             <div className="flex-1">
@@ -486,7 +492,12 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                                     return (
                                         <div key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors group">
                                             <div className="relative">
-                                                <img src={m.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.email}`} className="w-6 h-6 rounded-full bg-secondary object-cover" />
+                                                <img
+                                                    src={m.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.email}`}
+                                                    alt={m.name || "Team member"}
+                                                    title={m.name || "Team member"}
+                                                    className="w-6 h-6 rounded-full bg-secondary object-cover"
+                                                />
                                                 <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border-2 border-card rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />
                                             </div>
                                             <span className="text-sm text-foreground truncate">{m.name || m.email.split('@')[0]}</span>
@@ -496,7 +507,12 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                                 })}
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <button onClick={() => setIsInviting(true)} className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-primary transition-colors w-full">
+                                        <button
+                                            onClick={() => setIsInviting(true)}
+                                            className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-primary transition-colors w-full text-left"
+                                            title="Invite people"
+                                            aria-label="Invite people to team"
+                                        >
                                             <Plus size={14} /> Invite People
                                         </button>
                                     </TooltipTrigger>
@@ -514,7 +530,7 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                     {/* Mobile Header */}
                     <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
                         <h1 className="font-bold text-foreground">{team.name}</h1>
-                        <button onClick={() => setIsInviting(true)} className="text-primary"><Plus size={20} /></button>
+                        <button onClick={() => setIsInviting(true)} className="text-primary" title="Invite people" aria-label="Invite people"><Plus size={20} /></button>
                     </div>
 
                     {/* Tabs */}
@@ -528,6 +544,8 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
                                 className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                                title={`Switch to ${tab.label} tab`}
+                                aria-label={`Switch to ${tab.label} tab`}
                             >
                                 <tab.icon size={16} /> {tab.label}
                             </button>
@@ -552,7 +570,12 @@ export const TeamPage: React.FC<TeamPageProps> = ({
                                         );
                                         return (
                                             <div key={i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                                                <img src={isMe ? (user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`) : msg.senderAvatar} className="w-8 h-8 rounded-full bg-secondary object-cover flex-shrink-0" />
+                                                <img
+                                                    src={isMe ? (user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`) : msg.senderAvatar}
+                                                    alt={isMe ? "My avatar" : `${msg.senderName}'s avatar`}
+                                                    title={isMe ? "My avatar" : `${msg.senderName}'s avatar`}
+                                                    className="w-8 h-8 rounded-full bg-secondary object-cover flex-shrink-0"
+                                                />
                                                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[70%]`}>
                                                     {!isMe && <span className="text-[10px] text-muted-foreground mb-1 ml-1">{msg.senderName}</span>}
                                                     <div className={`p-3 rounded-2xl text-sm ${isMe ? 'bg-primary text-white rounded-tr-sm' : 'bg-secondary text-foreground rounded-tl-sm'}`}>{msg.text}</div>

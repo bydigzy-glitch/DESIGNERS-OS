@@ -161,7 +161,7 @@ export const QuickActionsSidebar: React.FC = () => {
                     <motion.span
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="ml-2 font-black text-[10px] uppercase tracking-[0.2em] text-foreground/40"
+                        className="ml-2 text-overline opacity-40"
                     >
                         Quick Actions
                     </motion.span>
@@ -199,18 +199,24 @@ export const QuickActionsSidebar: React.FC = () => {
                         <button
                             onClick={() => setActiveTab('notes')}
                             className={`flex-1 flex justify-center py-2 rounded-xl transition-all ${activeTab === 'notes' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                            aria-label="Notes Tab"
+                            title="Notes"
                         >
                             <StickyNote size={14} />
                         </button>
                         <button
                             onClick={() => setActiveTab('reminders')}
                             className={`flex-1 flex justify-center py-2 rounded-xl transition-all ${activeTab === 'reminders' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                            aria-label="Reminders Tab"
+                            title="Reminders"
                         >
                             <Bell size={14} />
                         </button>
                         <button
                             onClick={() => setActiveTab('tasks')}
                             className={`flex-1 flex justify-center py-2 rounded-xl transition-all ${activeTab === 'tasks' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                            aria-label="Tasks Tab"
+                            title="Tasks"
                         >
                             <ClipboardList size={14} />
                         </button>
@@ -228,7 +234,7 @@ export const QuickActionsSidebar: React.FC = () => {
                         className="flex-1 flex flex-col min-h-0 px-4 pb-4"
                     >
                         <div className="flex justify-between items-baseline mb-6">
-                            <h3 className="text-xl font-black tracking-tight capitalize text-foreground">
+                            <h3 className="text-h2 capitalize">
                                 {activeTab === 'tasks' ? 'Quick Tasks' : activeTab}
                             </h3>
                             <Button
@@ -258,10 +264,10 @@ export const QuickActionsSidebar: React.FC = () => {
                                                     onFocus={() => setIsTyping(true)}
                                                     onBlur={() => setIsTyping(false)}
                                                     placeholder="Start writing..."
-                                                    className="w-full bg-transparent border-none focus:ring-0 text-sm resize-none h-24 placeholder:text-muted-foreground/30 font-medium leading-relaxed"
+                                                    className="w-full bg-transparent border-none focus:ring-0 text-caption resize-none h-24 placeholder:text-muted-foreground/30 leading-relaxed"
                                                 />
                                                 <div className="flex justify-between items-center mt-2 border-t border-black/5 pt-2">
-                                                    <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/40">{note.createdAt}</span>
+                                                    <span className="text-overline opacity-40">{note.createdAt}</span>
                                                     <button onClick={() => deleteNote(note.id)} aria-label="Delete note" className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <X size={12} />
                                                     </button>
@@ -317,9 +323,9 @@ export const QuickActionsSidebar: React.FC = () => {
                                                     <button
                                                         onClick={() => cyclePriority(task.id)}
                                                         aria-label={`Priority: ${task.priority}. Click to cycle.`}
-                                                        className={`text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full border border-current transition-colors ${task.priority === 'HIGH' ? 'text-red-500 bg-red-500/10' :
-                                                                task.priority === 'MEDIUM' ? 'text-blue-500 bg-blue-500/10' :
-                                                                    'text-muted-foreground/50 bg-secondary/50'
+                                                        className={`text-overline px-2 py-0.5 rounded-full border border-current transition-colors ${task.priority === 'HIGH' ? 'text-red-500 bg-red-500/10' :
+                                                            task.priority === 'MEDIUM' ? 'text-blue-500 bg-blue-500/10' :
+                                                                'text-muted-foreground/50 bg-secondary/50'
                                                             }`}
                                                     >
                                                         {task.priority} Priority

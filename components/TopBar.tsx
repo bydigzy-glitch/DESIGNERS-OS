@@ -125,7 +125,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                                             <CountUp value={user?.tokens || 0} duration={0.5} decimals={1} />
                                         </span>
                                     </div>
-                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                                    <div className="w-8 h-8 rounded-none bg-primary/20 flex items-center justify-center">
                                         <UserIcon size={16} className="text-primary" />
                                     </div>
                                 </Button>
@@ -187,7 +187,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                                     >
                                         <Bell size={20} />
                                         {notifications.filter(n => !n.read).length > 0 && (
-                                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-none animate-pulse"></span>
                                         )}
                                     </Button>
                                 </TooltipTrigger>
@@ -250,7 +250,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                         {/* Mobile User Avatar */}
                         <button
                             onClick={() => onNavigate?.('SETTINGS')}
-                            className="md:hidden w-8 h-8 rounded-full overflow-hidden border border-border hover:border-primary transition-colors"
+                            className="md:hidden w-8 h-8 rounded-none overflow-hidden border border-border hover:border-primary transition-colors"
                         >
                             <img src={user?.avatar} alt="User" className="w-full h-full object-cover" />
                         </button>

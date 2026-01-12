@@ -46,11 +46,11 @@
     --input: 240 5.9% 90%;
     --ring: 210 100% 44.5%;
 
-    --radius: 12px;
-    --radius-xs: 6px;
-    --radius-sm: 10px;
-    --radius-md: 12px;
-    --radius-lg: 18px;
+    --radius: 0px;
+    --radius-xs: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
 
     /* Apple-Caliber Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -67,19 +67,39 @@
     --space-6: 48px;
     --space-8: 64px;
 
-    /* Typography Scale */
-    --font-size-xs: 12px;
-    --font-size-sm: 14px;
-    --font-size-base: 16px;
-    --font-size-lg: 18px;
-    --font-size-xl: 20px;
-    --font-size-2xl: 24px;
-    --font-size-3xl: 32px;
-    --font-size-4xl: 40px;
+    /* Typography Tokens (Semantic Roles) */
+    --font-family-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Inter", system-ui, sans-serif;
+    --font-family-mono: "SF Mono", "SFMono-Regular", ui-monospace, "Geist Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+
+    /* Sizes & Spacing */
+    --font-size-display: 48px;
+    --font-size-h1: 34px;
+    --font-size-h2: 24px;
+    --font-size-h3: 20px;
+    --font-size-body: 16px;
+    --font-size-caption: 14px;
+    --font-size-overline: 11px;
+    --font-size-small: 12px;
 
     /* Line Heights */
+    --line-height-display: 1.1;
+    --line-height-h1: 1.2;
+    --line-height-h2: 1.25;
+    --line-height-h3: 1.3;
     --line-height-body: 1.5;
-    --line-height-tight: 1.25;
+    --line-height-caption: 1.4;
+    --line-height-small: 1.4;
+
+    /* Letter Spacing */
+    --letter-spacing-tight: -0.02em;
+    --letter-spacing-normal: 0em;
+    --letter-spacing-wide: 0.05em;
+
+    /* Weights */
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
 
     /* Z-Index System (Strict) */
     --z-background: 0;
@@ -191,11 +211,75 @@
 
   body {
     @apply bg-background text-foreground;
-    font-size: var(--font-size-base);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-regular);
     line-height: var(--line-height-body);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Semantic Typography Utilities */
+  .text-display {
+    font-size: var(--font-size-display);
+    line-height: var(--line-height-display);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-tight);
+    font-family: var(--font-family-sans);
+  }
+
+  .text-h1 {
+    font-size: var(--font-size-h1);
+    line-height: var(--line-height-h1);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-tight);
+  }
+
+  .text-h2 {
+    font-size: var(--font-size-h2);
+    line-height: var(--line-height-h2);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-tight);
+  }
+
+  .text-h3 {
+    font-size: var(--font-size-h3);
+    line-height: var(--line-height-h3);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .text-body {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    font-weight: var(--font-weight-regular);
+  }
+
+  .text-body-emphasis {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .text-caption {
+    font-size: var(--font-size-caption);
+    line-height: var(--line-height-caption);
+    font-weight: var(--font-weight-regular);
+  }
+
+  .text-overline {
+    font-size: var(--font-size-overline);
+    line-height: var(--line-height-small);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  .text-mono {
+    font-family: var(--font-family-mono);
+    font-size: 0.9em;
   }
 
   h1,
@@ -204,8 +288,8 @@
   h4,
   h5,
   h6 {
-    line-height: var(--line-height-tight);
-    font-weight: 700;
+    @apply tracking-tight;
+    font-weight: var(--font-weight-bold);
   }
 }
 
@@ -257,7 +341,7 @@
 }
 
 .project-icon-base {
-  @apply w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm bg-secondary/50;
+  @apply w-10 h-10 rounded-none flex items-center justify-center font-bold text-sm bg-secondary/50;
   color: var(--project-color, currentColor);
 }
 
@@ -273,7 +357,7 @@
 
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
-  border-radius: 10px;
+  border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -423,12 +507,12 @@ select:focus {
 
 .scrollbar-thin::-webkit-scrollbar-track {
   background: hsl(var(--secondary));
-  border-radius: 10px;
+  border-radius: 0px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 10px;
+  border-radius: 0px;
   transition: background 0.2s;
 }
 
@@ -498,7 +582,7 @@ select:focus {
 *:focus-visible {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 0px;
 }
 
 /* Smooth Color Transitions */
@@ -725,8 +809,8 @@ button[type="submit"]:active:not(:disabled) {
 
 /* Enhanced Chat Bubbles */
 [class*="bg-card"][class*="rounded"] {
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 /* Enhanced Message Hover */
@@ -745,7 +829,7 @@ button[type="submit"]:active:not(:disabled) {
 .typing-indicator span {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: 0px;
   background: hsl(var(--muted-foreground));
   animation: typing 1.4s infinite;
 }
@@ -839,7 +923,7 @@ img[alt*="Preview"]:hover {
   background: hsl(var(--primary) / 0.1);
   border: 1px solid hsl(var(--primary) / 0.3);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 0px;
   transition: all 0.2s ease-in-out;
 }
 
@@ -1157,23 +1241,23 @@ button[class*="destructive"]:hover {
 
 /* Border Radius - Consistent rounding */
 .rounded-sm {
-  border-radius: calc(var(--radius) - 4px);
+  border-radius: 0px;
 }
 
 .rounded-md {
-  border-radius: calc(var(--radius) - 2px);
+  border-radius: 0px;
 }
 
 .rounded-lg {
-  border-radius: var(--radius);
+  border-radius: 0px;
 }
 
 .rounded-xl {
-  border-radius: calc(var(--radius) + 4px);
+  border-radius: 0px;
 }
 
 .rounded-2xl {
-  border-radius: calc(var(--radius) + 8px);
+  border-radius: 0px;
 }
 
 /* Elevation System - Shadcn shadows */

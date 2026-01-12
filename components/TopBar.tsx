@@ -98,87 +98,121 @@ export const TopBar: React.FC<TopBarProps> = ({
 
     const handleSearch = (query: string) => {
         setSearchQuery(query);
-        if (query.length < 2) {
+        if (!query.trim()) {
             setSearchResults([]);
             setSelectedIndex(-1);
             return;
         }
 
-        const q = query.toLowerCase();
-        const results: SearchResult[] = [];
+        const q = query.toLowerCase().trim();
+        const results: (SearchResult & { weight: number })[] = [];
 
-        // Search Tasks
-        tasks?.filter(t => t.title.toLowerCase().includes(q)).slice(0, 3).forEach(t => {
-            results.push({
-                id: `task-${t.id}`,
-                type: 'TASK',
-                title: t.title,
-                subtitle: t.category || 'Task',
-                icon: <CheckSquare size={14} className="text-blue-500" />,
-                view: 'WORK'
-            });
+        // Helper for weighted search
+        const getWeight = (text: string, query: string) => {
+            const lowerText = text.toLowerCase();
+            if (lowerText === query) return 100;
+            if (lowerText.startsWith(query)) return 80;
+            if (lowerText.includes(query)) return 40;
+            return 0;
+        };
+
+        // Search Projects (High Priority)
+        projects?.forEach(p => {
+            const weight = getWeight(p.title, q);
+            if (weight > 0) {
+                results.push({
+                    id: `project-${p.id}`,
+                    type: 'PROJECT',
+                    title: p.title,
+                    subtitle: `Project • ${p.status}`,
+                    icon: <Briefcase size={14} className="text-purple-500" />,
+                    view: 'WORK',
+                    weight: weight + 10 // Projects get +10 bias
+                });
+            }
         });
 
-        // Search Projects
-        projects?.filter(p => p.title.toLowerCase().includes(q)).slice(0, 3).forEach(p => {
-            results.push({
-                id: `project-${p.id}`,
-                type: 'PROJECT',
-                title: p.title,
-                subtitle: `Project: ${p.status}`,
-                icon: <Briefcase size={14} className="text-purple-500" />,
-                view: 'WORK'
-            });
+        // Search Tasks
+        tasks?.forEach(t => {
+            const weight = getWeight(t.title, q);
+            if (weight > 0) {
+                results.push({
+                    id: `task-${t.id}`,
+                    type: 'TASK',
+                    title: t.title,
+                    subtitle: t.category || 'Task',
+                    icon: <CheckSquare size={14} className="text-blue-500" />,
+                    view: 'WORK',
+                    weight
+                });
+            }
         });
 
         // Search Clients
-        clients?.filter(c => c.name.toLowerCase().includes(q)).slice(0, 3).forEach(c => {
-            results.push({
-                id: `client-${c.id}`,
-                type: 'CLIENT',
-                title: c.name,
-                subtitle: `Client: ${c.status}`,
-                icon: <Users size={14} className="text-orange-500" />,
-                view: 'CLIENTS'
-            });
+        clients?.forEach(c => {
+            const weight = getWeight(c.name, q);
+            if (weight > 0) {
+                results.push({
+                    id: `client-${c.id}`,
+                    type: 'CLIENT',
+                    title: c.name,
+                    subtitle: `Client • ${c.status}`,
+                    icon: <Users size={14} className="text-orange-500" />,
+                    view: 'CLIENTS',
+                    weight: weight - 5 // Clients slightly lower priority than projects/tasks
+                });
+            }
         });
 
         // Search Files
-        files?.filter(f => f.name.toLowerCase().includes(q)).slice(0, 3).forEach(f => {
-            results.push({
-                id: `file-${f.id}`,
-                type: 'FILE',
-                title: f.name,
-                subtitle: `File: ${f.type}`,
-                icon: <FileText size={14} className="text-emerald-500" />,
-                view: 'FILES'
-            });
+        files?.forEach(f => {
+            const weight = getWeight(f.name, q);
+            if (weight > 0) {
+                results.push({
+                    id: `file-${f.id}`,
+                    type: 'FILE',
+                    title: f.name,
+                    subtitle: `File • ${f.type}`,
+                    icon: <FileText size={14} className="text-emerald-500" />,
+                    view: 'FILES',
+                    weight: weight - 10
+                });
+            }
         });
 
         // Smart Actions
+        const actions: SearchResult[] = [];
         if ('settings'.includes(q)) {
-            results.push({
+            actions.push({
                 id: 'action-settings',
                 type: 'ACTION',
                 title: 'Open Settings',
-                subtitle: 'Customize preferences',
+                subtitle: 'System',
                 icon: <Settings size={14} className="text-muted-foreground" />,
                 view: 'SETTINGS'
             });
         }
-        if ('dark mode'.includes(q) || 'light mode'.includes(q) || 'theme'.includes(q)) {
-            results.push({
+        if ('dark mode'.includes(q) || 'light mode'.includes(q) || 'theme'.includes(q) || 'uber'.includes(q)) {
+            actions.push({
                 id: 'action-theme',
                 type: 'ACTION',
                 title: 'Toggle Theme',
-                subtitle: 'Switch light/dark/uber',
+                subtitle: 'System Appearance',
                 icon: <Sparkles size={14} className="text-primary" />,
                 action: onToggleTheme
             });
         }
 
-        setSearchResults(results);
-        setSelectedIndex(results.length > 0 ? 0 : -1);
+        actions.forEach(a => results.push({ ...a, weight: 50 }));
+
+        // Sort by weight and slice
+        const sortedResults = results
+            .sort((a, b) => b.weight - a.weight)
+            .slice(0, 6)
+            .map(({ weight, ...rest }) => rest);
+
+        setSearchResults(sortedResults);
+        setSelectedIndex(sortedResults.length > 0 ? 0 : -1);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -295,31 +329,44 @@ export const TopBar: React.FC<TopBarProps> = ({
                                             ))}
                                         </div>
                                     ) : searchResults.length > 0 ? (
-                                        searchResults.map((result, index) => (
-                                            <div
-                                                key={result.id}
-                                                onClick={() => handleSelectResult(result)}
-                                                onMouseEnter={() => setSelectedIndex(index)}
-                                                className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${index === selectedIndex ? 'bg-primary/10 border-primary/20 shadow-sm' : 'hover:bg-secondary/50 border-transparent'} border mb-1 mx-1`}
-                                            >
-                                                <div className={`p-2 rounded-lg ${index === selectedIndex ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
-                                                    {result.icon}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className={`text-sm font-bold truncate ${index === selectedIndex ? 'text-primary' : 'text-foreground'}`}>
-                                                        {result.title}
-                                                    </p>
-                                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                                                        {result.subtitle}
-                                                    </p>
-                                                </div>
-                                                {index === selectedIndex && (
-                                                    <div className="flex items-center gap-1.5 opacity-60">
-                                                        <CornerDownLeft size={10} strokeWidth={3} />
+                                        <div className="space-y-1">
+                                            {searchResults.map((result, index) => (
+                                                <div
+                                                    key={result.id}
+                                                    onClick={() => handleSelectResult(result)}
+                                                    onMouseEnter={() => setSelectedIndex(index)}
+                                                    className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${index === selectedIndex ? 'bg-primary/10 border-primary/20 shadow-sm' : 'hover:bg-secondary/20 border-transparent'} border mx-1 relative overflow-hidden`}
+                                                >
+                                                    {index === 0 && (
+                                                        <div className="absolute top-0 right-0 px-2 py-1 bg-primary/20 text-primary text-[8px] font-black uppercase tracking-tighter rounded-bl-lg">
+                                                            Best Match
+                                                        </div>
+                                                    )}
+                                                    <div className={`p-2.5 rounded-xl ${index === selectedIndex ? 'bg-primary/20 text-primary scale-110 shadow-lg' : 'bg-secondary text-muted-foreground'} transition-all duration-300`}>
+                                                        {result.icon}
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className={`text-sm font-bold truncate ${index === selectedIndex ? 'text-primary' : 'text-foreground'}`}>
+                                                                {result.title}
+                                                            </p>
+                                                            {result.type === 'PROJECT' && (
+                                                                <span className="px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-500 text-[8px] font-black tracking-widest uppercase">Project</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">
+                                                            <span>{result.subtitle}</span>
+                                                        </p>
+                                                    </div>
+                                                    {index === selectedIndex && (
+                                                        <div className="flex items-center gap-2 animate-in slide-in-from-right-2 duration-300">
+                                                            <span className="text-[9px] font-black text-primary/60 uppercase tracking-tighter">Enter</span>
+                                                            <CornerDownLeft size={10} className="text-primary" strokeWidth={3} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
                                     ) : (
                                         <div className="py-12 flex flex-col items-center justify-center text-center px-4">
                                             <div className="w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center text-muted-foreground mb-4">

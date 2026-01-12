@@ -7,12 +7,12 @@ interface SkeletonProps {
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({ className = "", variant = "rectangular" }) => {
-  const baseClasses = "animate-pulse bg-white/5 rounded-none";
+  const baseClasses = "animate-pulse bg-white/5 rounded-md";
 
   const variantClasses = {
-    text: "h-4 w-full rounded-none",
-    circular: "rounded-none",
-    rectangular: "h-full w-full rounded-none",
+    text: "h-4 w-full rounded",
+    circular: "rounded-full",
+    rectangular: "h-full w-full rounded-lg",
   };
 
   return (

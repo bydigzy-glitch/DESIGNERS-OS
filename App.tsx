@@ -713,6 +713,14 @@ function App() {
         }
     }, [user?.preferences?.themeColor]);
 
+    // Apply saved theme class (light/dark/uber)
+    useEffect(() => {
+        if (user?.preferences?.theme) {
+            document.documentElement.classList.remove('light', 'dark', 'uber');
+            document.documentElement.classList.add(user.preferences.theme);
+        }
+    }, [user?.preferences?.theme]);
+
     const addToast = (type: ToastType, message: string) => {
         const id = Date.now().toString();
         setToasts(prev => [...prev, { id, type, message }]);
@@ -792,15 +800,19 @@ function App() {
     };
 
     const handleToggleTheme = () => {
-        const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
-        document.documentElement.classList.remove('dark', 'light');
-        document.documentElement.classList.add(newTheme);
-        localStorage.setItem('user_preferences_theme', newTheme);
-        if (user) {
-            const updated = { ...user, preferences: { ...user.preferences, theme: newTheme as 'light' | 'dark' } };
-            setUser(updated);
-            storageService.saveUser(updated);
-        }
+        if (!user) return;
+        const themes: ('light' | 'dark' | 'uber')[] = ['light', 'dark', 'uber'];
+        const currentIndex = themes.indexOf(user.preferences.theme);
+        const nextIndex = (currentIndex + 1) % themes.length;
+        const nextTheme = themes[nextIndex];
+
+        document.documentElement.classList.remove('light', 'dark', 'uber');
+        document.documentElement.classList.add(nextTheme);
+        localStorage.setItem('user_preferences_theme', nextTheme);
+
+        const updated = { ...user, preferences: { ...user.preferences, theme: nextTheme } };
+        setUser(updated);
+        storageService.saveUser(updated);
     };
 
     const handleToggleHabit = async (id: string) => {

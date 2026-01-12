@@ -283,7 +283,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   variant="destructive"
                   size="icon"
                   onClick={() => setPendingImage(null)}
-                  className="absolute -top-2 -right-2 h-6 w-6 rounded-none"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
                 >
                   <X size={14} />
                 </Button>
@@ -303,7 +303,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       onClick={() => handleSelectMention(task)}
                       className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors flex items-center gap-3 group"
                     >
-                      <div className={`w-2 h-2 rounded-none ${task.priority === 'HIGH' ? 'bg-red-500' :
+                      <div className={`w-2 h-2 rounded-full ${task.priority === 'HIGH' ? 'bg-red-500' :
                         task.priority === 'MEDIUM' ? 'bg-yellow-500' :
                           'bg-blue-500'
                         }`} />
@@ -319,7 +319,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {/* Input Form */}
             <form onSubmit={handleSubmit} className="relative w-full">
               {/* New Gradient Border Container */}
-              <div className="relative flex w-full flex-col overflow-hidden rounded-none p-[1.5px]">
+              <div className="relative flex w-full flex-col overflow-hidden rounded-[20px] p-[1.5px]">
                 {/* Gradient Background Layer - Themed */}
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/80 via-muted to-muted/20 pointer-events-none" />
 
@@ -327,7 +327,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <div className="absolute -left-[10px] -top-[10px] h-[30px] w-[30px] blur-[1px] bg-[radial-gradient(ellipse_at_center,var(--primary),rgba(255,255,255,0.1),transparent_70%)] pointer-events-none opacity-50" />
 
                 {/* Inner Content - Glassy */}
-                <div className="relative flex w-full flex-col overflow-hidden rounded-none bg-background/60 backdrop-blur-md">
+                <div className="relative flex w-full flex-col overflow-hidden rounded-[19px] bg-background/60 backdrop-blur-md">
 
                   {/* Textarea Wrapper */}
                   <div className="relative flex w-full">
@@ -386,11 +386,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         <button
                           type="submit"
                           disabled={(!inputText.trim() && !pendingImage) || isLoading}
-                          className="group relative flex items-center justify-center rounded-none bg-gradient-to-t from-primary via-primary/80 to-primary p-[2px] shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)] active:scale-95 transition-all duration-150 border-none outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                          className="group relative flex items-center justify-center rounded-xl bg-gradient-to-t from-primary via-primary/80 to-primary p-[2px] shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)] active:scale-95 transition-all duration-150 border-none outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                           title="Send message"
                           aria-label="Send message"
                         >
-                          <div className="rounded-none bg-black/10 p-1.5 backdrop-blur-[3px] text-primary-foreground/90 group-hover:text-white transition-colors duration-300 flex items-center justify-center">
+                          <div className="rounded-[10px] bg-black/10 p-1.5 backdrop-blur-[3px] text-primary-foreground/90 group-hover:text-white transition-colors duration-300 flex items-center justify-center">
                             <Send size={18} className="transition-all duration-300 group-focus:scale-110 group-focus:-translate-x-0.5 group-focus:translate-y-0.5 group-focus:rotate-45" />
                           </div>
                         </button>

@@ -210,6 +210,44 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
 
 
 
+                    {/* System Style Picker */}
+                    <div className="p-5 bg-card rounded-2xl border border-border">
+                        <h3 className="text-foreground font-bold mb-4">System Style</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Select the global interface theme</p>
+
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { id: 'light', name: 'Light', preview: 'bg-white border-black/10' },
+                                { id: 'dark', name: 'Dark', preview: 'bg-[#121212] border-white/10' },
+                                { id: 'uber', name: 'Uber', preview: 'bg-black border-white/20' },
+                            ].map(t => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => {
+                                        document.documentElement.classList.remove('light', 'dark', 'uber');
+                                        document.documentElement.classList.add(t.id);
+                                        if (onUpdateUser) {
+                                            onUpdateUser({
+                                                ...user,
+                                                preferences: {
+                                                    ...user.preferences,
+                                                    theme: t.id as any
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:scale-105 ${user.preferences.theme === t.id
+                                        ? 'border-primary bg-primary/10'
+                                        : 'border-border bg-secondary/20 hover:border-muted-foreground'
+                                        }`}
+                                >
+                                    <div className={`w-10 h-10 border ${t.preview}`}></div>
+                                    <span className="text-xs font-medium text-white">{t.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Theme Color Picker */}
                     <div className="p-5 bg-card rounded-2xl border border-border">
                         <h3 className="text-foreground font-bold mb-4">Theme Color</h3>

@@ -124,7 +124,7 @@ const WorkProgressGraph: React.FC<{ tasks: Task[], projects: Project[] }> = ({ t
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: `${(d.projectLoad / globalMax) * 100}%`, opacity: 0.15 }}
                                 transition={{ duration: 0.8, delay: i * 0.05 }}
-                                className="w-full max-w-[12px] rounded-none bg-purple-500"
+                                className="w-full max-w-[12px] rounded-t-sm bg-purple-500"
                             />
 
                             {/* Work Done - Main bar */}
@@ -132,7 +132,7 @@ const WorkProgressGraph: React.FC<{ tasks: Task[], projects: Project[] }> = ({ t
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: `${Math.max((d.workDone / globalMax) * 100, 2)}%`, opacity: 1 }}
                                 transition={{ duration: 0.8, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                                className={`w-full max-w-[20px] rounded-none transition-all relative ${d.workDone > 0
+                                className={`w-full max-w-[20px] rounded-t-sm transition-all relative ${d.workDone > 0
                                     ? 'bg-gradient-to-t from-primary/40 to-primary shadow-[0_0_10px_hsl(var(--primary)/0.2)]'
                                     : 'bg-secondary/20'}`}
                             />
@@ -160,11 +160,11 @@ const WorkProgressGraph: React.FC<{ tasks: Task[], projects: Project[] }> = ({ t
             {/* Legend */}
             <div className="flex gap-4 mt-6 pt-4 border-t border-border/50">
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-none bg-primary" />
+                    <div className="w-2 h-2 rounded-full bg-primary" />
                     <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Work Done</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-none bg-purple-500/40" />
+                    <div className="w-2 h-2 rounded-full bg-purple-500/40" />
                     <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Project Load</span>
                 </div>
             </div>
@@ -434,17 +434,17 @@ export const HQ: React.FC<HQProps> = ({
                                 {todaysFocus.length > 0 ? todaysFocus.map((item, idx) => (
                                     <div key={idx} className="flex items-center gap-3 group/focus">
                                         {item.type === 'APPROVAL' && (
-                                            <div className="w-8 h-8 rounded-none bg-orange-500/10 flex items-center justify-center text-orange-500 flex-shrink-0">
+                                            <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 flex-shrink-0">
                                                 <Star size={14} />
                                             </div>
                                         )}
                                         {item.type === 'RISK' && (
-                                            <div className="w-8 h-8 rounded-none bg-red-500/10 flex items-center justify-center text-red-500 flex-shrink-0">
+                                            <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 flex-shrink-0">
                                                 <Flame size={14} />
                                             </div>
                                         )}
                                         {item.type === 'OVERDUE' && (
-                                            <div className="w-8 h-8 rounded-none bg-blue-500/10 flex items-center justify-center text-blue-500 flex-shrink-0">
+                                            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 flex-shrink-0">
                                                 <Clock size={14} />
                                             </div>
                                         )}
@@ -505,8 +505,8 @@ export const HQ: React.FC<HQProps> = ({
                                             <div className="text-sm font-bold text-foreground truncate">{p.title}</div>
                                             <div className="text-xs font-medium text-muted-foreground">{p.progress}%</div>
                                         </div>
-                                        <div className="w-full h-1.5 bg-secondary rounded-none overflow-hidden">
-                                            <div className="h-full rounded-none transition-all duration-500 bg-primary" style={{ width: `${p.progress}%` }}></div>
+                                        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                                            <div className="h-full rounded-full transition-all duration-500 bg-primary" style={{ width: `${p.progress}%` }}></div>
                                         </div>
                                     </div>
                                     <ArrowUpRight size={16} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -565,7 +565,7 @@ export const HQ: React.FC<HQProps> = ({
                             {clients.slice(0, 4).map(c => (
                                 <div key={c.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 cursor-pointer transition-colors border border-transparent hover:border-border">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-none bg-secondary flex items-center justify-center font-bold text-sm text-foreground border border-border">
+                                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm text-foreground border border-border">
                                             {c.name.charAt(0)}
                                         </div>
                                         <div>

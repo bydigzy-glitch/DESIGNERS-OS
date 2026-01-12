@@ -165,7 +165,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     <span className="text-body-emphasis">{item.label}</span>
                     {/* Alert badge for Command Center */}
                     {item.id === 'COMMAND_CENTER' && hasAlerts && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-none animate-pulse" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     )}
                   </Button>
                 </TooltipTrigger>
@@ -258,7 +258,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           <div className="pt-4 mt-2 border-t border-border">
             <div className="flex items-center gap-4 p-3 rounded-xl bg-secondary/20 border border-transparent hover:border-border transition-colors cursor-pointer group">
-              <div className="w-10 h-10 rounded-none bg-secondary overflow-hidden ring-1 ring-border shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden ring-1 ring-border shadow-sm">
                 <img src={user?.avatar} alt="User" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
@@ -281,7 +281,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           <LayoutGrid size={20} />
           <span className="text-overline">HQ</span>
           {hasAlerts && (
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-none animate-pulse" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
           )}
         </Button>
 

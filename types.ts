@@ -168,7 +168,7 @@ export interface Folder {
 }
 
 export interface UserPreferences {
-  theme: 'dark' | 'light';
+  theme: 'dark' | 'light' | 'uber';
   notifications: boolean;
   displayName?: string;
   navOrder?: ViewMode[]; // New field for sidebar order

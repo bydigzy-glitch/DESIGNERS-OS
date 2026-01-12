@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -46,11 +48,11 @@
     --input: 240 5.9% 90%;
     --ring: 210 100% 44.5%;
 
-    --radius: 0px;
-    --radius-xs: 0px;
-    --radius-sm: 0px;
-    --radius-md: 0px;
-    --radius-lg: 0px;
+    --radius: 12px;
+    --radius-xs: 6px;
+    --radius-sm: 10px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
 
     /* Apple-Caliber Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -68,7 +70,7 @@
     --space-8: 64px;
 
     /* Typography Tokens (Semantic Roles) */
-    --font-family-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Inter", system-ui, sans-serif;
+    --font-family-sans: "Inter Display", "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
     --font-family-mono: "SF Mono", "SFMono-Regular", ui-monospace, "Geist Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 
     /* Sizes & Spacing */
@@ -187,6 +189,42 @@
     /* Surface Highlight - For hover states and subtle emphasis */
     --surface-highlight: 0 0% 20%;
     /* #333333 - For interactive hover states */
+  }
+
+  .uber {
+    /* Uber Black - High Contrast Expert Aesthetic */
+    --background: 0 0% 0%;
+    /* Pure Black #000000 */
+    --foreground: 0 0% 100%;
+    /* Pure White #FFFFFF */
+
+    --card: 0 0% 6%;
+    /* #0F0F0F - Very deep grey elevated card */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 4%;
+    /* Even deeper for menus */
+    --popover-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 11%;
+    /* Subtle lift */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 90%;
+
+    --surface-highlight: 0 0% 20%;
+    --success: 142 71% 45%;
+    --warning: 48 96% 53%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
   }
 
   /* Apple HIG: Support "Increase Contrast" accessibility setting
@@ -341,7 +379,7 @@
 }
 
 .project-icon-base {
-  @apply w-10 h-10 rounded-none flex items-center justify-center font-bold text-sm bg-secondary/50;
+  @apply w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm bg-secondary/50;
   color: var(--project-color, currentColor);
 }
 
@@ -507,12 +545,12 @@ select:focus {
 
 .scrollbar-thin::-webkit-scrollbar-track {
   background: hsl(var(--secondary));
-  border-radius: 0px;
+  border-radius: 4px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 0px;
+  border-radius: 4px;
   transition: background 0.2s;
 }
 
@@ -582,7 +620,7 @@ select:focus {
 *:focus-visible {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
-  border-radius: 0px;
+  border-radius: inherit;
 }
 
 /* Smooth Color Transitions */
@@ -923,7 +961,7 @@ img[alt*="Preview"]:hover {
   background: hsl(var(--primary) / 0.1);
   border: 1px solid hsl(var(--primary) / 0.3);
   padding: 2px 6px;
-  border-radius: 0px;
+  border-radius: 4px;
   transition: all 0.2s ease-in-out;
 }
 
@@ -1239,25 +1277,25 @@ button[class*="destructive"]:hover {
   font-weight: 700;
 }
 
-/* Border Radius - Consistent rounding */
+/* Border Radius - Consistent rounding following HIG */
 .rounded-sm {
-  border-radius: 0px;
+  border-radius: var(--radius-xs);
 }
 
 .rounded-md {
-  border-radius: 0px;
+  border-radius: var(--radius-sm);
 }
 
 .rounded-lg {
-  border-radius: 0px;
+  border-radius: var(--radius-md);
 }
 
 .rounded-xl {
-  border-radius: 0px;
+  border-radius: var(--radius-lg);
 }
 
 .rounded-2xl {
-  border-radius: 0px;
+  border-radius: calc(var(--radius-lg) + 4px);
 }
 
 /* Elevation System - Shadcn shadows */

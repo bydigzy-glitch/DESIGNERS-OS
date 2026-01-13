@@ -1466,6 +1466,39 @@ function App() {
         }
     };
 
+    // AI Action Event Listener - connects action buttons (WorkPage) to chat sidebar
+    useEffect(() => {
+        const handleAIAction = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            const { tool, content, prompt, itemType } = customEvent.detail || {};
+
+            // Open chat overlay
+            setIsChatOverlayOpen(true);
+
+            // Format message based on action type
+            let message = '';
+            if (tool === 'summarize') {
+                message = `Summarize this:\n\n${content}`;
+            } else if (tool === 'generate_items') {
+                message = prompt || `Generate ${itemType} for this item`;
+            } else if (tool === 'classify_tags') {
+                message = `Suggest tags for:\n\n${content}`;
+            } else {
+                message = content || prompt || '';
+            }
+
+            // Auto-send after sidebar opens (small delay for UI transition)
+            if (message) {
+                setTimeout(() => {
+                    handleSendMessage(message);
+                }, 400);
+            }
+        };
+
+        window.addEventListener('ai-action', handleAIAction);
+        return () => window.removeEventListener('ai-action', handleAIAction);
+    }, [handleSendMessage]);
+
     const handleUpdateUser = async (updatedUser: User) => {
         setUser(updatedUser);
         storageService.saveUser(updatedUser);

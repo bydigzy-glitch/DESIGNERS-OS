@@ -1,7 +1,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Send, Sparkles, Bot, AtSign, X, Paperclip, Loader2 } from 'lucide-react';
-import { Message, ChatSession, User, Task } from '../types';
+import { Message, ChatSession, User, Task, Project, Client } from '../types';
 import { ChatMessage } from './ChatMessage';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { Button } from '@/components/ui/button';
@@ -26,12 +26,14 @@ interface ChatInterfaceProps {
   hideSidebar?: boolean;
   overlayMode?: boolean;
   tasks?: Task[];
+  projects?: Project[];
+  clients?: Client[];
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   user, messages, isLoading, loadingStep, onSendMessage, onStopGeneration,
   sessions, currentSessionId, onSelectSession, onCreateSession, onDeleteSession,
-  hideSidebar = false, overlayMode = false, tasks = []
+  hideSidebar = false, overlayMode = false, tasks = [], projects = [], clients = []
 }) => {
   // ... existing state ...
   const [inputText, setInputText] = useState('');
@@ -41,7 +43,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // @ Mention State
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
-  const [mentionedTasks, setMentionedTasks] = useState<Task[]>([]);
+  const [mentionedItems, setMentionedItems] = useState<Array<{ type: 'task' | 'project' | 'client', item: Task | Project | Client }>>([]);
   const [cursorPosition, setCursorPosition] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -63,11 +65,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if ((inputText.trim() || pendingImage) && !isLoading) {
-      const taskIds = mentionedTasks.map(t => t.id);
+      const taskIds = mentionedItems.filter(m => m.type === 'task').map(m => (m.item as Task).id);
       onSendMessage(inputText, pendingImage || undefined, isAssistMode, taskIds);
       setInputText('');
       setPendingImage(null);
-      setMentionedTasks([]);
+      setMentionedItems([]);
       setShowMentions(false);
       setTimeout(() => inputRef.current?.focus(), 10);
     }
@@ -97,30 +99,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  const handleSelectMention = (task: Task) => {
+  const handleSelectMention = (type: 'task' | 'project' | 'client', item: Task | Project | Client) => {
     const textBeforeCursor = inputText.substring(0, cursorPosition);
     const lastAtIndex = textBeforeCursor.lastIndexOf('@');
 
     if (lastAtIndex !== -1) {
       const before = inputText.substring(0, lastAtIndex);
       const after = inputText.substring(cursorPosition);
-      const taskMention = `@${task.title}`;
 
-      setInputText(`${before}${taskMention} ${after}`);
-      setMentionedTasks(prev => [...prev, task]);
+      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+      const itemName = (item as any).title || (item as any).name;
+      const mention = `@[${typeLabel}: ${itemName}]`;
+
+      setInputText(`${before}${mention} ${after}`);
+      setMentionedItems(prev => [...prev, { type, item }]);
       setShowMentions(false);
       setMentionQuery('');
 
       setTimeout(() => {
         inputRef.current?.focus();
-        const newPosition = (before + taskMention + ' ').length;
+        const newPosition = (before + mention + ' ').length;
         inputRef.current?.setSelectionRange(newPosition, newPosition);
       }, 0);
     }
   };
 
-  const removeMentionedTask = (taskId: string) => {
-    setMentionedTasks(prev => prev.filter(t => t.id !== taskId));
+  const removeMentionedItem = (itemId: string) => {
+    setMentionedItems(prev => prev.filter(m => (m.item as any).id !== itemId));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,10 +139,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  // Filter tasks for mentions
+  // Filter items for mentions - all types
   const filteredTasks = tasks
     .filter(t => !t.completed && t.title.toLowerCase().includes(mentionQuery.toLowerCase()))
-    .slice(0, 5);
+    .slice(0, 3);
+  const filteredProjects = projects
+    .filter(p => p.title.toLowerCase().includes(mentionQuery.toLowerCase()))
+    .slice(0, 3);
+  const filteredClients = clients
+    .filter(c => c.name.toLowerCase().includes(mentionQuery.toLowerCase()))
+    .slice(0, 3);
+
+  const hasMatches = filteredTasks.length > 0 || filteredProjects.length > 0 || filteredClients.length > 0;
 
   // Auto-resize textarea
   useEffect(() => {
@@ -249,23 +262,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="flex-shrink-0 border-t border-border/50 bg-background/80 backdrop-blur-sm p-4 md:p-6">
           <div className="max-w-4xl mx-auto space-y-3">
 
-            {/* Mentioned Tasks Pills */}
-            {mentionedTasks.length > 0 && (
+            {/* Mentioned Items Pills */}
+            {mentionedItems.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {mentionedTasks.map(task => (
-                  <Badge key={task.id} variant="secondary" className="gap-2 pr-1">
-                    <AtSign size={12} />
-                    <span className="text-xs">{task.title}</span>
-                    <button
-                      onClick={() => removeMentionedTask(task.id)}
-                      className="ml-1 hover:bg-background rounded-full p-0.5"
-                      title="Remove mention"
-                      aria-label={`Remove mention of ${task.title}`}
-                    >
-                      <X size={12} />
-                    </button>
-                  </Badge>
-                ))}
+                {mentionedItems.map((mention) => {
+                  const item = mention.item as any;
+                  const itemName = item.title || item.name;
+                  return (
+                    <Badge key={item.id} variant="secondary" className="gap-2 pr-1">
+                      <AtSign size={12} />
+                      <span className="text-xs">{mention.type}: {itemName}</span>
+                      <button
+                        onClick={() => removeMentionedItem(item.id)}
+                        className="ml-1 hover:bg-background rounded-full p-0.5"
+                        title="Remove mention"
+                        aria-label={`Remove mention of ${itemName}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </Badge>
+                  );
+                })}
               </div>
             )}
 
@@ -285,27 +302,74 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             )}
 
             {/* Mention Suggestions */}
-            {showMentions && filteredTasks.length > 0 && (
+            {showMentions && hasMatches && (
               <div className="bg-card border border-border rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                <div className="p-2 text-xs font-medium text-muted-foreground bg-muted/50">
-                  Select a task to mention
-                </div>
-                <div className="max-h-48 overflow-y-auto">
-                  {filteredTasks.map(task => (
-                    <button
-                      key={task.id}
-                      onClick={() => handleSelectMention(task)}
-                      className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors flex items-center gap-3 group"
-                    >
-                      <div className={`w-2 h-2 rounded-full ${task.priority === 'HIGH' ? 'bg-red-500' :
-                        task.priority === 'MEDIUM' ? 'bg-yellow-500' :
-                          'bg-blue-500'
-                        }`} />
-                      <span className="text-sm text-foreground group-hover:text-primary transition-colors flex-1 truncate">
-                        {task.title}
-                      </span>
-                    </button>
-                  ))}
+                <div className="max-h-64 overflow-y-auto">
+                  {/* Tasks */}
+                  {filteredTasks.length > 0 && (
+                    <div>
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-indigo-400 bg-indigo-500/10 uppercase tracking-wider">
+                        Tasks
+                      </div>
+                      {filteredTasks.map(task => (
+                        <button
+                          key={task.id}
+                          onClick={() => handleSelectMention('task', task)}
+                          className="w-full px-4 py-2 text-left hover:bg-accent transition-colors flex items-center gap-3"
+                        >
+                          <div className={`w-2 h-2 rounded-full ${task.priority === 'HIGH' ? 'bg-red-500' : task.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-foreground truncate">{task.title}</div>
+                            <div className="text-xs text-muted-foreground">{task.category}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Projects */}
+                  {filteredProjects.length > 0 && (
+                    <div>
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-purple-400 bg-purple-500/10 uppercase tracking-wider">
+                        Projects
+                      </div>
+                      {filteredProjects.map(project => (
+                        <button
+                          key={project.id}
+                          onClick={() => handleSelectMention('project', project)}
+                          className="w-full px-4 py-2 text-left hover:bg-accent transition-colors flex items-center gap-3"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-purple-500" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-foreground truncate">{project.title}</div>
+                            <div className="text-xs text-muted-foreground">Project • {project.status}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Clients */}
+                  {filteredClients.length > 0 && (
+                    <div>
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 uppercase tracking-wider">
+                        Clients
+                      </div>
+                      {filteredClients.map(client => (
+                        <button
+                          key={client.id}
+                          onClick={() => handleSelectMention('client', client)}
+                          className="w-full px-4 py-2 text-left hover:bg-accent transition-colors flex items-center gap-3"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-foreground truncate">{client.name}</div>
+                            <div className="text-xs text-muted-foreground">Client • {client.status}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

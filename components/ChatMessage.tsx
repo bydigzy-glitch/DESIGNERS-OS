@@ -1,6 +1,6 @@
 import React from 'react';
 import { Message } from '../types';
-import { User, Copy, ThumbsUp, ThumbsDown, CheckSquare } from 'lucide-react';
+import { User, Copy, ThumbsUp, ThumbsDown, CheckSquare, Briefcase } from 'lucide-react';
 import { GradientGlobe } from '@/components/ui/GradientGlobe';
 import { StreamingText } from './StreamingText';
 
@@ -13,7 +13,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLatest = fa
   const isUser = message.role === 'user';
 
   const parseInline = (text: string) => {
-    // Regex matches: **bold**, `code`, or @[Task Name]
+    // Regex matches: **bold**, `code`, or @[Type: Name]
     const parts = text.split(/(\*\*.*?\*\*|`.*?`|@\[.*?\])/g);
 
     return parts.map((part, i) => {
@@ -25,13 +25,53 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLatest = fa
       if (part.startsWith('`') && part.endsWith('`')) {
         return <code key={i} className="bg-secondary border border-border rounded px-1.5 py-0.5 text-xs font-mono text-primary">{part.slice(1, -1)}</code>;
       }
-      // Task Mention
+      // Mentions - @[Type: Name] or @[Name]
       if (part.startsWith('@[') && part.endsWith(']')) {
-        const taskName = part.slice(2, -1);
+        const content = part.slice(2, -1);
+        let mentionType = 'task'; // default
+        let mentionName = content;
+
+        // Detect mention type from format "@[Type: Name]"
+        const typeMatch = content.match(/^(Task|Project|Client):\s*(.+)$/i);
+        if (typeMatch) {
+          mentionType = typeMatch[1].toLowerCase();
+          mentionName = typeMatch[2];
+        }
+
+        // Styling based on type
+        const styles = {
+          task: {
+            bg: 'bg-indigo-500/20',
+            border: 'border-indigo-500/50',
+            text: 'text-indigo-300',
+            shadow: 'shadow-[0_0_12px_rgba(99,102,241,0.25)]',
+            icon: <CheckSquare size={13} strokeWidth={2.5} />
+          },
+          project: {
+            bg: 'bg-purple-500/20',
+            border: 'border-purple-500/50',
+            text: 'text-purple-300',
+            shadow: 'shadow-[0_0_12px_rgba(168,85,247,0.25)]',
+            icon: <Briefcase size={13} strokeWidth={2.5} />
+          },
+          client: {
+            bg: 'bg-emerald-500/20',
+            border: 'border-emerald-500/50',
+            text: 'text-emerald-300',
+            shadow: 'shadow-[0_0_12px_rgba(16,185,129,0.25)]',
+            icon: <User size={13} strokeWidth={2.5} />
+          }
+        };
+
+        const style = styles[mentionType as keyof typeof styles] || styles.task;
+
         return (
-          <span key={i} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 text-xs font-bold mx-1 align-middle shadow-[0_0_10px_rgba(99,102,241,0.2)]">
-            <CheckSquare size={12} strokeWidth={2.5} />
-            {taskName}
+          <span
+            key={i}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md ${style.bg} ${style.text} border-2 ${style.border} text-sm font-bold mx-1 align-middle ${style.shadow}`}
+          >
+            {style.icon}
+            {mentionName}
           </span>
         );
       }

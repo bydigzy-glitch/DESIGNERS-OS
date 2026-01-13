@@ -1461,295 +1461,326 @@ function App() {
         } finally {
             if (activeRequestRef.current) {
                 setIsLoading(false);
-                activeRequestRef.current = false;
             }
-        }
-    };
+        };
 
-    const handleUpdateUser = async (updatedUser: User) => {
-        setUser(updatedUser);
-        storageService.saveUser(updatedUser);
+        // AI Action Event Listener - connects action buttons to chat sidebar
+        useEffect(() => {
+            const handleAIAction = (e: Event) => {
+                const customEvent = e as CustomEvent;
+                const { tool, content, prompt, itemType } = customEvent.detail || {};
 
-        // Sync to Supabase for cross-device sync
-        if (!updatedUser.isGuest) {
-            try {
-                await db.users.upsert({
-                    id: updatedUser.id,
-                    name: updatedUser.name,
-                    email: updatedUser.email,
-                    avatar: updatedUser.avatar,
-                    preferences: updatedUser.preferences,
-                    ai_memory: updatedUser.aiMemory,
-                    tokens: updatedUser.tokens
-                } as any);
-            } catch (error) {
-                console.error('Failed to sync user to Supabase:', error);
+                // Open chat overlay
+                setIsChatOverlayOpen(true);
+
+                // Format message based on action type
+                let message = '';
+                if (tool === 'summarize') {
+                    message = `Summarize this:\n\n${content}`;
+                } else if (tool === 'generate_items') {
+                    message = prompt || `Generate ${itemType} for this item`;
+                } else if (tool === 'classify_tags') {
+                    message = `Suggest tags for:\n\n${content}`;
+                } else {
+                    message = content || prompt || '';
+                }
+
+                // Auto-send after sidebar opens (small delay for UI transition)
+                if (message) {
+                    setTimeout(() => {
+                        handleSendMessage(message);
+                    }, 400);
+                }
+            };
+
+            window.addEventListener('ai-action', handleAIAction);
+            return () => window.removeEventListener('ai-action', handleAIAction);
+        }, [handleSendMessage]);
+
+        const handleUpdateUser = async (updatedUser: User) => {
+            setUser(updatedUser);
+            storageService.saveUser(updatedUser);
+
+            // Sync to Supabase for cross-device sync
+            if (!updatedUser.isGuest) {
+                try {
+                    await db.users.upsert({
+                        id: updatedUser.id,
+                        name: updatedUser.name,
+                        email: updatedUser.email,
+                        avatar: updatedUser.avatar,
+                        preferences: updatedUser.preferences,
+                        ai_memory: updatedUser.aiMemory,
+                        tokens: updatedUser.tokens
+                    } as any);
+                } catch (error) {
+                    console.error('Failed to sync user to Supabase:', error);
+                }
             }
-        }
 
-        addToast('SUCCESS', 'Profile updated');
-    };
+            addToast('SUCCESS', 'Profile updated');
+        };
 
-    const renderView = () => {
-        switch (currentView) {
-            // DESIGNERS HUB ROUTES
-            case 'COMMAND_CENTER':
-                return <CommandCenter
-                    user={user}
-                    tasks={tasks}
-                    projects={projects}
-                    clients={clients}
-                    pendingApprovals={pendingApprovals}
-                    riskAlerts={riskAlerts}
-                    handledToday={handledToday}
-                    autopilotMode={autopilotMode}
-                    onOpenBrain={() => setIsBrainOpen(true)}
-                    onApprove={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
-                    onReject={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
-                    onAcknowledgeRisk={(alert) => setRiskAlerts(prev => prev.map(r => r.id === alert.id ? { ...r, acknowledged: true } : r))}
-                    onTaskClick={(task) => { /* Open task modal */ }}
-                    onProjectClick={(project) => { /* Open project modal */ }}
-                    onOpenIntake={() => setIsIntakeFormOpen(true)}
-                />;
-            case 'CLIENTS':
-                return <ClientsPage
-                    clients={clients}
-                    projects={projects}
-                    onAddClient={handleClientAdd}
-                    onUpdateClient={handleClientUpdate}
-                    onDeleteClient={handleClientDelete}
-                />;
-            case 'WORK':
-                return <WorkPage
-                    tasks={tasks}
-                    projects={projects}
-                    clients={clients}
-                    onAddTask={handleTaskCreate}
-                    onUpdateTask={handleTaskUpdate}
-                    onDeleteTask={handleTaskDelete}
-                    onAddProject={handleProjectCreate}
-                    onUpdateProject={handleProjectUpdate}
-                    onDeleteProject={handleProjectDelete}
-                />;
-            case 'CALENDAR':
-                return <CalendarPage
-                    tasks={tasks}
-                    projects={projects}
-                    onUpdateTask={handleTaskUpdate}
-                    onAddTask={handleTaskCreate}
-                    onDeleteTask={handleTaskDelete}
-                />;
-            case 'MONEY':
-                return <MoneyPage
-                    projects={projects}
-                    clients={clients}
-                />;
-            // LEGACY ROUTES (kept for transition)
-            case 'HQ':
-                return <HQ
-                    user={user}
-                    tasks={tasks}
-                    clients={clients}
-                    projects={projects}
-                    habits={habits}
-                    pendingApprovals={pendingApprovals}
-                    riskAlerts={riskAlerts}
-                    handledToday={handledToday}
-                    setTasks={setTasks}
-                    onStartRecovery={handleRecoverySession}
+        const renderView = () => {
+            switch (currentView) {
+                // DESIGNERS HUB ROUTES
+                case 'COMMAND_CENTER':
+                    return <CommandCenter
+                        user={user}
+                        tasks={tasks}
+                        projects={projects}
+                        clients={clients}
+                        pendingApprovals={pendingApprovals}
+                        riskAlerts={riskAlerts}
+                        handledToday={handledToday}
+                        autopilotMode={autopilotMode}
+                        onOpenBrain={() => setIsBrainOpen(true)}
+                        onApprove={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
+                        onReject={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
+                        onAcknowledgeRisk={(alert) => setRiskAlerts(prev => prev.map(r => r.id === alert.id ? { ...r, acknowledged: true } : r))}
+                        onTaskClick={(task) => { /* Open task modal */ }}
+                        onProjectClick={(project) => { /* Open project modal */ }}
+                        onOpenIntake={() => setIsIntakeFormOpen(true)}
+                    />;
+                case 'CLIENTS':
+                    return <ClientsPage
+                        clients={clients}
+                        projects={projects}
+                        onAddClient={handleClientAdd}
+                        onUpdateClient={handleClientUpdate}
+                        onDeleteClient={handleClientDelete}
+                    />;
+                case 'WORK':
+                    return <WorkPage
+                        tasks={tasks}
+                        projects={projects}
+                        clients={clients}
+                        onAddTask={handleTaskCreate}
+                        onUpdateTask={handleTaskUpdate}
+                        onDeleteTask={handleTaskDelete}
+                        onAddProject={handleProjectCreate}
+                        onUpdateProject={handleProjectUpdate}
+                        onDeleteProject={handleProjectDelete}
+                    />;
+                case 'CALENDAR':
+                    return <CalendarPage
+                        tasks={tasks}
+                        projects={projects}
+                        onUpdateTask={handleTaskUpdate}
+                        onAddTask={handleTaskCreate}
+                        onDeleteTask={handleTaskDelete}
+                    />;
+                case 'MONEY':
+                    return <MoneyPage
+                        projects={projects}
+                        clients={clients}
+                    />;
+                // LEGACY ROUTES (kept for transition)
+                case 'HQ':
+                    return <HQ
+                        user={user}
+                        tasks={tasks}
+                        clients={clients}
+                        projects={projects}
+                        habits={habits}
+                        pendingApprovals={pendingApprovals}
+                        riskAlerts={riskAlerts}
+                        handledToday={handledToday}
+                        setTasks={setTasks}
+                        onStartRecovery={handleRecoverySession}
+                        onNavigate={setCurrentView}
+                        onSendMessage={handleSendMessage}
+                        onOpenAiSidebar={() => setIsChatOverlayOpen(true)}
+                        onAddTask={handleTaskCreate}
+                        onUpdateTask={handleTaskUpdate}
+                        onDeleteTask={handleTaskDelete}
+                        onAddProject={handleProjectCreate}
+                        onUpdateProject={handleProjectUpdate}
+                        onDeleteProject={handleProjectDelete}
+                        onToggleHabit={handleToggleHabit}
+                        onApprove={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
+                        onReject={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
+                        onAcknowledgeRisk={(alert) => setRiskAlerts(prev => prev.map(r => r.id === alert.id ? { ...r, acknowledged: true } : r))}
+                    />;
+                case 'MANAGER':
+                    return <ManagerPage
+                        clients={clients}
+                        projects={projects}
+                        tasks={tasks}
+                        onAddClient={handleClientAdd}
+                        onUpdateClient={handleClientUpdate}
+                        onDeleteClient={handleClientDelete}
+                        onAddProject={handleProjectCreate}
+                        onUpdateProject={handleProjectUpdate}
+                        onDeleteProject={handleProjectDelete}
+                    />;
+                case 'HABITS':
+                    return <HabitsPage
+                        habits={habits}
+                        setHabits={setHabits}
+                    />;
+                case 'APPS':
+                    return <Apps
+                        items={infinityItems}
+                        setItems={setInfinityItems}
+                        userTokens={user?.tokens || 0}
+                        onUseToken={(amount) => handleUseToken(amount, 'app_action')}
+                    />;
+                case 'FILES':
+                    return <FileManager files={files} setFiles={setFiles} folders={folders} setFolders={setFolders} clients={clients} isDriveConnected={isDriveConnected} />;
+                case 'SETTINGS':
+                    return <Settings
+                        user={user as User}
+                        onLogout={() => {
+                            storageService.logout();
+                            setUser(null);
+                            setCurrentView('HQ');
+                        }}
+                        onClose={() => setCurrentView('HQ')}
+                        onConnectDrive={() => setIsDriveConnected(true)}
+                        isDriveConnected={isDriveConnected}
+                        onUpdateUser={handleUpdateUser}
+                    />;
+                // case 'DEMO':
+                //     return <ShadcnDemo />;
+                case 'CHAT':
+                default:
+                    return <ChatInterface
+                        user={user}
+                        messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
+                        isLoading={isLoading}
+                        loadingStep={loadingStep}
+                        onSendMessage={handleSendMessage}
+                        onStopGeneration={handleStopGeneration}
+                        sessions={chatSessions}
+                        currentSessionId={currentSessionId}
+                        onSelectSession={setCurrentSessionId}
+                        onCreateSession={createNewSession}
+                        onDeleteSession={deleteSession}
+                        tasks={tasks}
+                    />;
+            }
+        };
+
+        // We've removed the full-screen LoadingScreen to prioritize an immediate shell render.
+        // Components like HQ will handle data-fetch states gracefully.
+        // if (isAppLoading) return <LoadingScreen />;
+
+        if (!user) return <Auth onLogin={handleLogin} />;
+
+        return (
+            <div className="flex flex-col md:flex-row h-[100dvh] bg-app-bg text-text-primary overflow-hidden animate-in fade-in duration-500 relative">
+                <AnimatedBackground />
+                <Navigation
+                    currentView={currentView}
                     onNavigate={setCurrentView}
-                    onSendMessage={handleSendMessage}
-                    onOpenAiSidebar={() => setIsChatOverlayOpen(true)}
-                    onAddTask={handleTaskCreate}
-                    onUpdateTask={handleTaskUpdate}
-                    onDeleteTask={handleTaskDelete}
-                    onAddProject={handleProjectCreate}
-                    onUpdateProject={handleProjectUpdate}
-                    onDeleteProject={handleProjectDelete}
-                    onToggleHabit={handleToggleHabit}
-                    onApprove={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
-                    onReject={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
-                    onAcknowledgeRisk={(alert) => setRiskAlerts(prev => prev.map(r => r.id === alert.id ? { ...r, acknowledged: true } : r))}
-                />;
-            case 'MANAGER':
-                return <ManagerPage
-                    clients={clients}
-                    projects={projects}
-                    tasks={tasks}
-                    onAddClient={handleClientAdd}
-                    onUpdateClient={handleClientUpdate}
-                    onDeleteClient={handleClientDelete}
-                    onAddProject={handleProjectCreate}
-                    onUpdateProject={handleProjectUpdate}
-                    onDeleteProject={handleProjectDelete}
-                />;
-            case 'HABITS':
-                return <HabitsPage
-                    habits={habits}
-                    setHabits={setHabits}
-                />;
-            case 'APPS':
-                return <Apps
-                    items={infinityItems}
-                    setItems={setInfinityItems}
-                    userTokens={user?.tokens || 0}
-                    onUseToken={(amount) => handleUseToken(amount, 'app_action')}
-                />;
-            case 'FILES':
-                return <FileManager files={files} setFiles={setFiles} folders={folders} setFolders={setFolders} clients={clients} isDriveConnected={isDriveConnected} />;
-            case 'SETTINGS':
-                return <Settings
-                    user={user as User}
-                    onLogout={() => {
-                        storageService.logout();
-                        setUser(null);
-                        setCurrentView('HQ');
-                    }}
-                    onClose={() => setCurrentView('HQ')}
-                    onConnectDrive={() => setIsDriveConnected(true)}
-                    isDriveConnected={isDriveConnected}
-                    onUpdateUser={handleUpdateUser}
-                />;
-            // case 'DEMO':
-            //     return <ShadcnDemo />;
-            case 'CHAT':
-            default:
-                return <ChatInterface
-                    user={user}
-                    messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
-                    isLoading={isLoading}
-                    loadingStep={loadingStep}
-                    onSendMessage={handleSendMessage}
-                    onStopGeneration={handleStopGeneration}
-                    sessions={chatSessions}
-                    currentSessionId={currentSessionId}
-                    onSelectSession={setCurrentSessionId}
-                    onCreateSession={createNewSession}
-                    onDeleteSession={deleteSession}
-                    tasks={tasks}
-                />;
-        }
-    };
-
-    // We've removed the full-screen LoadingScreen to prioritize an immediate shell render.
-    // Components like HQ will handle data-fetch states gracefully.
-    // if (isAppLoading) return <LoadingScreen />;
-
-    if (!user) return <Auth onLogin={handleLogin} />;
-
-    return (
-        <div className="flex flex-col md:flex-row h-[100dvh] bg-app-bg text-text-primary overflow-hidden animate-in fade-in duration-500 relative">
-            <AnimatedBackground />
-            <Navigation
-                currentView={currentView}
-                onNavigate={setCurrentView}
-                user={user}
-                notifications={notifications}
-                onMarkRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
-                onClearAll={() => setNotifications([])}
-                autopilotMode={autopilotMode}
-                onChangeAutopilotMode={setAutopilotMode}
-                onOpenBrain={() => setIsBrainOpen(true)}
-                onOpenAI={() => setIsAICommandOpen(true)}
-                pendingApprovalsCount={pendingApprovals.length}
-                riskAlertsCount={riskAlerts.filter(r => !r.acknowledged).length}
-            />
-            <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-                <TopBar
                     user={user}
                     notifications={notifications}
-                    onToggleTheme={handleToggleTheme}
-                    onToggleNotifications={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
-                    showNotificationsDropdown={showNotificationsDropdown}
-                    onClearNotifications={() => setNotifications([])}
-                    onMarkNotificationRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
-                    onTeamInviteResponse={handleTeamInviteResponse}
-                    onNavigate={setCurrentView}
-                    currentView={currentView}
-                    onOpenAI={() => setIsChatOverlayOpen(true)}
-                    tasks={tasks}
-                    projects={projects}
-                    clients={clients}
-                    files={files}
-                />
-                <div className="flex-1 h-full w-full max-w-[1920px] mx-auto overflow-hidden p-4 md:p-8 transition-all">
-                    {renderView()}
-                </div>
-                <ToastContainer toasts={toasts} onDismiss={removeToast} />
-
-                <ChatOverlay
-                    isOpen={isChatOverlayOpen}
-                    onClose={() => setIsChatOverlayOpen(false)}
-                    user={user}
-                    messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
-                    isLoading={isLoading}
-                    loadingStep={loadingStep}
-                    onSendMessage={handleSendMessage}
-                    onStopGeneration={handleStopGeneration}
-                    sessions={chatSessions}
-                    currentSessionId={currentSessionId}
-                    onSelectSession={setCurrentSessionId}
-                    onCreateSession={createNewSession}
-                    onDeleteSession={deleteSession}
-                    tasks={tasks}
-                />
-
-                {/* Designers Hub: Brain AI Sidebar */}
-                <BrainOverlay
-                    isOpen={isBrainOpen}
-                    onClose={() => setIsBrainOpen(false)}
-                    messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
-                    isLoading={isLoading}
-                    onSendMessage={handleSendMessage}
+                    onMarkRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
+                    onClearAll={() => setNotifications([])}
                     autopilotMode={autopilotMode}
-                    user={user}
+                    onChangeAutopilotMode={setAutopilotMode}
+                    onOpenBrain={() => setIsBrainOpen(true)}
+                    onOpenAI={() => setIsAICommandOpen(true)}
+                    pendingApprovalsCount={pendingApprovals.length}
+                    riskAlertsCount={riskAlerts.filter(r => !r.acknowledged).length}
                 />
+                <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+                    <TopBar
+                        user={user}
+                        notifications={notifications}
+                        onToggleTheme={handleToggleTheme}
+                        onToggleNotifications={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                        showNotificationsDropdown={showNotificationsDropdown}
+                        onClearNotifications={() => setNotifications([])}
+                        onMarkNotificationRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
+                        onTeamInviteResponse={handleTeamInviteResponse}
+                        onNavigate={setCurrentView}
+                        currentView={currentView}
+                        onOpenAI={() => setIsChatOverlayOpen(true)}
+                        tasks={tasks}
+                        projects={projects}
+                        clients={clients}
+                        files={files}
+                    />
+                    <div className="flex-1 h-full w-full max-w-[1920px] mx-auto overflow-hidden p-4 md:p-8 transition-all">
+                        {renderView()}
+                    </div>
+                    <ToastContainer toasts={toasts} onDismiss={removeToast} />
 
-                <IntakeForm
-                    isOpen={isIntakeFormOpen}
-                    onClose={() => setIsIntakeFormOpen(false)}
-                    onSubmit={handleIntakeSubmit}
-                />
+                    <ChatOverlay
+                        isOpen={isChatOverlayOpen}
+                        onClose={() => setIsChatOverlayOpen(false)}
+                        user={user}
+                        messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
+                        isLoading={isLoading}
+                        loadingStep={loadingStep}
+                        onSendMessage={handleSendMessage}
+                        onStopGeneration={handleStopGeneration}
+                        sessions={chatSessions}
+                        currentSessionId={currentSessionId}
+                        onSelectSession={setCurrentSessionId}
+                        onCreateSession={createNewSession}
+                        onDeleteSession={deleteSession}
+                        tasks={tasks}
+                    />
 
-                {/* AI Command Palette (⌘K) */}
-                <AICommandPalette
-                    open={isAICommandOpen}
-                    onOpenChange={setIsAICommandOpen}
-                    context={{
-                        userId: user.id,
-                        permissions: { canRead: true, canWrite: true, canDelete: false }
-                    }}
-                    tasks={tasks}
-                    projects={projects}
-                    clients={clients}
-                    onApplyResult={(toolName, result) => {
-                        // Handle AI results - create tasks, update items, etc.
-                        if (toolName === 'generate_items' && result?.items) {
-                            result.items.forEach((item: any) => {
-                                if (item.title) {
-                                    handleTaskCreate({
-                                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                                        title: item.title,
-                                        completed: false,
-                                        category: item.category || 'ADMIN',
-                                        date: new Date(),
-                                        duration: item.estimatedMinutes || 30,
-                                        priority: item.priority || 'MEDIUM'
-                                    });
-                                }
-                            });
-                            addToast('SUCCESS', `Created ${result.items.length} tasks from AI`);
-                        }
-                    }}
-                />
-            </main>
+                    {/* Designers Hub: Brain AI Sidebar */}
+                    <BrainOverlay
+                        isOpen={isBrainOpen}
+                        onClose={() => setIsBrainOpen(false)}
+                        messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
+                        isLoading={isLoading}
+                        onSendMessage={handleSendMessage}
+                        autopilotMode={autopilotMode}
+                        user={user}
+                    />
 
-            {/* Quick Actions Sidebar */}
-            <div className="hidden xl:block h-full">
-                <QuickActionsSidebar />
+                    <IntakeForm
+                        isOpen={isIntakeFormOpen}
+                        onClose={() => setIsIntakeFormOpen(false)}
+                        onSubmit={handleIntakeSubmit}
+                    />
+
+                    {/* AI Command Palette (⌘K) */}
+                    <AICommandPalette
+                        open={isAICommandOpen}
+                        onOpenChange={setIsAICommandOpen}
+                        context={{
+                            userId: user.id,
+                            permissions: { canRead: true, canWrite: true, canDelete: false }
+                        }}
+                        tasks={tasks}
+                        projects={projects}
+                        clients={clients}
+                        onApplyResult={(toolName, result) => {
+                            // Handle AI results - create tasks, update items, etc.
+                            if (toolName === 'generate_items' && result?.items) {
+                                result.items.forEach((item: any) => {
+                                    if (item.title) {
+                                        handleTaskCreate({
+                                            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                                            title: item.title,
+                                            completed: false,
+                                            category: item.category || 'ADMIN',
+                                            date: new Date(),
+                                            duration: item.estimatedMinutes || 30,
+                                            priority: item.priority || 'MEDIUM'
+                                        });
+                                    }
+                                });
+                                addToast('SUCCESS', `Created ${result.items.length} tasks from AI`);
+                            }
+                        }}
+                    />
+                </main>
+
+                {/* Quick Actions Sidebar */}
+                <div className="hidden xl:block h-full">
+                    <QuickActionsSidebar />
+                </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
-export default App;
+    export default App;

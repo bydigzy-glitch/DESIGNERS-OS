@@ -91,6 +91,25 @@ export const WorkPage: React.FC<WorkPageProps> = ({
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [filterProjectStatus, setFilterProjectStatus] = useState<string | null>(null);
 
+    // Drag and Drop State
+    const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+
+    const handleDragStart = (task: Task) => {
+        setDraggedTask(task);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault(); // Allow drop
+    };
+
+    const handleDrop = (status: string) => {
+        if (draggedTask) {
+            const updatedTask = { ...draggedTask, statusLabel: status as 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE' };
+            onUpdateTask(updatedTask);
+            setDraggedTask(null);
+        }
+    };
+
     // Calculate stats
     const stats = useMemo(() => {
         const activeProjects = projects.filter(p => p.status === 'ACTIVE').length;
@@ -361,7 +380,12 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                     <TabsContent value="tasks" className="mt-6">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             {Object.entries(tasksByStatus).map(([status, statusTasks]) => (
-                                <Card key={status} className="min-h-[300px]">
+                                <Card
+                                    key={status}
+                                    className="min-h-[300px]"
+                                    onDragOver={handleDragOver}
+                                    onDrop={() => handleDrop(status)}
+                                >
                                     <CardHeader className="pb-3">
                                         <CardTitle className="text-sm flex items-center justify-between">
                                             <span className="flex items-center gap-2">
@@ -376,8 +400,10 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                                         {statusTasks.slice(0, 5).map(task => (
                                             <div
                                                 key={task.id}
+                                                draggable
+                                                onDragStart={() => handleDragStart(task)}
                                                 onClick={() => { setSelectedTask(task); setIsTaskModalOpen(true); }}
-                                                className="p-3 rounded-lg bg-secondary/30 border border-transparent hover:border-primary/30 cursor-pointer transition-all group"
+                                                className="p-3 rounded-lg bg-secondary/30 border border-transparent hover:border-primary/30 cursor-move transition-all group"
                                             >
                                                 <div className="font-medium text-sm text-foreground truncate">{task.title}</div>
                                                 <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">

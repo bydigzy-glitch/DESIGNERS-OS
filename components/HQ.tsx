@@ -117,24 +117,24 @@ const WorkProgressGraph: React.FC<{ tasks: Task[], projects: Project[] }> = ({ t
 
             <div className="flex-1 flex items-end gap-3 px-1 min-h-[140px]">
                 {data.map((d, i) => (
-                    <div key={d.date} className="flex-1 flex flex-col items-center gap-3 group relative">
-                        <div className="w-full relative flex items-end justify-center gap-1 h-full max-h-[120px]">
-                            {/* Project Load - Background or side bar */}
+                    <div key={d.date} className="flex-1 flex flex-col items-center gap-3 group relative h-full">
+                        <div className="w-full relative flex items-end justify-center gap-1.5 h-[120px]">
+                            {/* Project Load - Wider and more visible */}
                             <motion.div
                                 initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: `${(d.projectLoad / globalMax) * 100}%`, opacity: 0.15 }}
+                                animate={{ height: `${(d.projectLoad / globalMax) * 100}%`, opacity: 0.3 }}
                                 transition={{ duration: 0.8, delay: i * 0.05 }}
-                                className="w-full max-w-[12px] rounded-t-sm bg-purple-500"
+                                className="w-full max-w-[14px] rounded-t-sm bg-purple-500/40 border-t border-purple-500/50"
                             />
 
                             {/* Work Done - Main bar */}
                             <motion.div
                                 initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: `${Math.max((d.workDone / globalMax) * 100, 2)}%`, opacity: 1 }}
+                                animate={{ height: `${Math.max((d.workDone / globalMax) * 100, 4)}%`, opacity: 1 }}
                                 transition={{ duration: 0.8, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                                className={`w-full max-w-[20px] rounded-t-sm transition-all relative ${d.workDone > 0
-                                    ? 'bg-gradient-to-t from-primary/40 to-primary shadow-[0_0_10px_hsl(var(--primary)/0.2)]'
-                                    : 'bg-secondary/20'}`}
+                                className={`w-full max-w-[14px] rounded-t-sm transition-all relative ${d.workDone > 0
+                                    ? 'bg-gradient-to-t from-primary/60 to-primary shadow-[0_0_15px_hsl(var(--primary)/0.3)]'
+                                    : 'bg-secondary/30 border-t border-border'}`}
                             />
 
                             {/* Tooltip */}

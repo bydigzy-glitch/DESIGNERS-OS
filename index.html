@@ -6,6 +6,15 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>TaskNovaPro</title>
+  <script>
+    // Prevent theme flash by applying theme before render
+    (function () {
+      var theme = localStorage.getItem('app_theme');
+      if (theme === 'stripe' || theme === 'default') {
+        document.documentElement.dataset.theme = theme;
+      }
+    })();
+  </script>
   <script src="https://apis.google.com/js/api.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 

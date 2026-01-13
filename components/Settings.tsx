@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { User, ViewMode } from '../types';
-import { LogOut, User as UserIcon, Bell, ArrowLeft, Save, Upload, Menu, ChevronUp, ChevronDown } from 'lucide-react';
+import { LogOut, User as UserIcon, Bell, ArrowLeft, Save, Upload, Menu, ChevronUp, ChevronDown, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { FadeIn } from './common/AnimatedComponents';
+import { getInitialTheme, setTheme, type Theme } from '@/lib/theme';
 
 interface SettingsProps {
     user: User;
@@ -35,6 +36,7 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
     const [isEditing, setIsEditing] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(user.preferences.notifications);
     const [navOrder, setNavOrder] = useState<ViewMode[]>(user.preferences.navOrder || DEFAULT_ORDER);
+    const [uiTheme, setUiTheme] = useState<Theme>(getInitialTheme());
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -242,7 +244,37 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                                         }`}
                                 >
                                     <div className={`w-10 h-10 border ${t.preview}`}></div>
-                                    <span className="text-xs font-medium text-white">{t.name}</span>
+                                    <span className="text-xs font-medium text-foreground">{t.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* UI Theme - Default vs Stripe */}
+                    <div className="p-5 bg-card rounded-2xl border border-border">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Palette size={18} className="text-primary" />
+                            <h3 className="text-foreground font-bold">UI Theme</h3>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-4">Applies across the entire app</p>
+
+                        <div className="flex gap-2 p-1 bg-secondary rounded-lg">
+                            {[
+                                { id: 'default' as Theme, name: 'Default' },
+                                { id: 'stripe' as Theme, name: 'Stripe UI' },
+                            ].map(t => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => {
+                                        setUiTheme(t.id);
+                                        setTheme(t.id);
+                                    }}
+                                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${uiTheme === t.id
+                                            ? 'bg-card text-foreground shadow-sm'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                >
+                                    {t.name}
                                 </button>
                             ))}
                         </div>

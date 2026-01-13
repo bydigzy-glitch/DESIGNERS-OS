@@ -227,6 +227,129 @@
     --destructive-foreground: 0 0% 100%;
   }
 
+  /* =============================================
+     STRIPE UI THEME
+     Dashboard-calibrated tokens following Stripe's design system
+     ============================================= */
+
+  :root[data-theme="stripe"] {
+    /* Stripe Dashboard Background - Clean white with subtle warmth */
+    --background: 210 20% 98%;
+    /* #F6F8FA - Stripe's signature background */
+    --foreground: 220 13% 18%;
+    /* #252A31 - Rich dark text */
+
+    /* Elevated surfaces */
+    --card: 0 0% 100%;
+    /* Pure white cards */
+    --card-foreground: 220 13% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 18%;
+
+    /* Stripe's signature blue/purple accent */
+    --primary: 252 100% 65%;
+    /* #635BFF - Stripe's indigo-blue */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary surfaces */
+    --secondary: 210 20% 96%;
+    /* #F0F3F5 */
+    --secondary-foreground: 220 13% 18%;
+
+    --muted: 210 14% 93%;
+    /* #E8EBEE */
+    --muted-foreground: 220 8% 46%;
+    /* #697386 - Stripe's muted text */
+
+    --accent: 210 20% 96%;
+    --accent-foreground: 220 13% 18%;
+
+    /* Semantic status colors - Stripe calibrated */
+    --success: 154 65% 40%;
+    /* #24A148 - Stripe green */
+    --warning: 36 100% 50%;
+    /* #FF9500 - Amber warning */
+    --destructive: 0 73% 55%;
+    /* #E2442F - Stripe red */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Crisp borders - Stripe's signature clean lines */
+    --border: 216 14% 89%;
+    /* #E3E8EE - Subtle but visible */
+    --input: 216 14% 89%;
+    --ring: 252 100% 65%;
+
+    /* Focus ring - Stripe's signature purple glow */
+    --focus-ring: 252 100% 65%;
+
+    /* Stripe spacing scale (0, 2, 4, 8, 16, 24, 32, 48) */
+    --space-0: 0px;
+    --space-2: 2px;
+    --space-4: 4px;
+    --space-8: 8px;
+    --space-16: 16px;
+    --space-24: 24px;
+    --space-32: 32px;
+    --space-48: 48px;
+
+    /* Stripe radii - Subtle, professional curves */
+    --radius: 6px;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+
+    /* Stripe shadows - Restrained, layered */
+    --shadow-sm: 0 1px 2px 0 rgba(30, 39, 50, 0.06);
+    --shadow-md: 0 2px 4px rgba(30, 39, 50, 0.06), 0 4px 8px rgba(30, 39, 50, 0.06);
+    --shadow-lg: 0 4px 12px rgba(30, 39, 50, 0.08), 0 8px 24px rgba(30, 39, 50, 0.08);
+
+    /* Stripe elevated surface */
+    --surface-highlight: 210 14% 96%;
+  }
+
+  :root[data-theme="stripe"].dark,
+  :root[data-theme="stripe"] .dark {
+    /* Stripe Dashboard Dark Mode */
+    --background: 222 28% 7%;
+    /* #0A0D14 - Stripe dark bg */
+    --foreground: 210 20% 95%;
+    /* #F0F3F5 */
+
+    --card: 222 23% 10%;
+    /* #111827 - Elevated dark card */
+    --card-foreground: 210 20% 95%;
+
+    --popover: 222 23% 12%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 252 100% 68%;
+    /* #7B73FF - Lighter purple for dark mode */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 23% 13%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 222 20% 16%;
+    --muted-foreground: 215 14% 55%;
+
+    --accent: 222 23% 13%;
+    --accent-foreground: 210 20% 95%;
+
+    --success: 154 65% 50%;
+    --warning: 36 100% 55%;
+    --destructive: 0 73% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 16% 18%;
+    --input: 222 16% 18%;
+    --ring: 252 100% 68%;
+
+    --focus-ring: 252 100% 68%;
+    --surface-highlight: 222 20% 16%;
+  }
+
   /* Apple HIG: Support "Increase Contrast" accessibility setting
      Provides enhanced contrast for users who enable it */
   @media (prefers-contrast: more) {
@@ -258,6 +381,26 @@
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
+    /* Smooth theme transitions - colors only, no layout shift */
+    transition: background-color 200ms ease, color 200ms ease;
+  }
+
+  /* Theme transition for common elements */
+  *:not([class*="animate"]) {
+    transition-property: background-color, border-color, box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
+  }
+
+  /* Disable transitions for reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
   }
 
   /* Semantic Typography Utilities */

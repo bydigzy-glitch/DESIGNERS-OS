@@ -135,12 +135,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLatest = fa
             <div className="font-sans">
               {isUser ? (
                 <p className="text-sm leading-7 whitespace-pre-wrap">{parseInline(message.text)}</p>
-              ) : isLatest ? (
-                <div className="text-sm leading-7">
-                  <StreamingText text={message.text} />
-                </div>
               ) : (
-                renderContent(message.text)
+                <div className={`text-sm leading-7 ${isLatest ? 'streaming-content' : ''}`}>
+                  {renderContent(message.text)}
+                </div>
               )}
             </div>
           </div>

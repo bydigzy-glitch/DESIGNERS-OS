@@ -1456,13 +1456,18 @@ function App() {
             const response = await sendMessageToGemini(`IMPORTANT: ${RECOVERY_INSTRUCTION.replace('{{ENERGY_LEVEL}}', String(energyLevel))}`, undefined, undefined, user?.aiMemory);
             if (activeRequestRef.current) {
                 const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'model', text: response.text, timestamp: new Date() };
-                setChatSessions(prev => prev.map(s => s.id === recoveryId ? { ...s, messages: [...s.messages, aiMsg] } : s));
+                setChatSessions(prev => prev.map(s => s.id === recoveryId ? {
+                    ...s,
+                    messages: [...s.messages, aiMsg],
+                    lastModified: new Date()
+                } : s));
             }
+        } catch (error: any) {
+            console.error('Recovery failed:', error);
+            addToast('ERROR', 'Recovery failed to start');
         } finally {
-            if (activeRequestRef.current) {
-                setIsLoading(false);
-                activeRequestRef.current = false;
-            }
+            setIsLoading(false);
+            activeRequestRef.current = false;
         }
     };
 
@@ -1663,6 +1668,39 @@ function App() {
                 />;
         }
     };
+
+    // AI Action Event Listener - connects action buttons (WorkPage) to chat sidebar
+    useEffect(() => {
+        const handleAIAction = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            const { tool, content, prompt, itemType } = customEvent.detail || {};
+
+            // Open chat overlay
+            setIsChatOverlayOpen(true);
+
+            // Format message based on action type
+            let message = '';
+            if (tool === 'summarize') {
+                message = `Summarize this:\n\n${content}`;
+            } else if (tool === 'generate_items') {
+                message = prompt || `Generate ${itemType} for this item`;
+            } else if (tool === 'classify_tags') {
+                message = `Suggest tags for:\n\n${content}`;
+            } else {
+                message = content || prompt || '';
+            }
+
+            // Auto-send after sidebar opens (small delay for UI transition)
+            if (message) {
+                setTimeout(() => {
+                    handleSendMessage(message);
+                }, 400);
+            }
+        };
+
+        window.addEventListener('ai-action', handleAIAction);
+        return () => window.removeEventListener('ai-action', handleAIAction);
+    }, [handleSendMessage]);
 
     // We've removed the full-screen LoadingScreen to prioritize an immediate shell render.
     // Components like HQ will handle data-fetch states gracefully.

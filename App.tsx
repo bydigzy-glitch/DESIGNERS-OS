@@ -36,6 +36,7 @@ import { IntakeForm } from './components/IntakeForm';
 import { IntakeSubmission } from './types';
 import { AICommandPalette } from './components/ai/AICommandPalette';
 import { AIContext } from './services/ai/types';
+import { runReminderCheck, requestNotificationPermission, clearAllReminders } from './services/reminderService';
 
 const DUMMY_USER: User = {
     id: 'admin-user',
@@ -734,6 +735,39 @@ function App() {
     const addNotification = useCallback((note: AppNotification) => {
         setNotifications(prev => [note, ...prev]);
     }, []);
+
+    // Reminder notification system - checks for upcoming tasks/meetings/deadlines
+    useEffect(() => {
+        if (!user) return;
+
+        // Request notification permission on first interaction
+        const requestPermission = () => {
+            requestNotificationPermission();
+            window.removeEventListener('click', requestPermission);
+        };
+        window.addEventListener('click', requestPermission);
+
+        // Run reminder check every 30 seconds
+        const checkReminders = () => {
+            runReminderCheck({
+                tasks,
+                projects,
+                onNotification: addNotification
+            });
+        };
+
+        // Initial check
+        checkReminders();
+
+        // Set up interval
+        const interval = setInterval(checkReminders, 30000); // Every 30 seconds
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('click', requestPermission);
+        };
+    }, [user, tasks, projects, addNotification]);
+
 
     const handleTeamInviteResponse = (teamId: string, accept: boolean, notificationId: string) => {
         if (!user) return;

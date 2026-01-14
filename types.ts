@@ -259,7 +259,7 @@ export interface AppNotification {
   timestamp: Date;
   read: boolean;
   actionData?: {
-    type: 'TEAM_INVITE' | 'CHAT_MESSAGE' | 'DEADLINE' | 'ROLE_ASSIGNMENT' | 'TASK_MODAL';
+    type: 'TEAM_INVITE' | 'CHAT_MESSAGE' | 'DEADLINE' | 'ROLE_ASSIGNMENT' | 'TASK_MODAL' | 'REMINDER';
     teamId?: string;
     teamName?: string;
     taskId?: string;

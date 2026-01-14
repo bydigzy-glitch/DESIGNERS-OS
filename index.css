@@ -6,104 +6,58 @@
 
 @layer base {
   :root {
-    /* Apple-Style Bright Light Mode */
-    --background: 0 0% 98.4%;
-    /* #FBFBFD - Soft off-white */
-    --foreground: 0 0% 12.2%;
-    /* #1D1D1F - Dark graphite text */
+    /* Stripe Dashboard Light Theme */
+    --background: 210 20% 98%;
+    /* #F6F8FA */
+    --foreground: 220 13% 18%;
+    /* #252A31 */
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 12.2%;
+    --card-foreground: 220 13% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 12.2%;
+    --popover-foreground: 220 13% 18%;
 
-    /* Primary Accent: Bright but elegant Apple Blue */
-    --primary: 210 100% 44.5%;
-    /* #0071E3 */
-    --primary-foreground: 0 0% 98%;
+    --primary: 252 100% 65%;
+    /* #635BFF - Stripe Indigo */
+    --primary-foreground: 0 0% 100%;
 
-    /* Surfaces: slightly tinted whites */
-    --secondary: 240 4.8% 95.9%;
-    /* #F5F5F7 */
-    --secondary-foreground: 0 0% 12.2%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 220 13% 18%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 53.5%;
-    /* #86868B - Cool grey clarity */
+    --muted: 210 14% 93%;
+    --muted-foreground: 220 8% 46%;
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 0 0% 12.2%;
+    --accent: 210 20% 96%;
+    --accent-foreground: 220 13% 18%;
 
-    /* Semantic Refinement */
-    --success: 152 57% 45%;
-    /* Fresh green */
-    --warning: 38 92% 50%;
-    /* Warm amber */
-    --destructive: 0 72% 51%;
-    /* Deep crimson */
-    --destructive-foreground: 0 0% 98%;
+    --success: 154 65% 40%;
+    /* Stripe Green */
+    --warning: 36 100% 50%;
+    --destructive: 0 73% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 210 100% 44.5%;
+    --border: 216 14% 89%;
+    /* Stripe Gray Border */
+    --input: 216 14% 89%;
+    --ring: 252 100% 65%;
 
-    --radius: 12px;
-    --radius-xs: 6px;
-    --radius-sm: 10px;
-    --radius-md: 12px;
-    --radius-lg: 18px;
+    --radius: 8px;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
 
-    /* Apple-Caliber Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-
-    /* 8pt Grid System */
-    --grid-step: 8px;
+    /* Spacing & Typography (Stripe Calibrated) */
     --space-1: 8px;
     --space-2: 16px;
     --space-3: 24px;
     --space-4: 32px;
-    --space-5: 40px;
-    --space-6: 48px;
-    --space-8: 64px;
 
-    /* Typography Tokens (Semantic Roles) */
-    --font-family-sans: "Inter Display", "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
-    --font-family-mono: "SF Mono", "SFMono-Regular", ui-monospace, "Geist Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+    --font-family-sans: "Inter", -apple-system, system-ui, sans-serif;
+    --font-family-mono: ui-monospace, "Geist Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    /* Sizes & Spacing */
-    --font-size-display: 48px;
-    --font-size-h1: 34px;
-    --font-size-h2: 24px;
-    --font-size-h3: 20px;
-    --font-size-body: 16px;
-    --font-size-caption: 14px;
-    --font-size-overline: 11px;
-    --font-size-small: 12px;
-
-    /* Line Heights */
-    --line-height-display: 1.1;
-    --line-height-h1: 1.2;
-    --line-height-h2: 1.25;
-    --line-height-h3: 1.3;
-    --line-height-body: 1.5;
-    --line-height-caption: 1.4;
-    --line-height-small: 1.4;
-
-    /* Letter Spacing */
-    --letter-spacing-tight: -0.02em;
-    --letter-spacing-normal: 0em;
-    --letter-spacing-wide: 0.05em;
-
-    /* Weights */
-    --font-weight-regular: 400;
-    --font-weight-medium: 500;
-    --font-weight-semibold: 600;
-    --font-weight-bold: 700;
-
-    /* Z-Index System (Strict) */
+    /* Z-Index System */
     --z-background: 0;
     --z-container: 10;
     --z-card: 20;
@@ -113,219 +67,28 @@
     --z-modal: 1000;
     --z-toast: 2000;
 
-    /* Motion System (Strict) */
-    --duration-micro: 120ms;
-    --duration-fast: 180ms;
-    --duration-default: 230ms;
-    --ease-out: cubic-bezier(0, 0, 0.2, 1);
-    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    /* Transitions */
+    --duration-fast: 150ms;
+    --duration-default: 200ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .dark {
-    /* =============================================
-       APPLE HIG DARK MODE - UPDATED
-       Based on: developer.apple.com/design/human-interface-guidelines/dark-mode
-       ============================================= */
-
-    /* Base Background - Deep but not pure black (reduces eye strain)
-       Apple recommends: Avoid pure #000000, use dark grays instead */
-    --background: 0 0% 7%;
-    /* ~#121212 - Soft black, easier on eyes */
-
-    /* Foreground Text - Off-white, not pure white 
-       Apple HIG: Pure white text on dark bg causes eye strain */
-    --foreground: 0 0% 93%;
-    /* #EDEDED - Soft off-white for primary text */
-
-    /* Elevated Surface - Cards, modals, popovers
-       Apple HIG: Use elevated backgrounds for layered content */
-    --card: 0 0% 11%;
-    /* #1C1C1C - Lifted surface, distinct from base */
-    --card-foreground: 0 0% 93%;
-
-    --popover: 0 0% 13%;
-    /* #212121 - Even more elevated for menus/popovers */
-    --popover-foreground: 0 0% 93%;
-
-    /* Primary Accent - Adjusted for dark mode
-       Apple HIG: Reduce saturation slightly, increase luminance 
-       to prevent "vibrating" colors on dark backgrounds */
-    --primary: 211 100% 55%;
-    /* #2997FF - Apple's adjusted blue for dark mode */
-    --primary-foreground: 0 0% 100%;
-
-    /* Secondary Surface - Subtle elevation step */
-    --secondary: 0 0% 14%;
-    /* #242424 - Slight lift from card */
-    --secondary-foreground: 0 0% 88%;
-    /* #E0E0E0 */
-
-    /* Muted Elements - Lower emphasis text/backgrounds */
-    --muted: 0 0% 16%;
-    /* #292929 */
-    --muted-foreground: 0 0% 60%;
-    /* #999999 - Meets 4.5:1 contrast on dark bg */
-
-    --accent: 0 0% 14%;
-    --accent-foreground: 0 0% 93%;
-
-    /* Semantic Colors - Adjusted luminance for dark mode
-       Apple HIG: Increase brightness of status colors in dark mode */
-    --success: 142 71% 45%;
-    /* Green - slightly brighter */
-    --warning: 38 92% 50%;
-    /* Amber - maintained */
-    --destructive: 0 84% 60%;
-    /* Red - increased luminance for visibility */
-    --destructive-foreground: 0 0% 100%;
-
-    /* Borders - Subtle but visible
-       Apple HIG: Borders should be visible but not harsh */
-    --border: 0 0% 18%;
-    /* #2E2E2E - Visible separation */
-    --input: 0 0% 18%;
-    --ring: 211 100% 55%;
-
-    /* Surface Highlight - For hover states and subtle emphasis */
-    --surface-highlight: 0 0% 20%;
-    /* #333333 - For interactive hover states */
-  }
-
-  .uber {
-    /* Uber Black - High Contrast Expert Aesthetic */
-    --background: 0 0% 0%;
-    /* Pure Black #000000 */
-    --foreground: 0 0% 100%;
-    /* Pure White #FFFFFF */
-
-    --card: 0 0% 6%;
-    /* #0F0F0F - Very deep grey elevated card */
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 0% 4%;
-    /* Even deeper for menus */
-    --popover-foreground: 0 0% 100%;
-
-    --secondary: 0 0% 11%;
-    /* Subtle lift */
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 100%;
-
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 0 0% 90%;
-
-    --surface-highlight: 0 0% 20%;
-    --success: 142 71% 45%;
-    --warning: 48 96% 53%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-  }
-
-  /* =============================================
-     STRIPE UI THEME
-     Dashboard-calibrated tokens following Stripe's design system
-     ============================================= */
-
-  :root[data-theme="stripe"] {
-    /* Stripe Dashboard Background - Clean white with subtle warmth */
-    --background: 210 20% 98%;
-    /* #F6F8FA - Stripe's signature background */
-    --foreground: 220 13% 18%;
-    /* #252A31 - Rich dark text */
-
-    /* Elevated surfaces */
-    --card: 0 0% 100%;
-    /* Pure white cards */
-    --card-foreground: 220 13% 18%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 18%;
-
-    /* Stripe's signature blue/purple accent */
-    --primary: 252 100% 65%;
-    /* #635BFF - Stripe's indigo-blue */
-    --primary-foreground: 0 0% 100%;
-
-    /* Secondary surfaces */
-    --secondary: 210 20% 96%;
-    /* #F0F3F5 */
-    --secondary-foreground: 220 13% 18%;
-
-    --muted: 210 14% 93%;
-    /* #E8EBEE */
-    --muted-foreground: 220 8% 46%;
-    /* #697386 - Stripe's muted text */
-
-    --accent: 210 20% 96%;
-    --accent-foreground: 220 13% 18%;
-
-    /* Semantic status colors - Stripe calibrated */
-    --success: 154 65% 40%;
-    /* #24A148 - Stripe green */
-    --warning: 36 100% 50%;
-    /* #FF9500 - Amber warning */
-    --destructive: 0 73% 55%;
-    /* #E2442F - Stripe red */
-    --destructive-foreground: 0 0% 100%;
-
-    /* Crisp borders - Stripe's signature clean lines */
-    --border: 216 14% 89%;
-    /* #E3E8EE - Subtle but visible */
-    --input: 216 14% 89%;
-    --ring: 252 100% 65%;
-
-    /* Focus ring - Stripe's signature purple glow */
-    --focus-ring: 252 100% 65%;
-
-    /* Stripe spacing scale (0, 2, 4, 8, 16, 24, 32, 48) */
-    --space-0: 0px;
-    --space-2: 2px;
-    --space-4: 4px;
-    --space-8: 8px;
-    --space-16: 16px;
-    --space-24: 24px;
-    --space-32: 32px;
-    --space-48: 48px;
-
-    /* Stripe radii - Subtle, professional curves */
-    --radius: 6px;
-    --radius-xs: 4px;
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-
-    /* Stripe shadows - Restrained, layered */
-    --shadow-sm: 0 1px 2px 0 rgba(30, 39, 50, 0.06);
-    --shadow-md: 0 2px 4px rgba(30, 39, 50, 0.06), 0 4px 8px rgba(30, 39, 50, 0.06);
-    --shadow-lg: 0 4px 12px rgba(30, 39, 50, 0.08), 0 8px 24px rgba(30, 39, 50, 0.08);
-
-    /* Stripe elevated surface */
-    --surface-highlight: 210 14% 96%;
-  }
-
-  :root[data-theme="stripe"].dark,
-  :root[data-theme="stripe"] .dark {
-    /* Stripe Dashboard Dark Mode */
+    /* Stripe Dashboard Dark Theme */
     --background: 222 28% 7%;
-    /* #0A0D14 - Stripe dark bg */
+    /* #0A0D14 */
     --foreground: 210 20% 95%;
     /* #F0F3F5 */
 
     --card: 222 23% 10%;
-    /* #111827 - Elevated dark card */
+    /* #111827 */
     --card-foreground: 210 20% 95%;
 
     --popover: 222 23% 12%;
     --popover-foreground: 210 20% 95%;
 
     --primary: 252 100% 68%;
-    /* #7B73FF - Lighter purple for dark mode */
+    /* Stripe Indigo (Dark Adjusted) */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 222 23% 13%;
@@ -343,12 +106,53 @@
     --destructive-foreground: 0 0% 100%;
 
     --border: 222 16% 18%;
+    /* #262D3D */
     --input: 222 16% 18%;
     --ring: 252 100% 68%;
 
-    --focus-ring: 252 100% 68%;
     --surface-highlight: 222 20% 16%;
   }
+
+  .black-and-white {
+    /* Minimalist High Contrast (Black & White) */
+    --background: 0 0% 0%;
+    /* Pure Black */
+    --foreground: 0 0% 100%;
+    /* Pure White */
+
+    --card: 0 0% 4%;
+    /* Deep separation */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 0% 100%;
+    /* White accents */
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 90%;
+
+    --success: 0 0% 100%;
+    --warning: 0 0% 80%;
+    --destructive: 0 0% 100%;
+    --destructive-foreground: 0 0% 0%;
+
+    --surface-highlight: 0 0% 25%;
+  }
+
+
 
   /* Apple HIG: Support "Increase Contrast" accessibility setting
      Provides enhanced contrast for users who enable it */

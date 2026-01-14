@@ -715,10 +715,10 @@ function App() {
         }
     }, [user?.preferences?.themeColor]);
 
-    // Apply saved theme class (light/dark/uber)
+    // Apply saved theme class (light/dark/black-and-white)
     useEffect(() => {
         if (user?.preferences?.theme) {
-            document.documentElement.classList.remove('light', 'dark', 'uber');
+            document.documentElement.classList.remove('light', 'dark', 'black-and-white');
             document.documentElement.classList.add(user.preferences.theme);
         }
     }, [user?.preferences?.theme]);
@@ -836,12 +836,12 @@ function App() {
 
     const handleToggleTheme = () => {
         if (!user) return;
-        const themes: ('light' | 'dark' | 'uber')[] = ['light', 'dark', 'uber'];
+        const themes: ('light' | 'dark' | 'black-and-white')[] = ['light', 'dark', 'black-and-white'];
         const currentIndex = themes.indexOf(user.preferences.theme);
         const nextIndex = (currentIndex + 1) % themes.length;
         const nextTheme = themes[nextIndex];
 
-        document.documentElement.classList.remove('light', 'dark', 'uber');
+        document.documentElement.classList.remove('light', 'dark', 'black-and-white');
         document.documentElement.classList.add(nextTheme);
         localStorage.setItem('user_preferences_theme', nextTheme);
 

@@ -9,10 +9,9 @@
   <script>
     // Prevent theme flash by applying theme before render
     (function () {
-      var theme = localStorage.getItem('app_theme');
-      if (theme === 'stripe' || theme === 'default') {
-        document.documentElement.dataset.theme = theme;
-      }
+      var theme = localStorage.getItem('user_preferences_theme') || 'dark';
+      document.documentElement.classList.remove('light', 'dark', 'black-and-white');
+      document.documentElement.classList.add(theme);
     })();
   </script>
   <script src="https://apis.google.com/js/api.js"></script>

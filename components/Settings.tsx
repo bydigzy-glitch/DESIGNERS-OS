@@ -215,18 +215,18 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                     {/* System Style Picker */}
                     <div className="p-5 bg-card rounded-2xl border border-border">
                         <h3 className="text-foreground font-bold mb-4">System Style</h3>
-                        <p className="text-sm text-muted-foreground mb-4">Select the global interface theme</p>
+                        <p className="text-sm text-muted-foreground mb-4">Select the interface theme</p>
 
                         <div className="grid grid-cols-3 gap-3">
                             {[
                                 { id: 'light', name: 'Light', preview: 'bg-white border-black/10' },
                                 { id: 'dark', name: 'Dark', preview: 'bg-[#121212] border-white/10' },
-                                { id: 'uber', name: 'Uber', preview: 'bg-black border-white/20' },
+                                { id: 'black-and-white', name: 'B&W', preview: 'bg-black border-white/20' },
                             ].map(t => (
                                 <button
                                     key={t.id}
                                     onClick={() => {
-                                        document.documentElement.classList.remove('light', 'dark', 'uber');
+                                        document.documentElement.classList.remove('light', 'dark', 'black-and-white');
                                         document.documentElement.classList.add(t.id);
                                         if (onUpdateUser) {
                                             onUpdateUser({
@@ -245,36 +245,6 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout, onClose, onU
                                 >
                                     <div className={`w-10 h-10 border ${t.preview}`}></div>
                                     <span className="text-xs font-medium text-foreground">{t.name}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* UI Theme - Default vs Stripe */}
-                    <div className="p-5 bg-card rounded-2xl border border-border">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Palette size={18} className="text-primary" />
-                            <h3 className="text-foreground font-bold">UI Theme</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-4">Applies across the entire app</p>
-
-                        <div className="flex gap-2 p-1 bg-secondary rounded-lg">
-                            {[
-                                { id: 'default' as Theme, name: 'Default' },
-                                { id: 'stripe' as Theme, name: 'Stripe UI' },
-                            ].map(t => (
-                                <button
-                                    key={t.id}
-                                    onClick={() => {
-                                        setUiTheme(t.id);
-                                        setTheme(t.id);
-                                    }}
-                                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${uiTheme === t.id
-                                            ? 'bg-card text-foreground shadow-sm'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                >
-                                    {t.name}
                                 </button>
                             ))}
                         </div>

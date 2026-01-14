@@ -192,7 +192,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 view: 'SETTINGS'
             });
         }
-        if ('dark mode'.includes(q) || 'light mode'.includes(q) || 'theme'.includes(q) || 'uber'.includes(q)) {
+        if ('dark mode'.includes(q) || 'light mode'.includes(q) || 'theme'.includes(q) || 'black'.includes(q) || 'white'.includes(q)) {
             actions.push({
                 id: 'action-theme',
                 type: 'ACTION',
@@ -434,7 +434,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                                 >
                                     <Sun className={`h-5 w-5 transition-all ${user?.preferences.theme === 'light' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
                                     <Moon className={`absolute h-5 w-5 transition-all ${user?.preferences.theme === 'dark' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
-                                    <Sparkles className={`absolute h-5 w-5 transition-all ${user?.preferences.theme === 'uber' ? 'rotate-0 scale-100' : 'rotate-90 scale-0 text-primary'}`} />
+                                    <Sparkles className={`absolute h-5 w-5 transition-all ${user?.preferences.theme === 'black-and-white' ? 'rotate-0 scale-100' : 'rotate-90 scale-0 text-primary'}`} />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>

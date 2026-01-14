@@ -1,22 +1,21 @@
 /**
  * Theme Manager - Single source of truth for app theming
- * Supports: default | stripe
  */
 
-export type Theme = 'default' | 'stripe';
+export type Theme = 'light' | 'dark' | 'black-and-white';
 
-const THEME_STORAGE_KEY = 'app_theme';
+const THEME_STORAGE_KEY = 'user_preferences_theme';
 
 /**
  * Get initial theme from localStorage or default
  */
 export const getInitialTheme = (): Theme => {
-    if (typeof window === 'undefined') return 'default';
+    if (typeof window === 'undefined') return 'dark';
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === 'stripe' || stored === 'default') {
-        return stored;
+    if (stored === 'light' || stored === 'dark' || stored === 'black-and-white') {
+        return stored as Theme;
     }
-    return 'default';
+    return 'dark';
 };
 
 /**
@@ -24,7 +23,8 @@ export const getInitialTheme = (): Theme => {
  */
 export const applyTheme = (theme: Theme): void => {
     if (typeof window === 'undefined') return;
-    document.documentElement.dataset.theme = theme;
+    document.documentElement.classList.remove('light', 'dark', 'black-and-white');
+    document.documentElement.classList.add(theme);
 };
 
 /**

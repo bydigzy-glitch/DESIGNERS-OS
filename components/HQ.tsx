@@ -5,7 +5,8 @@ import {
     Zap, Plus, CheckCircle2, Briefcase, Sparkles, Flame, CheckSquare,
     Calendar, Trash2, ArrowUpRight, TrendingUp, MoreHorizontal,
     FileText, MessageSquare, Clock, AlertTriangle, Star, Check,
-    AlertCircle, Shield, X, ChevronRight, Brain, LayoutGrid, Box
+    AlertCircle, Shield, X, ChevronRight, Brain, LayoutGrid, Box,
+    DollarSign, CreditCard
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -281,12 +282,87 @@ export const HQ: React.FC<HQProps> = ({
     });
     const todaysPendingHabits = habits.filter(h => !h.completedDates.includes(today));
 
+    // Financial stats for dashboard cards
+    const financialStats = useMemo(() => {
+        const now = new Date();
+        const completedProjects = projects.filter(p => p.status === 'COMPLETED');
+        const totalEarned = completedProjects.reduce((s, p) => s + (p.price || 0), 0);
+
+        const avgProjectValue = projects.length > 0
+            ? Math.round(projects.reduce((s, p) => s + (p.price || 0), 0) / projects.length)
+            : 0;
+
+        const estimatedExpenses = Math.round(totalEarned * 0.3);
+
+        const overdueProjects = projects.filter(p =>
+            p.status === 'ACTIVE' &&
+            p.deadline &&
+            new Date(p.deadline) < now &&
+            p.invoiceStatus !== 'PAID'
+        );
+        const overdueAmount = overdueProjects.reduce((s, p) => s + (p.price || 0), 0);
+
+        return {
+            avgProjectValue,
+            estimatedExpenses,
+            completedCount: completedProjects.length,
+            overdueAmount
+        };
+    }, [projects]);
+
     return (
         <TooltipProvider delayDuration={300}>
             <div className="flex flex-col h-full w-full space-y-6 md:space-y-8 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2 relative z-[var(--z-container)]">
 
-
-                {/* Header & Greeting */}
+                {/* Financial Stats Row */}
+                <FadeIn>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <Card className="p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
+                                    <DollarSign size={18} />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold"><CountUp value={financialStats.avgProjectValue} prefix="$" /></div>
+                                    <div className="text-xs text-muted-foreground">Avg Project</div>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card className="p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
+                                    <CreditCard size={18} />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold"><CountUp value={financialStats.estimatedExpenses} prefix="$" /></div>
+                                    <div className="text-xs text-muted-foreground">Est. Expenses</div>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card className="p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
+                                    <TrendingUp size={18} />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold"><CountUp value={financialStats.completedCount} /></div>
+                                    <div className="text-xs text-muted-foreground">Completed</div>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card className={`p-4 ${financialStats.overdueAmount > 0 ? 'border-red-500/30' : ''}`}>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
+                                    <Clock size={18} />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold"><CountUp value={financialStats.overdueAmount} prefix="$" /></div>
+                                    <div className="text-xs text-muted-foreground">Overdue</div>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                </FadeIn>
                 <FadeIn>
                     <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6">
                         <div className="flex flex-col gap-4 max-w-lg w-full">

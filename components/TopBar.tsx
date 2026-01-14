@@ -421,47 +421,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                             </Tooltip>
                         )}
 
-                        {/* User Profile Dropdown */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="gap-2">
-                                    <div className="hidden md:flex items-center gap-2 px-2 py-1 bg-primary/10 rounded-lg border border-primary/20 text-primary">
-                                        <Coins size={14} fill="currentColor" />
-                                        <span className="text-xs font-bold font-mono tracking-tight">
-                                            <CountUp value={user?.tokens || 0} duration={0.5} decimals={1} />
-                                        </span>
-                                    </div>
-                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                                        <UserIcon size={16} className="text-primary" />
-                                    </div>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuLabel>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-bold">{user?.name || 'User'}</span>
-                                        <span className="text-xs text-muted-foreground">{user?.email}</span>
-                                    </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="flex items-center gap-2">
-                                    <Coins size={14} />
-                                    <span className="flex-1">Tokens</span>
-                                    <span className="text-xs font-mono font-bold text-primary">
-                                        {(user?.tokens || 0).toFixed(1)}
-                                    </span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onNavigate?.('SETTINGS')} className="flex items-center gap-2">
-                                    <Settings size={14} />
-                                    <span>Settings</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="flex items-center gap-2 text-destructive focus:text-destructive">
-                                    <LogOut size={14} />
-                                    <span>Log out</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+
 
                         {/* Theme Toggle */}
                         <Tooltip>

@@ -32,6 +32,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HorizonCalendar } from './HorizonCalendar';
+import { WeekGridCalendar } from './WeekGridCalendar';
+import { cn } from '@/lib/utils';
 
 interface CalendarPageProps {
     tasks: Task[];
@@ -58,7 +60,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
     onAddTask,
     onDeleteTask,
 }) => {
-    const [view, setView] = useState<'CALENDAR' | 'KANBAN' | 'HORIZON'>('HORIZON');
+    const [view, setView] = useState<'CALENDAR' | 'KANBAN' | 'HORIZON' | 'WEEK'>('WEEK');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -150,9 +152,72 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
         window.dispatchEvent(event);
     };
 
+    // If we are in the premium WEEK view, we return a full-page experience
+    if (view === 'WEEK') {
+        return (
+            <div className="flex flex-col h-full w-full overflow-hidden">
+                <motion.div
+                    key="week"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex-1 min-h-0 relative h-full"
+                >
+                    {/* Floating Switcher to get back to legacy views if needed */}
+                    <div className="absolute top-6 right-[380px] z-30 hidden lg:block">
+                        <div className="flex p-1 bg-secondary/80 backdrop-blur-md rounded-xl border border-border shadow-sm">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setView('HORIZON')}
+                                className="text-[10px] font-bold h-7 px-3"
+                            >
+                                <Sparkles size={12} className="mr-2" /> Horizon
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setView('CALENDAR')}
+                                className="text-[10px] font-bold h-7 px-3"
+                            >
+                                <CalendarIcon size={12} className="mr-2" /> Classic
+                            </Button>
+                        </div>
+                    </div>
+
+                    <WeekGridCalendar
+                        tasks={tasks}
+                        projects={projects}
+                        onUpdateTask={onUpdateTask}
+                        onAddTask={onAddTask}
+                        onDeleteTask={onDeleteTask}
+                    />
+                </motion.div>
+
+                <TaskModal
+                    isOpen={isTaskModalOpen}
+                    onClose={() => setIsTaskModalOpen(false)}
+                    onSave={(t) => {
+                        if (selectedTask) onUpdateTask({ ...selectedTask, ...t });
+                        else onAddTask({
+                            id: Date.now().toString(),
+                            date: selectedDate || new Date(),
+                            duration: 60,
+                            completed: false,
+                            statusLabel: 'TODO',
+                            ...t
+                        } as Task);
+                    }}
+                    onDelete={onDeleteTask}
+                    initialTask={selectedTask}
+                    projects={projects}
+                />
+            </div>
+        );
+    }
+
+    // Default view for legacy layouts
     return (
         <div className="flex flex-col h-full w-full space-y-6 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2">
-            {/* Header */}
             <FadeIn>
                 <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                     <div>
@@ -161,6 +226,14 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="flex p-1 bg-secondary rounded-xl border border-border/50">
+                            <Button
+                                variant={(view as string) === 'WEEK' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setView('WEEK')}
+                                className="gap-2 text-[10px] font-bold h-8 px-4"
+                            >
+                                <LayoutGrid size={14} /> Focused
+                            </Button>
                             <Button
                                 variant={view === 'HORIZON' ? 'default' : 'ghost'}
                                 size="sm"
@@ -193,7 +266,6 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                 </div>
             </FadeIn>
 
-            {/* Stats / Navigator */}
             <FadeIn delay={0.1}>
                 <Card className={weeklyStats.burnoutRisk === 'HIGH' ? 'border-red-500/50' : weeklyStats.burnoutRisk === 'MEDIUM' ? 'border-orange-500/30' : 'bg-card/50'}>
                     <CardContent className="py-5">
@@ -265,7 +337,6 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                         exit={{ opacity: 0, y: -20 }}
                         className="grid grid-cols-1 lg:grid-cols-3 gap-6"
                     >
-                        {/* Interactive Calendar */}
                         <Card className="lg:col-span-1 border border-border shadow-soft overflow-hidden">
                             <CardHeader className="bg-secondary/20 pb-4 border-b border-border">
                                 <CardTitle className="text-overline text-muted-foreground">Select Date</CardTitle>
@@ -276,17 +347,10 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                     selected={selectedDate}
                                     onSelect={setSelectedDate}
                                     className="rounded-md"
-                                    modifiers={{
-                                        hasTasks: (date) => tasks.some(t => new Date(t.date).toDateString() === date.toDateString())
-                                    }}
-                                    modifiersStyles={{
-                                        hasTasks: { fontWeight: 'bold', borderBottom: '2px solid var(--primary)', borderRadius: '0' }
-                                    }}
                                 />
                             </CardContent>
                         </Card>
 
-                        {/* Day Schedule with Colour-Coded Cards */}
                         <Card className="lg:col-span-2 border border-border shadow-soft flex flex-col min-h-[500px]">
                             <CardHeader className="bg-secondary/20 pb-4 border-b border-border flex flex-row items-center justify-between">
                                 <CardTitle className="text-h3">
@@ -308,7 +372,6 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                                 onClick={() => { setSelectedTask(task); setIsTaskModalOpen(true); }}
                                                 className="group relative flex items-start gap-4 p-4 rounded-2xl bg-secondary/20 border border-transparent hover:border-primary/20 hover:bg-secondary/40 transition-all cursor-pointer overflow-hidden"
                                             >
-                                                {/* Colour accent strip */}
                                                 <div
                                                     className="absolute left-0 top-0 bottom-0 w-1.5 opacity-60"
                                                     style={{ backgroundColor: task.color || 'var(--primary)' }}
@@ -326,15 +389,6 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                                         </h4>
                                                         {task.priority === 'HIGH' && <Badge variant="destructive" className="text-[9px] h-4">CRITICAL</Badge>}
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="text-[9px] bg-background/50">{task.category}</Badge>
-                                                        {task.projectId && <span className="text-[10px] text-muted-foreground font-medium">Sync: {projects.find(p => p.id === task.projectId)?.title}</span>}
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}>
-                                                        <Trash2 size={14} />
-                                                    </Button>
                                                 </div>
                                             </div>
                                         ))}
@@ -358,7 +412,6 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                         <div className={`w-2 h-2 rounded-full ${column.color.replace('text', 'bg')}`} />
                                         <span className="text-overline">{column.label}</span>
                                     </div>
-                                    <Badge variant="secondary" className="text-overline px-1.5">{kanbanTasks[column.id]?.length || 0}</Badge>
                                 </div>
                                 <ScrollArea className="flex-1 p-3">
                                     <div className="space-y-3">
@@ -368,28 +421,9 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                                 onClick={() => { setSelectedTask(task); setIsTaskModalOpen(true); }}
                                                 className="p-4 rounded-xl bg-card border border-border shadow-sm hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group relative overflow-hidden"
                                             >
-                                                <div
-                                                    className="absolute left-0 top-0 bottom-0 w-1 opacity-40"
-                                                    style={{ backgroundColor: task.color || 'var(--primary)' }}
-                                                />
-                                                <div className="text-sm font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{task.title}</div>
-                                                <div className="flex items-center justify-between mt-3">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Clock size={10} className="text-muted-foreground" />
-                                                        <span className="text-[10px] font-bold text-muted-foreground">
-                                                            {new Date(task.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                                        </span>
-                                                    </div>
-                                                    <Badge variant="outline" className="text-[8px] uppercase">{task.category}</Badge>
-                                                </div>
+                                                <div className="text-sm font-bold text-foreground mb-2">{task.title}</div>
                                             </div>
                                         ))}
-                                        {kanbanTasks[column.id].length === 0 && (
-                                            <div className="py-20 text-center text-muted-foreground opacity-30">
-                                                <CheckCircle2 size={32} strokeWidth={1} className="mx-auto mb-2" />
-                                                <p className="text-[10px] font-bold uppercase">Empty Column</p>
-                                            </div>
-                                        )}
                                     </div>
                                 </ScrollArea>
                             </div>
@@ -398,7 +432,6 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                 )}
             </AnimatePresence>
 
-            {/* Task Modal */}
             <TaskModal
                 isOpen={isTaskModalOpen}
                 onClose={() => setIsTaskModalOpen(false)}

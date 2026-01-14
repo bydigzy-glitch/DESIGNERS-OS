@@ -29,6 +29,7 @@ import { WorkPage } from './components/WorkPage';
 import { CalendarPage } from './components/CalendarPage';
 import { MoneyPage } from './components/MoneyPage';
 import { BrainOverlay } from './components/BrainOverlay';
+import { BrainPage } from './components/BrainPage';
 import { AutomationEngine } from './services/automationEngine';
 import { analyzeIntakeSubmission } from './services/geminiService';
 import { IntakeForm } from './components/IntakeForm';
@@ -1650,6 +1651,24 @@ function App() {
                 />;
             // case 'DEMO':
             //     return <ShadcnDemo />;
+            case 'BRAIN':
+                return <BrainPage
+                    user={user}
+                    messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
+                    isLoading={isLoading}
+                    loadingStep={loadingStep}
+                    onSendMessage={handleSendMessage}
+                    onStopGeneration={handleStopGeneration}
+                    sessions={chatSessions}
+                    currentSessionId={currentSessionId}
+                    onSelectSession={setCurrentSessionId}
+                    onCreateSession={createNewSession}
+                    onDeleteSession={deleteSession}
+                    tasks={tasks}
+                    projects={projects}
+                    clients={clients}
+                    autopilotMode={autopilotMode}
+                />;
             case 'CHAT':
             default:
                 return <ChatInterface
@@ -1722,7 +1741,6 @@ function App() {
                 onClearAll={() => setNotifications([])}
                 autopilotMode={autopilotMode}
                 onChangeAutopilotMode={setAutopilotMode}
-                onOpenBrain={() => setIsBrainOpen(true)}
                 onOpenAI={() => setIsAICommandOpen(true)}
                 pendingApprovalsCount={pendingApprovals.length}
                 riskAlertsCount={riskAlerts.filter(r => !r.acknowledged).length}
@@ -1767,17 +1785,6 @@ function App() {
                     tasks={tasks}
                     projects={projects}
                     clients={clients}
-                />
-
-                {/* Designers Hub: Brain AI Sidebar */}
-                <BrainOverlay
-                    isOpen={isBrainOpen}
-                    onClose={() => setIsBrainOpen(false)}
-                    messages={chatSessions.find(s => s.id === currentSessionId)?.messages || []}
-                    isLoading={isLoading}
-                    onSendMessage={handleSendMessage}
-                    autopilotMode={autopilotMode}
-                    user={user}
                 />
 
                 <IntakeForm

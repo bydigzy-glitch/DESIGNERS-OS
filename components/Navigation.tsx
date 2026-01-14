@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { ViewMode, User, AppNotification, AutopilotMode } from '../types';
 import {
   LayoutGrid,
@@ -40,7 +41,6 @@ interface NavigationProps {
   onClearAll: () => void;
   autopilotMode: AutopilotMode;
   onChangeAutopilotMode: (mode: AutopilotMode) => void;
-  onOpenBrain: () => void;
   onOpenAI?: () => void;
   pendingApprovalsCount: number;
   riskAlertsCount: number;
@@ -88,7 +88,6 @@ export const Navigation: React.FC<NavigationProps> = ({
   onClearAll,
   autopilotMode,
   onChangeAutopilotMode,
-  onOpenBrain,
   onOpenAI,
   pendingApprovalsCount,
   riskAlertsCount
@@ -108,8 +107,8 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <Hexagon size={20} className="text-white" strokeWidth={3} />
               </div>
               <div>
-                <span className="block text-body-emphasis leading-none mb-1">Designers Hub</span>
-                <span className="text-overline opacity-40 leading-none">V2.0.0</span>
+                <span className="block text-body-emphasis leading-none mb-1 text-foreground font-bold italic tracking-tighter">DESIGNERS OS</span>
+                <span className="text-overline opacity-40 leading-none">V3.2.0</span>
               </div>
             </div>
           </div>
@@ -183,12 +182,15 @@ export const Navigation: React.FC<NavigationProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                onClick={onOpenBrain}
-                className="w-full justify-start gap-4 border-primary/20 hover:border-primary/40 hover:bg-primary/5 group h-10 px-3"
+                variant={currentView === 'BRAIN' ? "secondary" : "outline"}
+                onClick={() => onNavigate('BRAIN')}
+                className={cn(
+                  "w-full justify-start gap-4 border-primary/20 hover:border-primary/40 hover:bg-primary/5 group h-10 px-3 transition-all duration-300",
+                  currentView === 'BRAIN' && "border-primary/50 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)]"
+                )}
               >
-                <Brain size={18} className="text-primary animate-calm-pulse" />
-                <span className="text-primary text-body-emphasis tracking-wide">Ask Brain</span>
+                <Brain size={18} className={cn("text-primary", currentView === 'BRAIN' ? "animate-pulse" : "animate-calm-pulse")} />
+                <span className="text-primary text-body-emphasis tracking-wide font-bold">Ask Brain</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">
@@ -297,12 +299,15 @@ export const Navigation: React.FC<NavigationProps> = ({
 
         {/* Brain */}
         <Button
-          variant="ghost"
-          onClick={onOpenBrain}
-          className="flex flex-col items-center justify-center gap-1 h-auto py-3 text-primary"
+          variant={currentView === 'BRAIN' ? "secondary" : "ghost"}
+          onClick={() => onNavigate('BRAIN')}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 h-auto py-3 text-primary transition-all",
+            currentView === 'BRAIN' && "bg-primary/10"
+          )}
         >
-          <Brain size={20} />
-          <span className="text-overline">BRAIN</span>
+          <Brain size={20} className={currentView === 'BRAIN' ? "animate-pulse" : ""} />
+          <span className="text-overline font-bold">BRAIN</span>
         </Button>
 
         {/* Calendar */}

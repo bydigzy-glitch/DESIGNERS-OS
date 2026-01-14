@@ -23,7 +23,7 @@ export interface ChatState {
 // Navigation structure for Designers Hub (includes legacy for backwards compatibility)
 export type ViewMode =
   // New Designers Hub routes
-  | 'COMMAND_CENTER' | 'CLIENTS' | 'WORK' | 'CALENDAR' | 'MONEY'
+  | 'BRAIN' | 'COMMAND_CENTER' | 'CLIENTS' | 'WORK' | 'CALENDAR' | 'MONEY'
   // Shared routes
   | 'FILES' | 'SETTINGS'
   // Legacy routes (kept for transition period)

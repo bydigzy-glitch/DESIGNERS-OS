@@ -44,6 +44,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
 
 interface WorkPageProps {
     tasks: Task[];
@@ -262,17 +263,30 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                         {/* Projects Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredProjects.map(project => (
-                                <Card key={project.id} className="overflow-hidden border border-border hover:border-primary/30 transition-all duration-200 group">
+                                <Card
+                                    key={project.id}
+                                    className={cn(
+                                        "overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 group",
+                                        project.status === 'COMPLETED' && "opacity-60 grayscale-[0.2] border-border/50 hover:opacity-90 hover:grayscale-0"
+                                    )}
+                                >
                                     <CardContent className="p-5">
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex items-center gap-3">
                                                 <div
-                                                    className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center font-bold text-foreground border border-border"
+                                                    className={cn(
+                                                        "w-10 h-10 rounded-xl bg-secondary flex items-center justify-center font-bold text-foreground border border-border shadow-sm transition-colors",
+                                                        project.status === 'COMPLETED' && "bg-secondary/50",
+                                                        project.color && "border-[var(--project-color)] border-opacity-40 text-[var(--project-color)]"
+                                                    )}
+                                                    style={{
+                                                        '--project-color': project.color || 'transparent'
+                                                    } as React.CSSProperties}
                                                 >
                                                     {project.title.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-foreground leading-none mb-1">{project.title}</h3>
+                                                    <h3 className="font-bold text-foreground leading-none mb-1 group-hover:text-primary transition-colors">{project.title}</h3>
                                                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{getClientName(project.clientId)}</div>
                                                 </div>
                                             </div>
@@ -342,16 +356,34 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                                             </DropdownMenu>
                                         </div>
 
-                                        <Badge variant="outline" className={`text-[10px] mb-3 ${PROJECT_STATUS_COLORS[project.status]}`}>
-                                            {project.status}
+                                        <Badge variant="outline" className={cn(
+                                            "text-[10px] mb-3 font-bold",
+                                            PROJECT_STATUS_COLORS[project.status]
+                                        )}>
+                                            {project.status === 'COMPLETED' ? (
+                                                <span className="flex items-center gap-1">
+                                                    <CheckCircle2 size={10} /> {project.status}
+                                                </span>
+                                            ) : project.status}
                                         </Badge>
 
                                         <div className="space-y-2 mb-3">
                                             <div className="flex justify-between text-xs">
                                                 <span className="text-muted-foreground">Progress</span>
-                                                <span className="font-medium">{project.progress}%</span>
+                                                <span className={cn(
+                                                    "font-bold",
+                                                    project.status === 'COMPLETED' ? "text-green-500" : "text-foreground"
+                                                )}>
+                                                    {project.status === 'COMPLETED' ? 100 : project.progress}%
+                                                </span>
                                             </div>
-                                            <Progress value={project.progress} className="h-1.5" />
+                                            <Progress
+                                                value={project.status === 'COMPLETED' ? 100 : project.progress}
+                                                className={cn(
+                                                    "h-1.5 transition-all duration-1000",
+                                                    project.status === 'COMPLETED' && "[&>div]:bg-green-500/80"
+                                                )}
+                                            />
                                         </div>
 
                                         <div className="flex items-center justify-between text-sm pt-3 border-t border-border">

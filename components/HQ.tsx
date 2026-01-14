@@ -199,7 +199,6 @@ export const HQ: React.FC<HQProps> = ({
     onAddProject, onUpdateProject, onDeleteProject,
     onToggleHabit, onApprove, onReject, onAcknowledgeRisk
 }) => {
-    const [aiInput, setAiInput] = useState('');
     const [isLoaded, setIsLoaded] = useState(false);
 
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -221,9 +220,17 @@ export const HQ: React.FC<HQProps> = ({
         return habits.reduce((acc, h) => acc + h.streak, 0);
     }, [habits]);
 
-    // Memoize greeting text to prevent re-renders
+    // Memoize greeting text with time-based greeting
     const greetingText = useMemo(() => {
-        return `Hey, ${user?.name?.split(' ')[0] || 'Creator'}`;
+        const hour = new Date().getHours();
+        let timeGreeting = 'Good Morning';
+        if (hour >= 12 && hour < 17) {
+            timeGreeting = 'Good Afternoon';
+        } else if (hour >= 17) {
+            timeGreeting = 'Good Evening';
+        }
+        const firstName = user?.name?.split(' ')[0] || 'Creator';
+        return `${timeGreeting}, ${firstName}`;
     }, [user?.name]);
 
     // Priority Logic
@@ -237,15 +244,6 @@ export const HQ: React.FC<HQProps> = ({
         .slice(0, 5);
 
     const focusTasks = [...overdueTasks, ...highPriorityTasks].slice(0, 5);
-
-    const handleAiSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (aiInput.trim() && onSendMessage) {
-            onSendMessage(aiInput);
-            onOpenAiSidebar(); // Open overlay instead of navigating
-            setAiInput('');
-        }
-    };
 
     // Calculate Today's Focus - most urgent items
     const todaysFocus = useMemo(() => {
@@ -314,8 +312,26 @@ export const HQ: React.FC<HQProps> = ({
         <TooltipProvider delayDuration={300}>
             <div className="flex flex-col h-full w-full space-y-6 md:space-y-8 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2 relative z-[var(--z-container)]">
 
-                {/* Financial Stats Row */}
+                {/* Greeting Header */}
                 <FadeIn>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                        {isLoaded ? (
+                            <TextAnimate
+                                key={greetingText}
+                                animation="blurInUp"
+                                by="character"
+                                once
+                                startOnView={false}
+                                text={greetingText}
+                            />
+                        ) : (
+                            <Skeleton className="h-8 w-64 bg-secondary/80" />
+                        )}
+                    </h1>
+                </FadeIn>
+
+                {/* Financial Stats Row */}
+                <FadeIn delay={0.1}>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <Card className="p-4">
                             <div className="flex items-center gap-3">
@@ -361,48 +377,6 @@ export const HQ: React.FC<HQProps> = ({
                                 </div>
                             </div>
                         </Card>
-                    </div>
-                </FadeIn>
-                <FadeIn>
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6">
-                        <div className="flex flex-col gap-4 max-w-lg w-full">
-                            <div>
-                                <h1 className="text-3xl font-bold text-foreground tracking-tight h-[36px]">
-                                    {isLoaded ? (
-                                        <TextAnimate
-                                            key={greetingText}
-                                            animation="blurInUp"
-                                            by="character"
-                                            once
-                                            startOnView={false}
-                                            text={greetingText}
-                                        />
-                                    ) : (
-                                        <Skeleton className="h-8 w-48 bg-secondary/80" />
-                                    )}
-                                </h1>
-                                <p className="text-muted-foreground">
-                                    {isLoaded ? "Ready to conquer the day?" : <Skeleton className="h-4 w-32 mt-2" />}
-                                </p>
-                            </div>
-                            <form onSubmit={handleAiSubmit} className="relative w-full group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                                    <MessageSquare size={16} />
-                                </div>
-                                <input
-                                    type="text"
-                                    value={aiInput}
-                                    onChange={(e) => setAiInput(e.target.value)}
-                                    placeholder="Ask Assist to add tasks or review projects..."
-                                    className="w-full h-12 bg-secondary rounded-xl pl-10 pr-12 text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background transition-all placeholder:text-muted-foreground text-sm font-medium border border-border"
-                                />
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                    <button type="submit" className="p-1.5 bg-primary rounded-lg text-white hover:bg-primary/90 transition-colors" title="Send Prompt">
-                                        <ArrowUpRight size={14} />
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
                     </div>
                 </FadeIn>
 

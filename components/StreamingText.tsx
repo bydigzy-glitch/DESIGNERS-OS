@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 
+import { cn } from '@/lib/utils';
+
 interface StreamingTextProps {
     text: string;
     className?: string;
@@ -38,11 +40,8 @@ export const StreamingText: React.FC<StreamingTextProps> = ({ text, className = 
             {chunks.map((chunk, index) => (
                 <span
                     key={index}
-                    className="inline opacity-0 animate-fadeInChunk"
-                    style={{
-                        animationDelay: `${index * 50}ms`,
-                        animationFillMode: 'forwards'
-                    }}
+                    className={cn("inline opacity-0 animate-fadeInChunk [animation-fill-mode:forwards]")}
+                    style={{ animationDelay: `${index * 50}ms` }}
                 >
                     {chunk}
                 </span>

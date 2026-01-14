@@ -165,11 +165,12 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      className="w-full h-full bg-secondary/50 border border-border rounded-xl p-3 pl-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none text-sm"
+                      className="w-full h-full bg-secondary/50 border border-border rounded-xl p-3 pl-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none text-sm min-h-[160px]"
                       placeholder="Payment terms, key contacts..."
-                      style={{ minHeight: '160px' }}
+                      title="Client notes"
+                      aria-label="Client notes"
                     />
-                    <FileText size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
+                    <FileText size={16} className="absolute left-3 top-3.5 text-muted-foreground transition-colors group-focus-within:text-primary" />
                   </div>
                 </div>
               </div>
@@ -218,7 +219,12 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                         />
                         <DollarSign size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       </div>
-                      <button onClick={() => removePendingProject(i)} className="p-2 hover:bg-red-500/10 text-red-500 rounded-xl transition-colors">
+                      <button
+                        onClick={() => removePendingProject(i)}
+                        className="p-2 hover:bg-red-500/10 text-red-500 rounded-xl transition-colors"
+                        title="Remove project"
+                        aria-label="Remove project"
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -238,8 +244,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               </button>
             </div>
           </motion.div>
-        </div>
+        </div >
       )}
-    </AnimatePresence>
+    </AnimatePresence >
   );
 };

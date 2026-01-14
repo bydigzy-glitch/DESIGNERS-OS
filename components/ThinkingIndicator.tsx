@@ -10,15 +10,12 @@ export const ThinkingIndicator: React.FC<ThinkingIndicatorProps> = ({ className 
             <div className="flex gap-1.5">
                 <span
                     className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-thinkingPulse"
-                    style={{ animationDelay: '0ms' }}
                 />
                 <span
-                    className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-thinkingPulse"
-                    style={{ animationDelay: '150ms' }}
+                    className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-thinkingPulse [animation-delay:150ms]"
                 />
                 <span
-                    className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-thinkingPulse"
-                    style={{ animationDelay: '300ms' }}
+                    className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-thinkingPulse [animation-delay:300ms]"
                 />
             </div>
         </div>

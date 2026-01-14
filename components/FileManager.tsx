@@ -16,6 +16,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface FileManagerProps {
     files: FileAsset[];
@@ -199,7 +200,10 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                     <span className="text-xs font-medium text-muted-foreground">{stats.usagePercent.toFixed(0)}%</span>
                 </div>
                 <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden mb-4">
-                    <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${stats.usagePercent}%` }}></div>
+                    <div
+                        className={cn("h-full bg-primary rounded-full transition-all duration-500")}
+                        style={{ width: `${stats.usagePercent}%` }}
+                    ></div>
                 </div>
                 <button className="w-full py-3 bg-primary text-primary-foreground font-bold text-sm rounded-xl shadow-glow hover:bg-primary/90 transition-colors">
                     Upgrade Plan
@@ -285,6 +289,8 @@ export const FileManager: React.FC<FileManagerProps> = ({ files, setFiles, folde
                                     <button
                                         onClick={() => setIsFilterOpen(!isFilterOpen)}
                                         className={`p-2 rounded-lg text-muted-foreground hover:bg-secondary transition-colors ${filterType ? 'text-primary bg-secondary' : ''}`}
+                                        title="Filter files"
+                                        aria-label="Filter files"
                                     >
                                         <Filter size={18} />
                                     </button>

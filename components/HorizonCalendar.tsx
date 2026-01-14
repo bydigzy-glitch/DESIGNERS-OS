@@ -158,11 +158,11 @@ export const HorizonCalendar: React.FC<HorizonCalendarProps> = ({
                             >
                                 {/* Heatmap Background */}
                                 <div
-                                    className="absolute inset-x-0 bottom-0 pointer-events-none transition-all duration-1000"
+                                    className={cn("absolute inset-x-0 bottom-0 pointer-events-none transition-all duration-1000 opacity-[0.05] bg-gradient-to-t from-[var(--heatmap-color)] to-transparent")}
                                     style={{
                                         height: `${load}%`,
-                                        background: `linear-gradient(to top, ${load > 80 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(99, 102, 241, 0.05)'}, transparent)`
-                                    }}
+                                        '--heatmap-color': load > 80 ? 'rgba(239, 68, 68, 1)' : 'var(--primary)'
+                                    } as React.CSSProperties}
                                 />
 
                                 {/* Lane Header */}
@@ -218,8 +218,8 @@ export const HorizonCalendar: React.FC<HorizonCalendarProps> = ({
                                                     task.completed ? "opacity-60 grayscale-[0.5]" : ""
                                                 )}>
                                                     <div
-                                                        className="absolute left-0 top-0 bottom-0 w-1.5 opacity-50 transition-all group-hover:w-2"
-                                                        style={{ backgroundColor: task.color || 'var(--primary)' }}
+                                                        className={cn("absolute left-0 top-0 bottom-0 w-1.5 opacity-50 transition-all group-hover:w-2 bg-[var(--task-color)]")}
+                                                        style={{ '--task-color': task.color || 'var(--primary)' } as React.CSSProperties}
                                                     />
 
                                                     <div className="flex items-start justify-between gap-3">

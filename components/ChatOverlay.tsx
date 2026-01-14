@@ -2,7 +2,7 @@
 import React from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { ChatInterface } from './ChatInterface';
-import { User, Message, ChatSession, Task } from '../types';
+import { User, Message, ChatSession, Task, Project, Client } from '../types';
 
 interface ChatOverlayProps {
   isOpen: boolean;
@@ -19,11 +19,13 @@ interface ChatOverlayProps {
   onCreateSession: () => void;
   onDeleteSession: (id: string) => void;
   tasks?: Task[];
+  projects?: Project[];
+  clients?: Client[];
 }
 
 export const ChatOverlay: React.FC<ChatOverlayProps> = ({
   isOpen, onClose, user, messages, isLoading, loadingStep, onSendMessage, onStopGeneration,
-  sessions, currentSessionId, onSelectSession, onCreateSession, onDeleteSession, tasks = []
+  sessions, currentSessionId, onSelectSession, onCreateSession, onDeleteSession, tasks = [], projects = [], clients = []
 }) => {
   return (
     <>
@@ -62,6 +64,8 @@ export const ChatOverlay: React.FC<ChatOverlayProps> = ({
             onDeleteSession={onDeleteSession}
             hideSidebar={true}
             tasks={tasks}
+            projects={projects}
+            clients={clients}
           />
         </div>
       </div>

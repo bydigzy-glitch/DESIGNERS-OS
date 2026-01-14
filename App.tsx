@@ -1665,6 +1665,8 @@ function App() {
                     onCreateSession={createNewSession}
                     onDeleteSession={deleteSession}
                     tasks={tasks}
+                    projects={projects}
+                    clients={clients}
                 />;
         }
     };
@@ -1763,6 +1765,8 @@ function App() {
                     onCreateSession={createNewSession}
                     onDeleteSession={deleteSession}
                     tasks={tasks}
+                    projects={projects}
+                    clients={clients}
                 />
 
                 {/* Designers Hub: Brain AI Sidebar */}

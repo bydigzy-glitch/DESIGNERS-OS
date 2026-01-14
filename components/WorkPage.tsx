@@ -124,10 +124,24 @@ export const WorkPage: React.FC<WorkPageProps> = ({
         return { activeProjects, pendingTasks, overdueTasks, pipelineValue };
     }, [tasks, projects]);
 
-    // Filter projects
-    const filteredProjects = filterProjectStatus
-        ? projects.filter(p => p.status === filterProjectStatus)
-        : projects;
+    // Filter and sort projects - active first, then completed
+    const filteredProjects = useMemo(() => {
+        const filtered = filterProjectStatus
+            ? projects.filter(p => p.status === filterProjectStatus)
+            : projects;
+
+        // Sort: active projects first, then completed/archived
+        return filtered.sort((a, b) => {
+            const aIsCompleted = a.status === 'COMPLETED' || a.status === 'ARCHIVED';
+            const bIsCompleted = b.status === 'COMPLETED' || b.status === 'ARCHIVED';
+
+            // If both are same completion status, maintain original order
+            if (aIsCompleted === bIsCompleted) return 0;
+
+            // Active projects come first
+            return aIsCompleted ? 1 : -1;
+        });
+    }, [projects, filterProjectStatus]);
 
     // Group tasks by status
     const tasksByStatus = useMemo(() => {

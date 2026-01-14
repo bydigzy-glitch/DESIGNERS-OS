@@ -42,6 +42,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [availableCategories, setAvailableCategories] = useState(INITIAL_CATEGORIES);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   useEffect(() => {
     if (initialTask) {
@@ -152,12 +153,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
               <div className="flex items-center gap-2">
                 {initialTask && onDelete && (
                   <button
-                    onClick={() => { onDelete(initialTask.id); onClose(); }}
-                    className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
-                    title="Delete task"
-                    aria-label="Delete task"
+                    onClick={() => {
+                      if (isConfirmingDelete) {
+                        onDelete(initialTask.id);
+                        onClose();
+                      } else {
+                        setIsConfirmingDelete(true);
+                      }
+                    }}
+                    onMouseLeave={() => setIsConfirmingDelete(false)}
+                    className={`p-2 rounded-xl transition-all flex items-center gap-2 ${isConfirmingDelete ? 'bg-red-500 text-white px-3' : 'text-red-400 hover:bg-red-500/10'}`}
+                    title={isConfirmingDelete ? "Click again to confirm" : "Delete task"}
+                    aria-label={isConfirmingDelete ? "Confirm delete" : "Delete task"}
                   >
                     <Trash2 size={18} />
+                    {isConfirmingDelete && <span className="text-[10px] font-bold">Confirm?</span>}
                   </button>
                 )}
                 <button
@@ -293,7 +303,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     <button
                       key={cat.id}
                       onClick={() => setCategory(cat.id)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${category === cat.id ? 'bg-white/10 text-white border-white/20 shadow-inner' : 'bg-transparent text-muted-foreground border-transparent hover:bg-white/5'}`}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${category === cat.id ? 'bg-primary text-primary-foreground border-primary shadow-inner' : 'bg-transparent text-muted-foreground border-transparent hover:bg-white/5'}`}
                     >
                       {cat.id}
                     </button>

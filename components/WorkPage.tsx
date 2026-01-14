@@ -298,7 +298,11 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                                                         <CheckCircle2 size={14} className="mr-2" /> Complete
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => onDeleteProject(project.id)} className="text-red-500">
+                                                    <DropdownMenuItem onClick={() => {
+                                                        if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+                                                            onDeleteProject(project.id);
+                                                        }
+                                                    }} className="text-red-500">
                                                         <Trash2 size={14} className="mr-2" /> Delete
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />

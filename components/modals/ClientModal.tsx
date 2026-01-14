@@ -21,6 +21,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<Client['status']>('ACTIVE');
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [pendingProjects, setPendingProjects] = useState<Partial<Project>[]>([]);
 
   useEffect(() => {
@@ -107,8 +108,22 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               <h2 className="text-xl font-bold text-foreground">{initialClient ? 'Edit Client' : 'New Client'}</h2>
               <div className="flex items-center gap-2">
                 {initialClient && onDelete && (
-                  <button onClick={() => { onDelete(initialClient.id); onClose(); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors" title="Delete Client" aria-label="Delete Client">
+                  <button
+                    onClick={() => {
+                      if (isConfirmingDelete) {
+                        onDelete(initialClient.id);
+                        onClose();
+                      } else {
+                        setIsConfirmingDelete(true);
+                      }
+                    }}
+                    onMouseLeave={() => setIsConfirmingDelete(false)}
+                    className={`p-2 rounded-xl transition-all flex items-center gap-2 ${isConfirmingDelete ? 'bg-red-500 text-white px-3' : 'text-red-400 hover:bg-red-500/10'}`}
+                    title={isConfirmingDelete ? "Click again to confirm" : "Delete Client"}
+                    aria-label={isConfirmingDelete ? "Confirm delete" : "Delete Client"}
+                  >
                     <Trash2 size={18} />
+                    {isConfirmingDelete && <span className="text-[10px] font-bold">Confirm?</span>}
                   </button>
                 )}
                 <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-colors" title="Close Modal" aria-label="Close Modal">

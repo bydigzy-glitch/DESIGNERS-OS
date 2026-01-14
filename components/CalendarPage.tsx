@@ -18,7 +18,8 @@ import {
     Trash2,
     CheckCircle2,
     Circle,
-    Filter
+    Filter,
+    Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +31,7 @@ import { TaskModal } from './modals/TaskModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { motion, AnimatePresence } from 'framer-motion';
+import { HorizonCalendar } from './HorizonCalendar';
 
 interface CalendarPageProps {
     tasks: Task[];
@@ -56,7 +58,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
     onAddTask,
     onDeleteTask,
 }) => {
-    const [view, setView] = useState<'CALENDAR' | 'KANBAN'>('CALENDAR');
+    const [view, setView] = useState<'CALENDAR' | 'KANBAN' | 'HORIZON'>('HORIZON');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -124,16 +126,28 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
         return groups;
     }, [tasks]);
 
+    const getBurnoutColor = (risk: string) => {
+        if (risk === 'HIGH') return 'text-red-500 bg-red-500/10';
+        if (risk === 'MEDIUM') return 'text-orange-500 bg-orange-500/10';
+        return 'text-green-500 bg-green-500/10';
+    };
+
     const navigateWeek = (direction: 'prev' | 'next') => {
         const newDate = new Date(currentDate);
         newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
         setCurrentDate(newDate);
     };
 
-    const getBurnoutColor = (risk: string) => {
-        if (risk === 'HIGH') return 'text-red-500 bg-red-500/10';
-        if (risk === 'MEDIUM') return 'text-orange-500 bg-orange-500/10';
-        return 'text-green-500 bg-green-500/10';
+    const handleAiOptimize = (dayTasks: Task[]) => {
+        const taskList = dayTasks.map(t => `- ${t.title} (${t.duration}m)`).join('\n');
+        const event = new CustomEvent('ai-action', {
+            detail: {
+                tool: 'optimize_schedule',
+                prompt: `Analyze my current schedule for the week. Here are my tasks:\n\n${taskList}\n\nPlease identify any clusters where I might burn out and suggest a more balanced distribution of work. Output a polished strategy.`,
+                content: 'Optimizing your horizon...'
+            }
+        });
+        window.dispatchEvent(event);
     };
 
     return (
@@ -146,25 +160,33 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                         <p className="text-caption text-muted-foreground mt-1">Plan your speed, visualize your work</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="flex p-1 bg-secondary rounded-xl border border-border">
+                        <div className="flex p-1 bg-secondary rounded-xl border border-border/50">
+                            <Button
+                                variant={view === 'HORIZON' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setView('HORIZON')}
+                                className="gap-2 text-[10px] font-bold h-8 px-4"
+                            >
+                                <Sparkles size={14} /> Horizon
+                            </Button>
                             <Button
                                 variant={view === 'CALENDAR' ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setView('CALENDAR')}
-                                className="gap-2 text-overline"
+                                className="gap-2 text-[10px] font-bold h-8 px-4"
                             >
-                                <CalendarIcon size={14} /> Calendar
+                                <CalendarIcon size={14} /> Classic
                             </Button>
                             <Button
                                 variant={view === 'KANBAN' ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setView('KANBAN')}
-                                className="gap-2 text-overline"
+                                className="gap-2 text-[10px] font-bold h-8 px-4"
                             >
-                                <Trello size={14} /> Kanban
+                                <Trello size={14} /> Boards
                             </Button>
                         </div>
-                        <Button onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }} className="gap-2 shadow-lg">
+                        <Button onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }} className="gap-2 shadow-lg h-10 px-6 rounded-xl">
                             <Plus size={16} /> Block Time
                         </Button>
                     </div>
@@ -218,7 +240,24 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
             </FadeIn>
 
             <AnimatePresence mode="wait">
-                {view === 'CALENDAR' ? (
+                {view === 'HORIZON' ? (
+                    <motion.div
+                        key="horizon"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        className="h-[calc(100vh-320px)] min-h-[600px]"
+                    >
+                        <HorizonCalendar
+                            tasks={tasks}
+                            projects={projects}
+                            onUpdateTask={onUpdateTask}
+                            onAddTask={onAddTask}
+                            onDeleteTask={onDeleteTask}
+                            onOpenAiPlanner={handleAiOptimize}
+                        />
+                    </motion.div>
+                ) : view === 'CALENDAR' ? (
                     <motion.div
                         key="calendar"
                         initial={{ opacity: 0, y: 20 }}

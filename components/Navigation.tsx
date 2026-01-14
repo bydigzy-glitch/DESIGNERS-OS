@@ -14,6 +14,7 @@ import {
   Brain,
   Zap,
   Shield,
+  Grid,
 } from 'lucide-react';
 import { Sparkles, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,7 @@ const NAV_ITEMS: { id: ViewMode; label: string; icon: React.ReactNode; descripti
 ];
 
 const SECONDARY_ITEMS: { id: ViewMode; label: string; icon: React.ReactNode; description: string }[] = [
+  { id: 'APPS', label: 'Apps', icon: <Grid size={18} />, description: 'Tools and utilities' },
   { id: 'FILES', label: 'Assets', icon: <FolderOpen size={18} />, description: 'File storage and management' },
 ];
 

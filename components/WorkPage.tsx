@@ -18,7 +18,8 @@ import {
     Pause,
     CheckCircle2,
     Calendar,
-    Sparkles
+    Sparkles,
+    DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -216,7 +217,7 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                     <Card className="p-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
-                                <Clock size={18} />
+                                <DollarSign size={18} />
                             </div>
                             <div>
                                 <div className="text-2xl font-bold">$<CountUp value={stats.pipelineValue} /></div>
@@ -396,8 +397,8 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                                             <Badge variant="secondary" className="text-xs">{statusTasks.length}</Badge>
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        {statusTasks.slice(0, 5).map(task => (
+                                    <CardContent className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-hide">
+                                        {statusTasks.map(task => (
                                             <div
                                                 key={task.id}
                                                 draggable
@@ -416,11 +417,6 @@ export const WorkPage: React.FC<WorkPageProps> = ({
                                                 </div>
                                             </div>
                                         ))}
-                                        {statusTasks.length > 5 && (
-                                            <div className="text-xs text-muted-foreground text-center py-2">
-                                                +{statusTasks.length - 5} more
-                                            </div>
-                                        )}
                                         {statusTasks.length === 0 && (
                                             <div className="text-xs text-muted-foreground text-center py-4">
                                                 No tasks

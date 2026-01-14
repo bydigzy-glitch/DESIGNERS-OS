@@ -173,7 +173,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
 
             <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Title</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Title</label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -185,7 +185,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Due Date</label>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Due Date</label>
                   <div className="relative">
                     <input
                       type="date"
@@ -195,11 +195,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                       title="Due Date"
                       aria-label="Due Date"
                     />
-                    <CalendarIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <CalendarIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Priority</label>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Priority</label>
                   <div className="relative">
                     <select
                       value={priority}
@@ -214,7 +214,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                       <option value="LOW">Low Priority</option>
                     </select>
                     {/* Custom Arrow */}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   </div>
@@ -224,7 +224,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
               {/* ASSIGNEE SELECTOR */}
               {teamMembers.length > 0 && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Assign to</label>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Assign to</label>
                   <div className="relative">
                     <select
                       value={assignedTo}
@@ -238,8 +238,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                         <option key={m.id} value={m.id}>{m.name || m.email}</option>
                       ))}
                     </select>
-                    <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                    <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   </div>
@@ -248,7 +248,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
 
               {projects.length > 0 && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Assign Project</label>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Assign Project</label>
                   <select
                     value={projectId}
                     onChange={(e) => setProjectId(e.target.value)}
@@ -266,7 +266,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-xs font-bold text-gray-500 uppercase">Category</label>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase">Category</label>
                   <button
                     onClick={() => setIsAddingCategory(!isAddingCategory)}
                     className="text-[10px] font-bold text-accent-primary hover:underline flex items-center gap-1"
@@ -293,7 +293,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     <button
                       key={cat.id}
                       onClick={() => setCategory(cat.id)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${category === cat.id ? 'bg-white/10 text-white border-white/20 shadow-inner' : 'bg-transparent text-gray-500 border-transparent hover:bg-white/5'}`}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${category === cat.id ? 'bg-white/10 text-white border-white/20 shadow-inner' : 'bg-transparent text-muted-foreground border-transparent hover:bg-white/5'}`}
                     >
                       {cat.id}
                     </button>
@@ -302,7 +302,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Color Label</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Color Label</label>
                 <div className="flex gap-3">
                   {['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'].map(c => (
                     <button
@@ -319,7 +319,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Notes</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Notes</label>
                 <div className="relative">
                   <textarea
                     value={notes}
@@ -327,7 +327,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     className="w-full bg-secondary border border-border rounded-xl p-3 text-foreground focus:outline-none focus:border-primary pl-10 min-h-[100px] resize-none text-sm transition-colors"
                     placeholder="Additional details..."
                   />
-                  <FileText size={16} className="absolute left-3 top-4 text-gray-500" />
+                  <FileText size={16} className="absolute left-3 top-4 text-muted-foreground" />
                 </div>
               </div>
             </div>

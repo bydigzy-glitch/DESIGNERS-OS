@@ -163,8 +163,8 @@ export const Navigation: React.FC<NavigationProps> = ({
                   >
                     {item.icon}
                     <span className="text-body-emphasis">{item.label}</span>
-                    {/* Alert badge for Command Center */}
-                    {item.id === 'COMMAND_CENTER' && hasAlerts && (
+                    {/* Alert badge for HQ */}
+                    {item.id === 'HQ' && hasAlerts && (
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     )}
                   </Button>
@@ -272,10 +272,10 @@ export const Navigation: React.FC<NavigationProps> = ({
 
       {/* MOBILE BOTTOM DOCK */}
       <nav className="md:hidden fixed bottom-4 left-4 right-4 h-[68px] bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-[var(--z-overlay)] flex items-center justify-around px-4">
-        {/* Command Center */}
+        {/* HQ */}
         <Button
-          variant={currentView === 'COMMAND_CENTER' ? "default" : "ghost"}
-          onClick={() => onNavigate('COMMAND_CENTER')}
+          variant={currentView === 'HQ' ? "default" : "ghost"}
+          onClick={() => onNavigate('HQ')}
           className="flex flex-col items-center justify-center gap-1 h-auto py-3 relative"
         >
           <LayoutGrid size={20} />

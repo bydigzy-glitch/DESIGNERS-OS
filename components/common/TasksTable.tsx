@@ -22,9 +22,9 @@ export const TasksTable: React.FC<TasksTableProps> = ({
 }) => {
     const getPriorityColor = (p?: string) => {
         switch (p) {
-            case 'HIGH': return 'bg-teal-500/20 text-teal-500 border-teal-500/20';
+            case 'HIGH': return 'bg-red-500/20 text-red-500 border-red-500/20';
             case 'MEDIUM': return 'bg-orange-500/20 text-orange-500 border-orange-500/20';
-            case 'LOW': return 'bg-gray-500/20 text-gray-500 border-gray-500/20';
+            case 'LOW': return 'bg-blue-500/20 text-blue-500 border-blue-500/20';
             default: return 'bg-gray-500/20 text-gray-500 border-gray-500/20';
         }
     };

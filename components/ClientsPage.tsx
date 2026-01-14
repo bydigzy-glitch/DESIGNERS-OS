@@ -55,6 +55,13 @@ const getScoreColor = (score: number) => {
     return SCORE_COLORS.bad;
 };
 
+// For risk scores: high is bad, low is good
+const getRiskColor = (risk: number) => {
+    if (risk >= 70) return SCORE_COLORS.bad;
+    if (risk >= 40) return SCORE_COLORS.warning;
+    return SCORE_COLORS.good;
+};
+
 const STATUS_STYLES: Record<string, string> = {
     ACTIVE: 'bg-green-500/10 text-green-500 border-green-500/20',
     INACTIVE: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
@@ -288,11 +295,11 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({
                                             <div className="text-lg font-bold">{paymentScore}</div>
                                             <div className="text-[9px] uppercase tracking-wide opacity-80">Payment</div>
                                         </div>
-                                        <div className={`p-2 rounded-lg text-center ${getScoreColor(100 - scopeRisk)}`}>
+                                        <div className={`p-2 rounded-lg text-center ${getRiskColor(scopeRisk)}`}>
                                             <div className="text-lg font-bold">{scopeRisk}</div>
                                             <div className="text-[9px] uppercase tracking-wide opacity-80">Scope Risk</div>
                                         </div>
-                                        <div className={`p-2 rounded-lg text-center ${getScoreColor(100 - stressCost)}`}>
+                                        <div className={`p-2 rounded-lg text-center ${getRiskColor(stressCost)}`}>
                                             <div className="text-lg font-bold">{stressCost}</div>
                                             <div className="text-[9px] uppercase tracking-wide opacity-80">Stress</div>
                                         </div>

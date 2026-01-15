@@ -53,6 +53,8 @@ export const Apps: React.FC<AppsProps> = () => {
             <button
               onClick={() => setCurrentApp('HUB')}
               className="p-2 bg-card rounded-lg text-muted-foreground hover:text-foreground border border-border hover:border-primary/50 transition-all"
+              aria-label="Back to Apps HUB"
+              title="Back to Apps HUB"
             >
               <ArrowLeft size={20} />
             </button>
@@ -227,6 +229,8 @@ const InvoiceGeneratorView: React.FC = () => {
                         type="number"
                         value={item.quantity}
                         onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value))}
+                        aria-label="Quantity"
+                        title="Quantity"
                       />
                     </td>
                     <td className="py-2.5">
@@ -235,6 +239,8 @@ const InvoiceGeneratorView: React.FC = () => {
                         type="number"
                         value={item.rate}
                         onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value))}
+                        aria-label="Rate"
+                        title="Rate"
                       />
                     </td>
                     <td className="py-2.5 text-right font-medium">
@@ -244,6 +250,8 @@ const InvoiceGeneratorView: React.FC = () => {
                       <button
                         onClick={() => removeItem(item.id)}
                         className="text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Remove Item"
+                        title="Remove Item"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -283,6 +291,8 @@ const InvoiceGeneratorView: React.FC = () => {
               className="w-full bg-transparent border-none resize-none focus:ring-0 p-0 text-muted-foreground print:text-gray-600 h-20"
               value={invoiceData.notes}
               onChange={(e) => setInvoiceData({ ...invoiceData, notes: e.target.value })}
+              aria-label="Notes and Terms"
+              title="Notes and Terms"
             />
           </div>
 

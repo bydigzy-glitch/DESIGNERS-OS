@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Task, Project } from '../types';
 import {
     ChevronLeft,
@@ -43,6 +43,27 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll to current time
+    useEffect(() => {
+        if (view === 'month') return;
+
+        const timer = setTimeout(() => {
+            if (scrollContainerRef.current) {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const hourSelector = `#hour-${currentHour}`;
+                const element = scrollContainerRef.current.querySelector(hourSelector);
+
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }, 300); // Small delay to ensure render is complete
+
+        return () => clearTimeout(timer);
+    }, [view]);
 
     // Navigation helpers
     const navigatePrev = () => {
@@ -340,7 +361,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                             className="h-full"
                         >
                             <Card className="h-full overflow-hidden border border-border/50 shadow-xl backdrop-blur-sm bg-card/50">
-                                <div className="h-full overflow-y-auto">
+                                <div className="h-full overflow-y-auto" ref={scrollContainerRef}>
                                     {/* Time slots */}
                                     <div className="relative">
                                         {HOURS.map((hour) => {
@@ -348,6 +369,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                             return (
                                                 <div
                                                     key={hour}
+                                                    id={`hour-${hour}`}
                                                     className="flex border-b border-border/30 hover:bg-secondary/20 transition-colors group relative"
                                                 >
                                                     {/* Time label */}
@@ -430,7 +452,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                             className="h-full"
                         >
                             <Card className="h-full overflow-hidden border border-border/50 shadow-xl backdrop-blur-sm bg-card/50">
-                                <div className="h-full overflow-auto">
+                                <div className="h-full overflow-auto" ref={scrollContainerRef}>
                                     {/* Day headers */}
                                     <div className="sticky top-0 z-20 bg-secondary/80 backdrop-blur-md border-b border-border/50">
                                         <div className="flex">
@@ -462,7 +484,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                     {/* Time grid */}
                                     <div className="relative">
                                         {HOURS.map((hour) => (
-                                            <div key={hour} className="flex border-b border-border/30 hover:bg-secondary/20 transition-colors group">
+                                            <div key={hour} id={`hour-${hour}`} className="flex border-b border-border/30 transition-colors">
                                                 <div className="w-20 flex-shrink-0 p-4 text-xs font-medium text-muted-foreground border-r border-border/30">
                                                     {hour.toString().padStart(2, '0')}:00
                                                 </div>
@@ -473,7 +495,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                                             key={i}
                                                             onClick={() => handleTimeSlotClick(day, hour)}
                                                             className={cn(
-                                                                "flex-1 min-h-[60px] p-1 border-r border-border/30 last:border-r-0 cursor-pointer relative",
+                                                                "flex-1 min-h-[60px] p-1 border-r border-border/30 last:border-r-0 cursor-pointer relative group hover:bg-secondary/40 transition-colors",
                                                                 isToday(day) && "bg-primary/5"
                                                             )}
                                                         >
@@ -545,7 +567,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 </div>
 
                                 {/* Calendar grid */}
-                                <div className="grid grid-cols-7 flex-1" style={{ gridAutoRows: '1fr' }}>
+                                <div className="grid grid-cols-7 flex-1 auto-rows-fr">
                                     {monthDays.map((day, i) => {
                                         if (!day) {
                                             return <div key={`empty-${i}`} className="border-r border-b border-border/30 bg-muted/20" />;

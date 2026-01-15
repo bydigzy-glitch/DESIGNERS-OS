@@ -60,26 +60,6 @@ const SECONDARY_ITEMS: { id: ViewMode; label: string; icon: React.ReactNode; des
   { id: 'FILES', label: 'Assets', icon: <FolderOpen size={18} />, description: 'File storage and management' },
 ];
 
-const MODE_CONFIG: Record<AutopilotMode, { label: string; icon: React.ReactNode; color: string; description: string }> = {
-  ASSIST: {
-    label: 'Assist',
-    icon: <HelpCircle size={14} />,
-    color: 'text-blue-400',
-    description: 'Suggests actions, never acts alone'
-  },
-  CONFIDENT: {
-    label: 'Confident',
-    icon: <Zap size={14} />,
-    color: 'text-primary',
-    description: 'Acts + notifies, you can override'
-  },
-  STRICT: {
-    label: 'Strict',
-    icon: <Shield size={14} />,
-    color: 'text-orange-400',
-    description: 'Enforces rules automatically'
-  },
-};
 
 export const Navigation: React.FC<NavigationProps> = ({
   currentView,
@@ -94,7 +74,6 @@ export const Navigation: React.FC<NavigationProps> = ({
   pendingApprovalsCount,
   riskAlertsCount
 }) => {
-  const modeConfig = MODE_CONFIG[autopilotMode];
   const hasAlerts = pendingApprovalsCount > 0 || riskAlertsCount > 0;
 
   return (
@@ -115,42 +94,6 @@ export const Navigation: React.FC<NavigationProps> = ({
             </div>
           </div>
 
-          {/* Autopilot Mode Selector */}
-          <div className="mb-6 px-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between text-overline h-9 border-dashed"
-                >
-                  <span className="flex items-center gap-2">
-                    <span className={modeConfig.color}>{modeConfig.icon}</span>
-                    <span>{modeConfig.label} Mode</span>
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="start">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">Autopilot Mode</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {Object.entries(MODE_CONFIG).map(([mode, config]) => (
-                  <DropdownMenuItem
-                    key={mode}
-                    onClick={() => onChangeAutopilotMode(mode as AutopilotMode)}
-                    className={autopilotMode === mode ? 'bg-secondary' : ''}
-                  >
-                    <div className="flex items-center gap-2 w-full">
-                      <span className={config.color}>{config.icon}</span>
-                      <div className="flex-1">
-                        <div className="text-body-emphasis">{config.label}</div>
-                        <div className="text-overline text-muted-foreground">{config.description}</div>
-                      </div>
-                      {autopilotMode === mode && <span className="text-primary">✓</span>}
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
 
           {/* Primary Nav Items */}
           <div className="space-y-2">

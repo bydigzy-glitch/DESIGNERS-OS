@@ -27,7 +27,7 @@ import { CommandCenter } from './components/CommandCenter';
 import { ClientsPage } from './components/ClientsPage';
 import { WorkPage } from './components/WorkPage';
 import { CalendarPage } from './components/CalendarPage';
-import { MoneyPage } from './components/MoneyPage';
+import { FinancePage } from './components/FinancePage';
 import { BrainOverlay } from './components/BrainOverlay';
 import { BrainPage } from './components/BrainPage';
 import { AutomationEngine } from './services/automationEngine';
@@ -1575,7 +1575,7 @@ function App() {
                     pendingApprovals={pendingApprovals}
                     riskAlerts={riskAlerts}
                     handledToday={handledToday}
-                    autopilotMode={autopilotMode}
+
                     onOpenBrain={() => setIsBrainOpen(true)}
                     onApprove={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
                     onReject={(approval) => setPendingApprovals(prev => prev.filter(a => a.id !== approval.id))}
@@ -1613,7 +1613,7 @@ function App() {
                     onDeleteTask={handleTaskDelete}
                 />;
             case 'MONEY':
-                return <MoneyPage
+                return <FinancePage
                     projects={projects}
                     clients={clients}
                 />;
@@ -1667,6 +1667,7 @@ function App() {
                     setItems={setInfinityItems}
                     userTokens={user?.tokens || 0}
                     onUseToken={(amount) => handleUseToken(amount, 'app_action')}
+                    onAddTask={handleTaskCreate}
                 />;
             case 'FILES':
                 return <FileManager files={files} setFiles={setFiles} folders={folders} setFolders={setFolders} clients={clients} isDriveConnected={isDriveConnected} />;
@@ -1701,7 +1702,7 @@ function App() {
                     tasks={tasks}
                     projects={projects}
                     clients={clients}
-                    autopilotMode={autopilotMode}
+
                 />;
             case 'CHAT':
             default:
@@ -1773,8 +1774,7 @@ function App() {
                 notifications={notifications}
                 onMarkRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
                 onClearAll={() => setNotifications([])}
-                autopilotMode={autopilotMode}
-                onChangeAutopilotMode={setAutopilotMode}
+
                 onOpenAI={() => setIsAICommandOpen(true)}
                 pendingApprovalsCount={pendingApprovals.length}
                 riskAlertsCount={riskAlerts.filter(r => !r.acknowledged).length}

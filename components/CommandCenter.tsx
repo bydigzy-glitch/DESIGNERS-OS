@@ -46,7 +46,7 @@ interface CommandCenterProps {
     pendingApprovals: ApprovalRequest[];
     riskAlerts: RiskAlert[];
     handledToday: HandledAction[];
-    autopilotMode: AutopilotMode;
+
     onOpenBrain: () => void;
     onApprove: (approval: ApprovalRequest) => void;
     onReject: (approval: ApprovalRequest) => void;
@@ -55,12 +55,6 @@ interface CommandCenterProps {
     onProjectClick: (project: Project) => void;
     onOpenIntake: () => void;
 }
-
-const MODE_CONFIG: Record<AutopilotMode, { label: string; icon: React.ReactNode; color: string }> = {
-    ASSIST: { label: 'Assist', icon: <HelpCircle size={14} />, color: 'text-blue-400' },
-    CONFIDENT: { label: 'Confident', icon: <Zap size={14} />, color: 'text-primary' },
-    STRICT: { label: 'Strict', icon: <Shield size={14} />, color: 'text-orange-400' },
-};
 
 const URGENCY_COLORS = {
     LOW: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
@@ -88,7 +82,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     pendingApprovals,
     riskAlerts,
     handledToday,
-    autopilotMode,
+
     onOpenBrain,
     onApprove,
     onReject,
@@ -97,7 +91,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     onProjectClick,
     onOpenIntake,
 }) => {
-    const modeConfig = MODE_CONFIG[autopilotMode];
     const firstName = user?.name?.split(' ')[0] || 'Designer';
 
     // Calculate Today's Focus - max 3 most urgent items
@@ -137,9 +130,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             .slice(0, 3);
     }, [tasks, pendingApprovals, riskAlerts]);
 
-    // Active risks (unacknowledged)
-    const activeRisks = riskAlerts.filter(r => !r.acknowledged);
-
     return (
         <TooltipProvider delayDuration={300}>
             <div className="flex flex-col h-full w-full space-y-6 pb-24 md:pb-0 overflow-y-auto scrollbar-hide pr-2">
@@ -168,10 +158,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                                 <Zap size={16} />
                                 <span className="hidden md:inline">New Intake</span>
                             </Button>
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border text-overline ${modeConfig.color}`}>
-                                {modeConfig.icon}
-                                <span>{modeConfig.label} Mode</span>
-                            </div>
+
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button

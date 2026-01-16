@@ -22,15 +22,11 @@ interface BrainOverlayProps {
     messages: Message[];
     isLoading: boolean;
     onSendMessage: (text: string) => void;
-    autopilotMode: AutopilotMode;
+
     user: User | null;
 }
 
-const MODE_CONFIG: Record<AutopilotMode, { label: string; icon: React.ReactNode; color: string }> = {
-    ASSIST: { label: 'Assist', icon: <HelpCircle size={12} />, color: 'text-blue-400' },
-    CONFIDENT: { label: 'Confident', icon: <Zap size={12} />, color: 'text-primary' },
-    STRICT: { label: 'Strict', icon: <Shield size={12} />, color: 'text-orange-400' },
-};
+
 
 const QUICK_ACTIONS = [
     { label: "What should I focus on?", icon: <Sparkles size={14} /> },
@@ -44,13 +40,13 @@ export const BrainOverlay: React.FC<BrainOverlayProps> = ({
     messages,
     isLoading,
     onSendMessage,
-    autopilotMode,
+
     user,
 }) => {
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
-    const modeConfig = MODE_CONFIG[autopilotMode];
+
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -104,10 +100,6 @@ export const BrainOverlay: React.FC<BrainOverlayProps> = ({
                         </div>
                         <div>
                             <h2 className="font-bold text-foreground">Brain</h2>
-                            <div className={`flex items-center gap-1 text-[10px] ${modeConfig.color}`}>
-                                {modeConfig.icon}
-                                <span>{modeConfig.label} Mode</span>
-                            </div>
                         </div>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose}>
@@ -210,10 +202,6 @@ export const BrainOverlay: React.FC<BrainOverlayProps> = ({
                     </form>
                     <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground px-1">
                         <span>Enter to send, Shift+Enter for new line</span>
-                        <span className="flex items-center gap-1">
-                            <span className={modeConfig.color}>{modeConfig.icon}</span>
-                            {modeConfig.label}
-                        </span>
                     </div>
                 </div>
             </div>

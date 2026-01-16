@@ -21,32 +21,13 @@ interface BrainPageProps {
     tasks: Task[];
     projects: Project[];
     clients: Client[];
-    autopilotMode: AutopilotMode;
+
 }
 
-const MODE_CONFIG: Record<AutopilotMode, { label: string; icon: React.ReactNode; color: string; description: string }> = {
-    ASSIST: {
-        label: 'Assist',
-        icon: <HelpCircle size={14} />,
-        color: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-        description: 'System focuses on clarification and guidance.'
-    },
-    CONFIDENT: {
-        label: 'Confident',
-        icon: <Zap size={14} />,
-        color: 'text-primary bg-primary/10 border-primary/20',
-        description: 'Balanced automation with strategic suggestions.'
-    },
-    STRICT: {
-        label: 'Strict',
-        icon: <Shield size={14} />,
-        color: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
-        description: 'Maximum intervention for performance optimization.'
-    },
-};
+
 
 export const BrainPage: React.FC<BrainPageProps> = (props) => {
-    const modeConfig = MODE_CONFIG[props.autopilotMode];
+
 
     return (
         <div className="flex flex-col h-full w-full bg-background overflow-hidden relative">
@@ -64,14 +45,7 @@ export const BrainPage: React.FC<BrainPageProps> = (props) => {
                         <div>
                             <div className="flex items-center gap-3">
                                 <h1 className="text-xl font-bold text-foreground">Brain AI</h1>
-                                <Badge variant="outline" className={`gap-1.5 py-0.5 px-2.5 font-bold tracking-tight ${modeConfig.color}`}>
-                                    {modeConfig.icon}
-                                    {modeConfig.label} MODE
-                                </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5 font-medium opacity-70 italic">
-                                {modeConfig.description}
-                            </p>
                         </div>
                     </div>
 

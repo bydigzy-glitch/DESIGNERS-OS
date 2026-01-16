@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { ViewMode, User, AppNotification, AutopilotMode } from '../types';
+import { ViewMode, User, AppNotification } from '../types';
 import {
   LayoutGrid,
   Users,
@@ -40,8 +40,7 @@ interface NavigationProps {
   notifications: AppNotification[];
   onMarkRead: (id: string) => void;
   onClearAll: () => void;
-  autopilotMode: AutopilotMode;
-  onChangeAutopilotMode: (mode: AutopilotMode) => void;
+
   onOpenAI?: () => void;
   pendingApprovalsCount: number;
   riskAlertsCount: number;
@@ -52,7 +51,7 @@ const NAV_ITEMS: { id: ViewMode; label: string; icon: React.ReactNode; descripti
   { id: 'CLIENTS', label: 'Clients', icon: <Users size={18} />, description: 'Client management and scoring' },
   { id: 'WORK', label: 'Projects', icon: <Briefcase size={18} />, description: 'Projects and tasks unified' },
   { id: 'CALENDAR', label: 'Calendar', icon: <Clock size={18} />, description: 'Calendar and time protection' },
-  { id: 'MONEY', label: 'Money', icon: <DollarSign size={18} />, description: 'Finances and forecasting' },
+  { id: 'MONEY', label: 'Finance', icon: <DollarSign size={18} />, description: 'Revenue and financial overview' },
 ];
 
 const SECONDARY_ITEMS: { id: ViewMode; label: string; icon: React.ReactNode; description: string }[] = [
@@ -68,8 +67,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   notifications,
   onMarkRead,
   onClearAll,
-  autopilotMode,
-  onChangeAutopilotMode,
+
   onOpenAI,
   pendingApprovalsCount,
   riskAlertsCount

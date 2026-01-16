@@ -25,7 +25,7 @@ const NAV_LABELS: Record<string, string> = {
     'CLIENTS': 'Clients',
     'WORK': 'Projects',
     'TIME': 'Timeline',
-    'MONEY': 'Revenue',
+    'MONEY': 'Finance',
     'FILES': 'Assets',
     'SETTINGS': 'Settings'
 };

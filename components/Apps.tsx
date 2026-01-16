@@ -1,24 +1,28 @@
 import React, { useState } from 'react';
-import { ArrowLeft, FileText, Plus, Trash2, Printer, Settings } from 'lucide-react';
+import { ArrowLeft, FileText, Plus, Trash2, Printer, Settings, TrendingUp } from 'lucide-react';
 import { FadeIn } from './common/AnimatedComponents';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-type AppId = 'HUB' | 'INVOICE';
+import { ContentIntelligenceEngine } from './ContentIntelligenceEngine';
+
+type AppId = 'HUB' | 'INVOICE' | 'CONTENT_INTELLIGENCE';
 
 interface AppsProps {
   items: any[];
   setItems: React.Dispatch<React.SetStateAction<any[]>>;
   userTokens: number;
   onUseToken: (amount: number) => void;
+  onAddTask?: (task: { title: string; category: string; date: Date }) => void;
 }
 
-export const Apps: React.FC<AppsProps> = () => {
+export const Apps: React.FC<AppsProps> = ({ userTokens, onUseToken, onAddTask }) => {
   const [currentApp, setCurrentApp] = useState<AppId>('HUB');
 
   const renderCurrentAppView = () => {
     switch (currentApp) {
       case 'INVOICE': return <InvoiceGeneratorView />;
+      case 'CONTENT_INTELLIGENCE': return <ContentIntelligenceEngine userTokens={userTokens} onUseToken={onUseToken} onAddTask={onAddTask} />;
       default: return null;
     }
   };
@@ -30,6 +34,7 @@ export const Apps: React.FC<AppsProps> = () => {
           <h1 className="text-3xl font-bold text-foreground tracking-tight">Apps</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
+              { id: 'CONTENT_INTELLIGENCE', label: 'Content Intelligence', icon: <TrendingUp size={24} />, color: 'text-purple-500 bg-purple-500/10 border-purple-500/20', desc: 'Turn trends into targeted content plans backed by data and strategy.' },
               { id: 'INVOICE', label: 'Invoice Generator', icon: <FileText size={24} />, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20', desc: 'Create professional invoices for your clients in seconds.' },
             ].map((app, i) => (
               <FadeIn key={app.id} delay={i * 0.1}>

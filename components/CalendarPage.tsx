@@ -245,28 +245,35 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex-shrink-0 px-8 pt-8 pb-6 border-b border-border/50 backdrop-blur-sm bg-background/80"
+                className="flex-shrink-0 px-6 pt-6 pb-2 border-b border-border/20 backdrop-blur-[2px] bg-background/40"
             >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     {/* Title */}
-                    <div>
-                        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight">
                             Calendar
                         </h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Organize your time, achieve your goals
-                        </p>
+                        <div className="h-6 w-px bg-border/50 hidden md:block" />
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <CalendarIcon size={18} className="text-primary/70" />
+                            <h2 className="text-lg font-medium">{getDateHeader()}</h2>
+                            {visibleTasks.length > 0 && (
+                                <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5 font-bold">
+                                    {visibleTasks.length}
+                                </Badge>
+                            )}
+                        </div>
                     </div>
 
                     {/* Controls */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         {/* View Switcher */}
-                        <div className="flex p-1 bg-secondary/80 backdrop-blur-md rounded-xl border border-border/50 shadow-sm">
+                        <div className="flex p-1 bg-secondary/40 backdrop-blur-md rounded-xl border border-border/30 shadow-sm">
                             <Button
                                 variant={view === 'day' ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setView('day')}
-                                className="text-xs font-bold h-9 px-4 rounded-lg transition-all"
+                                className="text-xs font-bold px-4 rounded-lg transition-all"
                             >
                                 Day
                             </Button>
@@ -274,7 +281,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 variant={view === 'week' ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setView('week')}
-                                className="text-xs font-bold h-9 px-4 rounded-lg transition-all"
+                                className="text-xs font-bold px-4 rounded-lg transition-all"
                             >
                                 Week
                             </Button>
@@ -282,19 +289,19 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 variant={view === 'month' ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setView('month')}
-                                className="text-xs font-bold h-9 px-4 rounded-lg transition-all"
+                                className="text-xs font-bold px-4 rounded-lg transition-all"
                             >
                                 Month
                             </Button>
                         </div>
 
                         {/* Navigation */}
-                        <div className="flex items-center gap-2 p-1 bg-secondary/80 backdrop-blur-md rounded-xl border border-border/50 shadow-sm">
+                        <div className="flex items-center gap-2 p-1 bg-secondary/40 backdrop-blur-md rounded-xl border border-border/30 shadow-sm">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={navigatePrev}
-                                className="h-9 w-9 rounded-lg hover:bg-primary/10 transition-all"
+                                className="rounded-lg hover:bg-primary/10 transition-all"
                             >
                                 <ChevronLeft size={18} />
                             </Button>
@@ -302,7 +309,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={goToToday}
-                                className="text-xs font-bold h-9 px-4 rounded-lg hover:bg-primary/10 transition-all"
+                                className="text-xs font-bold px-4 hover:bg-primary/10 transition-all"
                             >
                                 Today
                             </Button>
@@ -310,7 +317,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 variant="ghost"
                                 size="icon"
                                 onClick={navigateNext}
-                                className="h-9 w-9 rounded-lg hover:bg-primary/10 transition-all"
+                                className="hover:bg-primary/10 transition-all"
                             >
                                 <ChevronRight size={18} />
                             </Button>
@@ -323,33 +330,17 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                 setSelectedDate(new Date());
                                 setIsTaskModalOpen(true);
                             }}
-                            className="gap-2 shadow-lg h-10 px-6 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all"
+                            className="gap-2"
                         >
                             <Plus size={16} />
                             <span className="hidden sm:inline">New Event</span>
                         </Button>
                     </div>
                 </div>
-
-                {/* Date Header */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="mt-6 flex items-center gap-2"
-                >
-                    <CalendarIcon size={20} className="text-primary" />
-                    <h2 className="text-xl font-semibold">{getDateHeader()}</h2>
-                    {visibleTasks.length > 0 && (
-                        <Badge variant="secondary" className="ml-2">
-                            {visibleTasks.length} {visibleTasks.length === 1 ? 'event' : 'events'}
-                        </Badge>
-                    )}
-                </motion.div>
             </motion.div>
 
             {/* Calendar Content */}
-            <div className="flex-1 overflow-auto p-8">
+            <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
                 <AnimatePresence mode="wait">
                     {/* Day View */}
                     {view === 'day' && (
@@ -451,10 +442,10 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                             exit={{ opacity: 0, scale: 0.98 }}
                             className="h-full"
                         >
-                            <Card className="h-full overflow-hidden border border-border/50 shadow-xl backdrop-blur-sm bg-card/50">
+                            <Card className="h-full overflow-hidden border border-border/30 shadow-md backdrop-blur-sm bg-card/30">
                                 <div className="h-full overflow-auto" ref={scrollContainerRef}>
                                     {/* Day headers */}
-                                    <div className="sticky top-0 z-20 bg-secondary/80 backdrop-blur-md border-b border-border/50">
+                                    <div className="sticky top-0 z-20 bg-secondary/60 backdrop-blur-md border-b border-border/30">
                                         <div className="flex">
                                             <div className="w-20 flex-shrink-0 border-r border-border/30" />
                                             {weekDays.map((day, i) => (
@@ -495,7 +486,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                                             key={i}
                                                             onClick={() => handleTimeSlotClick(day, hour)}
                                                             className={cn(
-                                                                "flex-1 min-h-[60px] p-1 border-r border-border/30 last:border-r-0 cursor-pointer relative group hover:bg-secondary/40 transition-colors",
+                                                                "flex-1 min-h-[80px] p-2 border-r border-border/30 last:border-r-0 cursor-pointer relative group hover:bg-secondary/20 transition-colors",
                                                                 isToday(day) && "bg-primary/5"
                                                             )}
                                                         >
@@ -648,10 +639,10 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
+            </div >
 
             {/* Task Modal */}
-            <TaskModal
+            < TaskModal
                 isOpen={isTaskModalOpen}
                 onClose={() => {
                     setIsTaskModalOpen(false);
@@ -683,6 +674,6 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                 initialTask={selectedTask}
                 projects={projects}
             />
-        </div>
+        </div >
     );
 };

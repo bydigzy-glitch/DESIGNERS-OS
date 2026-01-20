@@ -117,6 +117,47 @@ export interface Habit {
   category: 'HEALTH' | 'WORK' | 'MINDSET';
 }
 
+// ============================================
+// FINANCE MODULE TYPES
+// ============================================
+
+export interface FinancialGoal {
+  id: string;
+  target: number;
+  label: string;
+  deadline: string; // e.g., "Dec 2026" or ISO date
+  createdAt: Date;
+}
+
+export type PurchasePriority = 'CRITICAL' | 'STRATEGIC' | 'LUXURY';
+export type PurchaseStatus = 'WISHLIST' | 'SAVING' | 'AVAILABLE' | 'PURCHASED';
+
+export interface PlannedPurchase {
+  id: string;
+  name: string;
+  price: number;
+  priority: PurchasePriority;
+  status: PurchaseStatus;
+  notes?: string;
+  targetDate?: string;
+  createdAt: Date;
+}
+
+export type SubscriptionFrequency = 'MONTHLY' | 'YEARLY' | 'WEEKLY';
+export type SubscriptionStatus = 'ACTIVE' | 'PAUSED' | 'CANCELLED';
+
+export interface Subscription {
+  id: string;
+  name: string;
+  price: number;
+  frequency: SubscriptionFrequency;
+  nextBilling: Date;
+  status: SubscriptionStatus;
+  category?: string; // e.g., "Design Tools", "Hosting", "AI"
+  notes?: string;
+  createdAt: Date;
+}
+
 export interface CanvasItem {
   id: string;
   type: 'IMAGE' | 'NOTE' | 'COMMENT';

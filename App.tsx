@@ -38,17 +38,18 @@ import { AICommandPalette } from './components/ai/AICommandPalette';
 import { AIContext } from './services/ai/types';
 import { runReminderCheck, requestNotificationPermission, clearAllReminders } from './services/reminderService';
 
+// Note: Demo user - password should be set via environment variable or registration
 const DUMMY_USER: User = {
     id: 'admin-user',
-    name: 'Digzy',
-    email: 'bydigzy@gmail.com',
-    password: 'Aa332211',
+    name: 'Demo User',
+    email: 'demo@example.com',
+    password: import.meta.env.VITE_DEMO_PASSWORD || undefined, // Set in .env or remove
     isPro: true,
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Digzy',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo',
     preferences: {
         theme: 'dark',
         notifications: true,
-        displayName: 'Digzy'
+        displayName: 'Demo'
     },
     tokens: 10
 };

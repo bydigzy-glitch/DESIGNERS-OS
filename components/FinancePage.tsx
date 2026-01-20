@@ -1,5 +1,6 @@
 
 import React, { useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { Project, Client } from '../types';
 import {
     DollarSign,
@@ -17,7 +18,12 @@ import {
     BarChart3,
     Activity,
     CheckCircle2,
-    Shield
+    Shield,
+    Target,
+    ShoppingCart,
+    Repeat,
+    ArrowRight,
+    Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +49,27 @@ export const FinancePage: React.FC<FinancePageProps> = ({
     projects,
     clients,
 }) => {
+    // New features state
+    const [goal, setGoal] = React.useState({
+        target: 15000,
+        label: 'Monthly Target',
+        deadline: 'EOY 2026'
+    });
+
+    const purchases = [
+        { id: '1', name: 'MacBook Pro M3', price: 2499, priority: 'STRATEGIC', status: 'AVAILABLE' },
+        { id: '2', name: 'Adobe Creative Cloud', price: 54, priority: 'CRITICAL', status: 'PAID' },
+        { id: '3', name: 'Ergo Chair', price: 1200, priority: 'STRATEGIC', status: 'SAVING' },
+        { id: '4', name: 'Designer UI Kit', price: 199, priority: 'LUXURY', status: 'ADVISED' },
+    ];
+
+    const subscriptions = [
+        { id: '1', name: 'Framer', price: 25, frequency: 'MONTHLY', nextBilling: 'Jan 28' },
+        { id: '2', name: 'Midjourney', price: 30, frequency: 'MONTHLY', nextBilling: 'Feb 02' },
+        { id: '3', name: 'Vercel Pro', price: 20, frequency: 'MONTHLY', nextBilling: 'Feb 15' },
+        { id: '4', name: 'Webflow', price: 42, frequency: 'MONTHLY', nextBilling: 'Feb 10' },
+    ];
+
     // Calculate financial stats
     const stats = useMemo(() => {
         const now = new Date();
@@ -355,43 +382,171 @@ export const FinancePage: React.FC<FinancePageProps> = ({
                     </FadeIn>
                 )}
 
-                {/* Bottom Stats Grid */}
-                <FadeIn delay={0.5}>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <Card className="p-4 border-l-4 border-l-purple-500">
-                            <div className="flex items-center gap-3">
-                                <div>
-                                    <div className="text-overline text-muted-foreground">Avg Value</div>
-                                    <div className="text-2xl font-bold font-mono tracking-tight">${stats.avgProjectValue.toLocaleString()}</div>
+                {/* Strategic Planning Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Financial Goals & Priority */}
+                    <FadeIn delay={0.6}>
+                        <div className="space-y-6">
+                            {/* Financial Goal Card */}
+                            <Card className="overflow-hidden border-primary/20 bg-primary/5">
+                                <CardHeader className="pb-3 border-b border-primary/10">
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                            <Target size={16} className="text-primary" />
+                                            Financial Goal
+                                        </CardTitle>
+                                        <Badge variant="outline" className="bg-primary/10 border-primary/20 text-primary">
+                                            {goal.label}
+                                        </Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="pt-6">
+                                    <div className="flex justify-between items-end mb-4">
+                                        <div>
+                                            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1">Current Progress</div>
+                                            <div className="text-3xl font-black text-foreground tracking-tighter">
+                                                $<CountUp value={stats.totalEarned} />
+                                                <span className="text-lg text-muted-foreground font-medium ml-2">/ ${goal.target.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1">Target Date</div>
+                                            <div className="text-sm font-bold text-primary">{goal.deadline}</div>
+                                        </div>
+                                    </div>
+                                    <Progress value={(stats.totalEarned / goal.target) * 100} className="h-3 bg-primary/10" />
+                                    <div className="mt-4 p-3 rounded-xl bg-background/50 border border-primary/10 text-xs text-muted-foreground italic text-center">
+                                        "You are ${(goal.target - stats.totalEarned).toLocaleString()} away from your target. Brain suggests 2 more high-value projects."
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Automated Purchase Priority */}
+                            <Card>
+                                <CardHeader className="pb-3 border-b border-border/50">
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                            <ShoppingCart size={16} className="text-orange-500" />
+                                            Purchase Priority
+                                        </CardTitle>
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-[10px] font-bold text-muted-foreground uppercase">Safe to Buy:</div>
+                                            <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-500 bg-green-500/5">
+                                                ${stats.safeToSpend.toLocaleString()}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="pt-4 px-0">
+                                    <div className="space-y-1">
+                                        {purchases.map(item => (
+                                            <div key={item.id} className="flex items-center justify-between px-6 py-3 hover:bg-secondary/30 transition-colors group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn(
+                                                        "p-2 rounded-lg",
+                                                        item.priority === 'CRITICAL' ? "bg-red-500/10 text-red-500" :
+                                                            item.priority === 'STRATEGIC' ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
+                                                    )}>
+                                                        {item.priority === 'CRITICAL' ? <AlertCircle size={14} /> :
+                                                            item.priority === 'STRATEGIC' ? <TrendingUp size={14} /> : <ShoppingCart size={14} />}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{item.name}</div>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">${item.price.toLocaleString()}</span>
+                                                            <span className="text-[10px] text-muted-foreground opacity-50">•</span>
+                                                            <span className={cn(
+                                                                "text-[10px] font-black tracking-widest uppercase",
+                                                                item.status === 'AVAILABLE' ? "text-green-500" :
+                                                                    item.status === 'SAVING' ? "text-orange-500" :
+                                                                        item.status === 'PAID' ? "text-muted-foreground line-through" : "text-primary"
+                                                            )}>
+                                                                {item.status}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <ArrowRight size={14} />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </FadeIn>
+
+                    {/* Subscription Management */}
+                    <FadeIn delay={0.7}>
+                        <Card className="h-full">
+                            <CardHeader className="pb-3 border-b border-border/50">
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <Repeat size={16} className="text-primary" />
+                                        Subscriptions
+                                    </CardTitle>
+                                    <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold tracking-widest gap-2">
+                                        <Plus size={12} /> Add New
+                                    </Button>
                                 </div>
-                            </div>
-                        </Card>
-                        <Card className="p-4 border-l-4 border-l-orange-500">
-                            <div className="flex items-center gap-3">
-                                <div>
-                                    <div className="text-overline text-muted-foreground">Est. Expenses</div>
-                                    <div className="text-2xl font-bold font-mono tracking-tight">${stats.estimatedExpenses.toLocaleString()}</div>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                <div className="space-y-4">
+                                    {/* Monthly Burn Card */}
+                                    <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50 relative overflow-hidden group">
+                                        <div className="flex justify-between items-center relative z-10">
+                                            <div>
+                                                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Monthly Recurring Cost</div>
+                                                <div className="text-2xl font-black text-foreground">
+                                                    ${subscriptions.reduce((s, sub) => s + sub.price, 0).toLocaleString()}
+                                                    <span className="text-sm text-muted-foreground font-medium ml-1">/mo</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                                <CreditCard size={20} />
+                                            </div>
+                                        </div>
+                                        <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-primary/5 blur-2xl" />
+                                    </div>
+
+                                    {/* Subscription List */}
+                                    <div className="space-y-2">
+                                        {subscriptions.map(sub => (
+                                            <div key={sub.id} className="flex items-center justify-between p-3 rounded-xl border border-border/30 hover:border-primary/30 transition-all hover:translate-x-1">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center font-bold text-xs text-muted-foreground border border-border/50">
+                                                        {sub.name.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-foreground">{sub.name}</div>
+                                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Next: {sub.nextBilling}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-sm font-black text-foreground">${sub.price}</div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Monthly</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="pt-4 border-t border-border/50">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Yearly Subscription Cost</span>
+                                            <span className="text-lg font-black text-foreground">${(subscriptions.reduce((s, sub) => s + sub.price, 0) * 12).toLocaleString()}</span>
+                                        </div>
+                                        <Button className="w-full bg-primary/10 hover:bg-primary/20 text-primary border-primary/20 border" variant="ghost">
+                                            View Optimization Analysis
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
+                            </CardContent>
                         </Card>
-                        <Card className="p-4 border-l-4 border-l-green-500">
-                            <div className="flex items-center gap-3">
-                                <div>
-                                    <div className="text-overline text-muted-foreground">Projects Done</div>
-                                    <div className="text-2xl font-bold font-mono tracking-tight">{projects.filter(p => p.status === 'COMPLETED').length}</div>
-                                </div>
-                            </div>
-                        </Card>
-                        <Card className="p-4 border-l-4 border-l-red-500">
-                            <div className="flex items-center gap-3">
-                                <div>
-                                    <div className="text-overline text-muted-foreground">Arrears</div>
-                                    <div className="text-2xl font-bold font-mono tracking-tight">${stats.overdueAmount.toLocaleString()}</div>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
-                </FadeIn>
+                    </FadeIn>
+                </div>
+
+                <div className="h-12" /> {/* Decorative spacer */}
             </div>
         </TooltipProvider>
     );

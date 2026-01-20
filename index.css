@@ -319,6 +319,13 @@
   background-color: var(--dynamic-color, transparent);
 }
 
+/* Calendar Task Card - uses CSS custom property for dynamic task colors */
+.calendar-task-card {
+  --task-color: hsl(var(--primary));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--task-color) 20%, transparent) 0%, color-mix(in srgb, var(--task-color) 10%, transparent) 100%);
+  border-left-color: var(--task-color);
+}
+
 .dynamic-border-color {
   border-color: var(--dynamic-color, transparent);
 }

@@ -19,7 +19,7 @@ export const LoadingScreen: React.FC = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-background z-[9999] flex flex-col items-center justify-center animate-out fade-out duration-500 fill-mode-forwards" style={{ animationPlayState: progress >= 100 ? 'running' : 'paused' }}>
+    <div className={`fixed inset-0 bg-background z-[9999] flex flex-col items-center justify-center ${progress >= 100 ? 'animate-out fade-out duration-500 fill-mode-forwards' : ''}`}>
 
       <div className="relative mb-8 animate-in fade-in zoom-in-50 duration-500">
         <div className="gradient-blob absolute -inset-4 bg-primary/20 blur-xl rounded-full animate-pulse"></div>

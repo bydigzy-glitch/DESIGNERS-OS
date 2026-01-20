@@ -600,14 +600,10 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                                                                 e.stopPropagation();
                                                                 handleTaskClick(task);
                                                             }}
-                                                            className="px-2 py-1 rounded text-[10px] font-medium truncate shadow-sm hover:shadow-md transition-all border border-border/30 backdrop-blur-sm"
+                                                            className="px-2 py-1 rounded text-[10px] font-medium truncate shadow-sm hover:shadow-md transition-all border border-border/30 backdrop-blur-sm border-l-2 calendar-task-card"
                                                             style={{
-                                                                background: task.color
-                                                                    ? `linear-gradient(135deg, ${task.color}20 0%, ${task.color}10 100%)`
-                                                                    : 'linear-gradient(135deg, hsl(var(--primary) / 0.2) 0%, hsl(var(--primary) / 0.1) 100%)',
-                                                                borderLeftWidth: '2px',
-                                                                borderLeftColor: task.color || 'hsl(var(--primary))',
-                                                            }}
+                                                                '--task-color': task.color || 'hsl(var(--primary))'
+                                                            } as React.CSSProperties}
                                                         >
                                                             {task.title}
                                                         </div>
